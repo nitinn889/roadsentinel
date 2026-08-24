@@ -1,0 +1,4 @@
+numpy>=1.26
+opencv-python-headless>=4.10
+requests>=2.32
+Pillow>=10.0

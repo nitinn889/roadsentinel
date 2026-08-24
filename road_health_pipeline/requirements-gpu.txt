@@ -1,0 +1,11 @@
+numpy>=2.0
+opencv-python>=4.10
+Pillow>=10.0
+requests>=2.32
+faiss-cpu>=1.8.0
+fastapi>=0.115
+uvicorn>=0.34
+python-multipart>=0.0.20
+torch>=2.5
+torchvision>=0.20
+# Install the official Meta SAM 2 repository separately; see README.md.

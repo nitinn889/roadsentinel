@@ -39,3 +39,45 @@ ml/outputs/*
 # OS
 .DS_Store
 Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# ML outputs / caches
+outputs/
+output/
+runs/
+checkpoints/
+*.pt
+*.pth
+*.onnx
+*.engine
+*.ckpt
+
+# Dataset files
+RoadSentinel_datasets/
+
+# Large archives
+*.zip
+*.tar
+*.tar.gz
+*.7z
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Secrets
+.env
+*.pem
+*.key
