@@ -32,15 +32,23 @@ def require_cuda(device: str) -> None:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(
+        description="Build a DINOv2 healthy-road memory bank for RoadSentinel."
+    )
     ap.add_argument("--healthy-dir", type=Path, default=CONFIG.healthy_roads_dir)
     ap.add_argument("--output-dir", type=Path, default=CONFIG.memory_bank_dir)
     ap.add_argument("--device", default=CONFIG.device)
     ap.add_argument("--coreset-pool", type=int, default=CONFIG.coreset_presample_max)
     ap.add_argument("--max-images", type=int, default=None)
+    ap.add_argument(
+        "--allow-cpu",
+        action="store_true",
+        help="Allow building the memory bank on CPU (slow; for development/testing only).",
+    )
     args = ap.parse_args()
 
-    require_cuda(args.device)
+    if not args.allow_cpu:
+        require_cuda(args.device)
     images = find_images(args.healthy_dir)
     if args.max_images:
         images = images[: args.max_images]
@@ -58,6 +66,8 @@ def main() -> None:
 
     chunks: list[np.ndarray] = []
     total = 0
+    import time
+    t0 = time.monotonic()
     for i, path in enumerate(images, 1):
         try:
             rgb = load_rgb(path)
@@ -68,8 +78,14 @@ def main() -> None:
                 total += len(emb)
         except Exception as exc:
             log.exception("Skipping %s: %s", path, exc)
-        if i % 100 == 0 or i == len(images):
-            log.info("Processed %d/%d images; collected %d patch embeddings", i, len(images), total)
+        if i % 10 == 0 or i == len(images):
+            elapsed = time.monotonic() - t0
+            rate = i / elapsed if elapsed > 0 else 0
+            remaining = (len(images) - i) / rate if rate > 0 else float("inf")
+            log.info(
+                "Processed %d/%d images (%.1f img/s, ETA %.0fs); %d patch embeddings",
+                i, len(images), rate, remaining, total,
+            )
 
     if not chunks:
         raise RuntimeError("No patch embeddings were produced")
