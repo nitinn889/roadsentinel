@@ -1,0 +1,9 @@
+# RoadSentinel drone-sim client dependencies
+# Install the CARLA client wheel that matches your CARLA server version, e.g.:
+#   pip install carla==0.9.14
+# (not pinned here since it depends on which CARLA server build you're running -
+# see DEMO_INSTRUCTIONS.md in the accompanying instructions zip)
+carla==0.9.14
+pygame>=2.5.0
+numpy>=1.24.0
+Pillow>=10.0.0

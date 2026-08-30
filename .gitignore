@@ -3,10 +3,10 @@ __pycache__/
 *.py[cod]
 *.so
 
-# Virtual environment
+# Virtual environments
 .venv/
 venv/
-env/
+carla_env/
 
 # IDE
 .vscode/
@@ -36,20 +36,6 @@ ml/models/*.safetensors
 ml/outputs/*
 !ml/outputs/.gitkeep
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Python
-__pycache__/
-*.py[cod]
-*.so
-
-# Virtual environments
-.venv/
-venv/
-env/
-
 # ML outputs / caches
 outputs/
 output/
@@ -69,15 +55,22 @@ RoadSentinel_datasets/
 *.tar
 *.tar.gz
 *.7z
-
-# IDE
-.vscode/
-.idea/
+*.whl
 
 # OS
 .DS_Store
+Thumbs.db
 
 # Secrets
 .env
 *.pem
 *.key
+
+# ---- env/ directory: allow source code, ignore generated/binary content ----
+env/__pycache__/
+env/output/
+env/carla_env/
+env/Blender files/
+env/assets/
+env/road_defects_preview/
+env/*.jpg
