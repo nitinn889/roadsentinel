@@ -8,4 +8,6 @@ uvicorn>=0.34
 python-multipart>=0.0.20
 torch>=2.5
 torchvision>=0.20
-# Install the official Meta SAM 2 repository separately; see README.md.
+sam2>=1.1.0
+pytest>=8.0
+# Install the official Meta SAM 2 checkpoint separately; see README.md.

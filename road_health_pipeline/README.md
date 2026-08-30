@@ -1,48 +1,118 @@
-# RoadSentinel end-to-end prototype
+# RoadSentinel — SAM2 + DINOv2 Road Health Pipeline
 
-This prototype separates the Raspberry Pi edge stage from GPU inference:
+End-to-end prototype for detecting road surface anomalies (potholes and defects)
+from aerial RGB imagery using DINOv2 feature extraction, a healthy-road memory bank,
+and SAM2 segmentation.
 
-`RGB camera -> Pi quality/filtering/metadata/queue -> GPU SAM2 + DINOv2 + FAISS -> anomaly candidates -> SAM2 refinement -> area/GPS/water/severity -> JSON`
+```
+RGB image → DINOv2 patch features → Healthy-road memory bank → Anomaly map
+         → Candidate regions → SAM2 segmentation → Pothole mask
+         → Area estimation → Depth interface → Severity interface → JSON
+```
 
-CARLA depth is used only as evaluation ground truth.
+CARLA depth camera is used **only** as evaluation ground truth; the real pipeline
+is RGB-only.
 
-## What the supplied specification establishes
+---
 
-The source material says the RDD2020 preparation produced 6,472 images with no XML damage annotations, but it explicitly says these were **not** manually verified as perfectly healthy. It also says the previous Colab run failed at SAM2 initialization because the PyTorch build had no CUDA support. Therefore this project does not claim that a memory bank already exists; `build_memory_bank.py` must create and `validate_memory_bank.py` must validate it.
+## Component Status
+
+| Component | Status | Notes |
+|---|---|---|
+| DINOv2 feature extraction | **IMPLEMENTED** | ViT-S/14, patch tokens + CLS token |
+| Healthy-road memory bank | **IMPLEMENTED** | FAISS inner-product index, coreset selection |
+| Anomaly detection | **IMPLEMENTED** | kNN cosine distance, spatial heat-map |
+| Candidate localisation | **IMPLEMENTED** | Connected components + heuristic scoring |
+| SAM2 segmentation | **IMPLEMENTED** | Box prompt → mask + confidence |
+| Area estimation | **IMPLEMENTED** | Requires altitude metadata |
+| Depth estimation | **PLACEHOLDER** | NullDepthEstimator — requires metric RGB depth model |
+| Severity scoring | **PLACEHOLDER** | Requires calibrated thresholds + real depth |
+| GPS localisation | **PLACEHOLDER** | Requires real GNSS telemetry |
+| Real-data validation | **NOT AVAILABLE** | Pending labelled dataset |
+
+---
+
+## GPU Requirements
+
+| Resource | Minimum (tested) |
+|---|---|
+| GPU | NVIDIA GeForce RTX 5060 Laptop GPU (8 GB VRAM) |
+| CUDA | 12.x / 13.x |
+| RAM | 16 GB recommended |
+
+Memory bank building requires CUDA. Inference can run on CPU (slow).
+
+---
 
 ## Installation
 
-### GPU machine
+### 1. Python environment (GPU machine)
 
-Use a CUDA-enabled PyTorch build appropriate for your NVIDIA driver. Do not install the CPU-only wheel. Then:
+Use a CUDA-enabled PyTorch build matching your NVIDIA driver:
 
 ```bash
 cd road_health_pipeline
-python3 -m venv .venv-gpu
-source .venv-gpu/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements-gpu.txt
 ```
 
-Install the official SAM 2 repository and its dependencies according to its current instructions. The code expects:
+> **Note**: `requirements-gpu.txt` does **not** install a CUDA-enabled PyTorch
+> automatically. Install the appropriate wheel first:
+> ```bash
+> pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+> ```
 
-- `sam2/build_sam.py`
-- `sam2/sam2_image_predictor.py`
-- `configs/sam2.1/sam2.1_hiera_s.yaml`
-- `checkpoints/sam2.1_hiera_small.pt`
-
-A CUDA check must pass before building:
+### 2. Verify CUDA
 
 ```bash
 python - <<'PY'
 import torch
-print(torch.__version__)
-print('CUDA:', torch.cuda.is_available())
+print("torch:", torch.__version__)
+print("CUDA:", torch.cuda.is_available())
 if not torch.cuda.is_available():
-    raise SystemExit('CUDA is not available; install a CUDA-enabled PyTorch build')
+    raise SystemExit("CUDA not available; install a CUDA-enabled PyTorch build.")
 PY
 ```
 
-### Raspberry Pi
+### 3. SAM2 installation
+
+SAM2 is installed via pip as part of `requirements-gpu.txt`:
+
+```bash
+pip install sam2>=1.1.0
+```
+
+Verify:
+
+```bash
+python -c "from sam2.build_sam import build_sam2; print('SAM2 OK')"
+```
+
+### 4. SAM2 checkpoint download
+
+The checkpoint is **not** committed to the repository (it is excluded by `.gitignore`).
+Download it once:
+
+```bash
+wget -P road_health_pipeline/checkpoints/ \
+  https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_small.pt
+```
+
+Expected path: `road_health_pipeline/checkpoints/sam2.1_hiera_small.pt` (~180 MB).
+
+### 5. DINOv2 setup
+
+DINOv2 is loaded automatically via `torch.hub` on first use:
+
+```python
+from inference.dinov2_embed import Dinov2Embedder
+e = Dinov2Embedder.from_config(device="cuda")  # downloads ~330 MB on first run
+```
+
+The model is cached in `~/.cache/torch/hub/`.
+
+### 6. Raspberry Pi
 
 ```bash
 cd road_health_pipeline
@@ -51,113 +121,228 @@ source .venv-pi/bin/activate
 pip install -r requirements-pi.txt
 ```
 
-The Pi code intentionally does not import SAM2, DINOv2, FAISS, or CUDA libraries.
+Pi code does **not** import SAM2, DINOv2, FAISS, or CUDA libraries.
 
-### CARLA machine
+---
 
-Use the already-working CARLA Docker setup and the existing Python 3.10 environment. Install the CARLA Python client in that environment if not already present.
+## Configuration
 
-## Build and validate the memory bank
+All settings are in [`config.py`](config.py). Key parameters:
 
-On the GPU machine:
+| Setting | Default | Environment variable |
+|---|---|---|
+| `device` | `"cuda"` | `ROADSENTINEL_DEVICE` |
+| `camera_mode` | `"nadir"` | `ROADSENTINEL_CAMERA_MODE` |
+| `dinov2_model_name` | `"dinov2_vits14"` | — |
+| `sam2_checkpoint` | `checkpoints/sam2.1_hiera_small.pt` | — |
+| `memory_bank_dir` | `output/memory_bank` | — |
+| `anomaly_percentile` | `98.0` | — |
+| `knn_k` | `5` | — |
+| `pothole_confidence_threshold` | `0.55` | — |
+
+Thresholds must be calibrated on a labelled validation set before deployment.
+
+---
+
+## DINOv2 Architecture Reference
+
+| Property | Value |
+|---|---|
+| Model | `dinov2_vits14` (ViT-Small) |
+| Feature dim | 384 |
+| Patch size | 14 px |
+| Input size | 518 px (37 × 37 = 1369 tokens) |
+| Normalisation | ImageNet mean/std |
+| Token layout | `x_norm_patchtokens` (1, 1369, 384) + `x_norm_clstoken` (1, 384) |
+
+Token at grid `(r, c)` covers pixels `[r*14:(r+1)*14, c*14:(c+1)*14]` in the
+resized 518×518 input. After upsampling the anomaly map back to original image
+resolution, spatial correspondence is preserved by bilinear interpolation.
+
+---
+
+## Building the Memory Bank
+
+Build from a directory of healthy-road images:
 
 ```bash
-python memory_bank/build_memory_bank.py --healthy-dir data/healthy_roads
+python memory_bank/build_memory_bank.py \
+    --healthy-dir data/healthy_roads \
+    --output-dir output/memory_bank \
+    --device cuda
+```
+
+For CPU-only development (slow):
+
+```bash
+python memory_bank/build_memory_bank.py \
+    --healthy-dir data/healthy_roads \
+    --allow-cpu
+```
+
+Validate the result:
+
+```bash
 python memory_bank/validate_memory_bank.py
 ```
 
-The builder keeps the original DINOv2 ViT-S/14 design, but it never runs k-center on the full multi-million-point matrix. It random-presamples a bounded pool and performs blockwise farthest-point selection.
+---
 
-## Single-image smoke test
+## Running Inference
 
-After a successful memory-bank build:
+Single image:
 
 ```bash
-python inference/run_inference.py path/to/frame.png --device cuda --output output/smoke.json
+python inference/run_inference.py path/to/image.jpg \
+    --device cuda \
+    --memory-bank output/memory_bank \
+    --output output/result.json
 ```
 
-Expected output is JSON with:
+With telemetry metadata:
 
-- image-level anomaly score
-- candidate potholes
-- bounding boxes and mask areas
-- area in m² when altitude metadata is present
-- GPS coordinates when metadata exists
-- `estimated_depth_m: null` unless a metric RGB depth estimator is provided
-- water flag and confidence from a heuristic
-- severity score
+```bash
+python inference/run_inference.py image.jpg \
+    --metadata image_meta.json \
+    --device cuda \
+    --output output/result.json
+```
 
-## Inference API
+Python API (model reuse across images):
 
-Start on the GPU machine:
+```python
+from inference.run_inference import load_pipeline, infer
+
+pipeline = load_pipeline(device="cuda")
+for path in image_list:
+    result = infer(path, pipeline=pipeline)
+```
+
+Inference server (GPU machine):
 
 ```bash
 python inference/server.py --host 0.0.0.0 --port 8000
 ```
 
-Health check:
+---
+
+## Running Tests
+
+### Unit and integration tests
 
 ```bash
-curl http://127.0.0.1:8000/health
+cd road_health_pipeline
+source .venv/bin/activate
+
+# All tests (DINOv2 tests require model; SAM2 real tests require checkpoint)
+pytest tests/ -v --tb=short
+
+# Only fast tests (no model loading)
+pytest tests/ -v --tb=short -m "not slow"
+
+# Explicit test classes
+pytest tests/test_memory_bank.py tests/test_anomaly_detector.py -v
 ```
 
-The Pi sends `image` and a `metadata_json` form field to `/infer`.
+SAM2 checkpoint-dependent tests are automatically skipped when the checkpoint
+file is absent. DINOv2 tests (`@pytest.mark.slow`) require the model to be
+downloaded (~330 MB on first run).
 
-## CARLA simulation
-
-The controller uses the road section in the supplied specification and a nadir camera. It prints the actual footprint and calculates the overlap implied by altitude, FOV, speed, and interval.
+### End-to-end test (no real dataset needed)
 
 ```bash
-python carla_sim/drone_controller.py --altitude 30 --speed 8.33 --interval 3
+python tests/run_e2e.py --device cuda
 ```
 
-Controls: `w=forward`, `s=reverse`, `d=stop`, `a/e=rotate`, `q=quit`.
+Expected output directory: `output/e2e_test/`
 
-Important: 8.33 m/s × 3 s is only ~25 m of travel; 70% overlap is **not** guaranteed until the camera footprint is calculated. Use the printed overlap to tune altitude, FOV, speed, or interval.
+---
 
-For synchronized RGB + CARLA ground-truth depth:
+## Expected Output
+
+### JSON result schema
+
+```json
+{
+  "image_path": "path/to/image.jpg",
+  "timestamp": "2026-08-30T09:00:00Z",
+  "frame_id": null,
+  "telemetry": {},
+  "image_shape": [720, 1280, 3],
+  "anomaly_threshold": 0.42,
+  "anomaly_score": 0.55,
+  "potholes": [
+    {
+      "pothole_id": "20260830T090000Z-000",
+      "timestamp": "2026-08-30T09:00:00Z",
+      "latitude": null,
+      "longitude": null,
+      "altitude_m": null,
+      "area_m2": null,
+      "estimated_depth_m": null,
+      "anomaly_score": 0.62,
+      "pothole_confidence": 0.48,
+      "severity_score": 0.29,
+      "water_flag": false,
+      "water_confidence": 0.0,
+      "source_image": "path/to/image.jpg",
+      "mask_area_px": 4200,
+      "bbox_xyxy": [120, 80, 340, 250],
+      "depth_source": "unavailable",
+      "notes": ["Heuristic pothole candidate; generic anomaly detection is not a trained pothole classifier."]
+    }
+  ],
+  "warnings": ["Metric RGB depth model was not provided; estimated_depth_m is null."]
+}
+```
+
+### Output visualisations (from `run_e2e.py`)
+
+| File | Description |
+|---|---|
+| `original.jpg` | Input image |
+| `dinov2_anomaly_heatmap.jpg` | JET-colourised anomaly map overlaid on image |
+| `candidate_regions.jpg` | Candidate bounding boxes + road mask tint |
+| `sam2_mask.png` | Binary combined segmentation mask |
+| `result.json` | Structured inference result |
+
+---
+
+## Scientific Limitations
+
+1. **DINOv2 anomaly score ≠ pothole classifier.** High scores arise from road
+   markings, shadows, repaired asphalt, stains, debris, cracks, and lighting
+   changes — not only potholes.
+
+2. **Memory bank quality depends on the healthy dataset.** The no-XML-damage
+   filter is not a verified label of perfect health. Images used to build the
+   bank should be reviewed.
+
+3. **Heuristic confidence is not a trained score.** The formula weights
+   (anomaly 0.40, shape 0.20, darkness 0.20, area 0.20) are heuristic starting
+   points; do not report them as classifier accuracy.
+
+4. **Depth is unavailable without a metric RGB depth model.** `estimated_depth_m`
+   is `null` by default. The `NullDepthEstimator` is intentional and honest.
+
+5. **Severity requires real depth and calibrated thresholds.** The current severity
+   formula is a placeholder.
+
+6. **GPS coordinates require real GNSS telemetry.** CARLA georeference is a
+   simulation convenience; it is not real-world GNSS.
+
+7. **No accuracy claims.** No detection accuracy, segmentation IoU, recall, or
+   depth accuracy figures are reported because no labelled evaluation dataset
+   has been processed on this branch.
+
+---
+
+## Git workflow
+
+This code lives on branch `marion-sam2-dinov2`. Do **not** merge into `main`
+without review.
 
 ```bash
-python carla_sim/rgb_depth_capture.py --out output/carla_sync
+git branch --show-current   # must be: marion-sam2-dinov2
+git push -u origin marion-sam2-dinov2
 ```
-
-Depth should only be used in evaluation.
-
-## Pi processing
-
-To preprocess an existing directory of CARLA images as if they arrived at the Pi:
-
-```bash
-python pi_edge/edge_processor.py --input-dir output/carla_run/rgb --once
-```
-
-To continuously upload queued frames:
-
-```bash
-python pi_edge/uploader.py --url http://GPU_MACHINE_IP:8000/infer
-```
-
-The Pi module rejects blurry, badly exposed, and near-duplicate frames, resizes oversized frames, JPEG-compresses them, attaches telemetry, stores them locally, and retries transmission later.
-
-## Depth
-
-The real system is RGB-only. `NullDepthEstimator` is the default, intentionally returning no metric depth. This avoids fabricating a scientific result when no trained RGB metric-depth model was supplied.
-
-To use a separately supplied metric depth model, wrap it with `ExternalMetricDepthEstimator` and pass a callable that maps `RGB -> HxW depth in metres`.
-
-CARLA raw depth is decoded only for ground-truth evaluation:
-
-```bash
-python evaluation/depth_metrics.py predicted_depth.npy output/carla_sync/depth_gt/frame_00000000.png
-```
-
-Metrics: MAE, RMSE, and relative error.
-
-## Scientific limitations
-
-1. The FAISS memory bank represents normal/healthy-road appearance as defined by the no-XML-damage dataset filter; it is not a pothole classifier.
-2. A high DINOv2 anomaly score can correspond to cracks, repairs, debris, shadows, or unusual texture.
-3. The supplied prototype uses spatial grouping plus heuristic appearance/shape features and SAM2 box refinement to form pothole candidates. A trained pothole classifier/segmenter should replace or augment this stage for a research-grade detector.
-4. RGB-only metric depth requires a trained/provided model or another validated geometric source. Without that, depth is reported as null.
-5. The water flag is a heuristic and should be replaced with a trained classifier if it becomes a key evaluation metric.
-6. The CARLA GPS conversion is a configurable local simulation georeference; it is not real-world GNSS.
