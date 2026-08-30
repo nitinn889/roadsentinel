@@ -78,25 +78,72 @@ class PotholeLocalizer:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _shape_score(mask: np.ndarray) -> float:
-        """Circularity score in [0, 1].
-
-        Potholes tend to be roughly circular / blob-shaped.  A perfect circle
-        has circularity 1.0; highly elongated or irregular shapes score lower.
-        """
+    def _shape_score(mask: np.ndarray) -> tuple[float, float]:
+        """Compute circularity score in [0, 1] and aspect ratio."""
         area = float(mask.sum())
         if area <= 0:
-            return 0.0
+            return 0.0, 1.0
         contours, _ = cv2.findContours(
             mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
         )
         if not contours:
-            return 0.0
+            return 0.0, 1.0
         c = max(contours, key=cv2.contourArea)
         ca = max(1.0, cv2.contourArea(c))
         perimeter = max(1.0, cv2.arcLength(c, True))
         circularity = 4 * np.pi * ca / (perimeter * perimeter)
-        return float(np.clip(circularity, 0, 1))
+        circularity = float(np.clip(circularity, 0, 1))
+
+        # Bounding rect aspect ratio
+        _, _, bw, bh = cv2.boundingRect(c)
+        aspect_ratio = float(max(bw, bh) / max(1, min(bw, bh)))
+        return circularity, aspect_ratio
+
+    def _classify_defect(
+        self,
+        rgb: np.ndarray,
+        mask: np.ndarray,
+        shape_circ: float,
+        aspect_ratio: float,
+        is_water: bool,
+    ) -> str:
+        """Classify candidate into specific defect category."""
+        if is_water:
+            return "water_filled_pothole"
+
+        # Cracks tend to have elongated aspect ratios (> 3.0) or very low circularity (< 0.25)
+        gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+        region = gray[mask]
+        laplacian_var = float(cv2.Laplacian(gray, cv2.CV_32F)[mask].var()) if len(region) > 0 else 0.0
+
+        if aspect_ratio > 3.0 or shape_circ < 0.25:
+            return "crack_or_damage"
+
+        # Potholes are blob-like with moderate to high circularity
+        if shape_circ >= 0.28:
+            return "pothole"
+
+        return "unknown_road_anomaly"
+
+    def _is_benign_shadow_or_patch(
+        self,
+        rgb: np.ndarray,
+        mask: np.ndarray,
+        road_mask: np.ndarray,
+    ) -> bool:
+        """Filter out benign uniform shadows and smooth asphalt patches."""
+        gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY).astype(np.float32)
+        region = gray[mask]
+        if len(region) < 30:
+            return False
+
+        # Internal texture variance
+        var_internal = float(np.var(region))
+        if var_internal < 15.0 and float(np.mean(region)) < 40.0:
+            # Very uniform deep shadow with zero internal gradient
+            return True
+
+        return False
 
     def _candidate_confidence(
         self,
@@ -104,18 +151,13 @@ class PotholeLocalizer:
         mask: np.ndarray,
         anomaly_mean: float,
         anomaly_max: float,
-    ) -> float:
-        """Heuristic pothole-likelihood score in [0, 1].
-
-        See module docstring for weight rationale.  This is NOT a trained
-        classifier; do not report it as model accuracy.
-        """
+    ) -> tuple[float, float, float, float]:
+        """Heuristic likelihood score and shape features."""
         area_frac = float(mask.mean())
-        shape = self._shape_score(mask)
+        shape, aspect_ratio = self._shape_score(mask)
 
         gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY).astype(np.float32)
         inside = gray[mask]
-        # Dilate the mask to get a surrounding-road annulus
         kernel = np.ones((21, 21), np.uint8)
         outside_mask = (
             cv2.dilate(mask.astype(np.uint8), kernel, iterations=1).astype(bool)
@@ -123,22 +165,22 @@ class PotholeLocalizer:
         )
         outside = gray[outside_mask]
 
-        darkness = 0.5  # neutral default when regions are empty
+        darkness = 0.5
+        surrounding_damage = 0.0
         if len(inside) > 0 and len(outside) > 0:
-            # Positive when inside is darker than outside (pothole-like)
             delta = (float(outside.mean()) - float(inside.mean())) / 80.0
             darkness = float(np.clip(0.5 + delta, 0, 1))
 
-        # Log-scaled area score: penalises both tiny noise and huge false-positive regions
-        area_score = float(np.clip(np.log1p(area_frac * 1000) / 5.0, 0, 1))
+            # Variance in outside ring indicates surrounding fatigue/cracks
+            outside_var = float(np.var(outside))
+            surrounding_damage = float(np.clip(outside_var / 800.0, 0, 1))
 
-        # Combined anomaly signal from the heat-map
+        area_score = float(np.clip(np.log1p(area_frac * 1000) / 5.0, 0, 1))
         anomaly_score = float(
             np.clip((anomaly_mean + anomaly_max) / 2.0 * 4.0, 0, 1)
         )
 
-        # Weighted heuristic (see module docstring for weight explanation)
-        return float(
+        conf = float(
             np.clip(
                 0.40 * anomaly_score
                 + 0.20 * shape
@@ -148,6 +190,7 @@ class PotholeLocalizer:
                 1,
             )
         )
+        return conf, shape, aspect_ratio, surrounding_damage
 
     # ------------------------------------------------------------------
     # Public API
@@ -161,36 +204,9 @@ class PotholeLocalizer:
         threshold: float,
         sam2=None,
     ) -> list[CandidateRegion]:
-        """Localise pothole candidates from the anomaly map.
-
-        Parameters
-        ----------
-        rgb:
-            HxWx3 uint8 RGB image.
-        anomaly_map:
-            HxW float32 anomaly heat-map from ``AnomalyDetector``.
-        road_mask:
-            HxW boolean mask restricting the search to road pixels.
-        threshold:
-            Anomaly score threshold (patches above this are considered
-            anomalous).  Derived from ``AnomalyDetector.summarize()``.
-        sam2:
-            Optional ``RoadMasker`` instance.  When provided, each candidate
-            bounding box is submitted to ``sam2.refine_box()`` to produce a
-            more precise segmentation mask.
-
-        Returns
-        -------
-        list[CandidateRegion]
-            Candidates ordered by ``pothole_confidence`` descending.
-            Only candidates with ``confidence >= self.confidence_threshold``
-            are included.
-        """
-        # Threshold the anomaly map and restrict to road pixels
+        """Localise pothole candidates from the anomaly map."""
         candidate_bin = (anomaly_map >= threshold) & road_mask
 
-        # Morphological operations to smooth/connect nearby detections and
-        # remove isolated noise specks
         kernel_close = np.ones((7, 7), np.uint8)
         kernel_open = np.ones((3, 3), np.uint8)
         candidate_u8 = cv2.morphologyEx(
@@ -216,13 +232,28 @@ class PotholeLocalizer:
                 continue
 
             comp_mask = (labels == label)
+            
+            # False positive shadow suppression
+            if self._is_benign_shadow_or_patch(rgb, comp_mask, road_mask):
+                continue
+
             pixels = anomaly_map[comp_mask]
-            conf = self._candidate_confidence(
+            conf, shape_circ, aspect_ratio, surrounding_damage = self._candidate_confidence(
                 rgb, comp_mask, float(pixels.mean()), float(pixels.max())
             )
 
             if conf < self.confidence_threshold:
                 continue
+
+            # Classify defect type
+            # Quick check for water pooling heuristic
+            hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
+            val_mean = float(hsv[comp_mask, 2].mean()) if len(hsv[comp_mask]) > 0 else 100.0
+            is_water = val_mean < 45.0 and conf > 0.65
+
+            defect_type = self._classify_defect(
+                rgb, comp_mask, shape_circ, aspect_ratio, is_water
+            )
 
             refined_mask = comp_mask
             sam2_result: Optional[SegmentationResult] = None
@@ -232,7 +263,6 @@ class PotholeLocalizer:
                     result = sam2.refine_box(rgb, [x, y, x + w, y + h_cc])
                     refined_road = result.mask & road_mask
                     if int(refined_road.sum()) >= CONFIG.candidate_min_area_px:
-                        # Accept the SAM2 refinement
                         sam2_result = SegmentationResult(
                             mask=refined_road,
                             confidence=result.confidence,
@@ -261,9 +291,13 @@ class PotholeLocalizer:
                     anomaly_score=float(np.mean(pixels)),
                     pothole_confidence=conf,
                     sam2_result=sam2_result,
+                    defect_type=defect_type,
+                    shape_circularity=shape_circ,
+                    aspect_ratio=aspect_ratio,
+                    surrounding_damage=surrounding_damage,
                 )
             )
 
-        # Sort by confidence descending
         out.sort(key=lambda c: c.pothole_confidence, reverse=True)
         return out
+

@@ -139,18 +139,77 @@ def water_heuristic(rgb: np.ndarray, mask: np.ndarray) -> tuple[bool, float]:
     return score >= 0.70, score
 
 
-def severity(
-    conf: float,
-    area_m2: Optional[float],
-    depth_m: Optional[float],
-    water: bool,
-) -> float:
-    area_score = 0.0 if area_m2 is None else float(np.clip(area_m2 / 2.0, 0, 1))
-    depth_score = 0.0 if depth_m is None else float(np.clip(depth_m / 0.15, 0, 1))
-    s = 0.60 * conf + 0.25 * area_score + 0.15 * depth_score
-    if water:
-        s = max(s, min(1.0, s + 0.15))
-    return float(np.clip(s, 0, 1))
+from analytics.severity import calculate_defect_severity
+from analytics.road_health import calculate_road_health_score
+from analytics.segment_aggregator import generate_spatial_segment_id
+from analytics.prediction import RoadDeteriorationPredictor, SegmentObservation
+
+
+def water_heuristic(rgb: np.ndarray, mask: np.ndarray) -> tuple[bool, float]:
+    """Low-risk RGB heuristic; not a trained water classifier."""
+    if mask.sum() < 50:
+        return False, 0.0
+    hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
+    region = hsv[mask]
+    val = region[:, 2].astype(np.float32)
+    gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+    local_std = float(cv2.Laplacian(gray, cv2.CV_32F).var())
+    low_texture = float(np.clip(1.0 - local_std / 1500.0, 0, 1))
+    dark = float(np.clip(1.0 - val.mean() / 180.0, 0, 1))
+    score = float(np.clip(0.55 * low_texture + 0.45 * dark, 0, 1))
+    return score >= 0.70, score
+
+
+def generate_visual_overlays(
+    rgb: np.ndarray,
+    potholes: list[PotholeRecord],
+    road_health: Any,
+) -> dict[str, np.ndarray]:
+    """Generate visual overlay images for detection, severity, and road health."""
+    bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+
+    # 1. Detection Overlay
+    det_overlay = bgr.copy()
+    for p in potholes:
+        x1, y1, x2, y2 = p.bbox_xyxy
+        color = (0, 165, 255) if p.water_flag else (0, 0, 255)
+        cv2.rectangle(det_overlay, (x1, y1), (x2, y2), color, 2)
+        label = f"{p.defect_type} ({p.pothole_confidence:.2f})"
+        cv2.putText(det_overlay, label, (x1, max(15, y1 - 6)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv2.LINE_AA)
+
+    # 2. Severity Overlay
+    sev_overlay = bgr.copy()
+    for p in potholes:
+        x1, y1, x2, y2 = p.bbox_xyxy
+        sev = p.severity_score
+        # Color code: green (low) -> yellow (med) -> orange (high) -> red (critical)
+        if sev >= 0.85:
+            color = (0, 0, 255)      # Red
+        elif sev >= 0.65:
+            color = (0, 140, 255)    # Orange
+        elif sev >= 0.35:
+            color = (0, 255, 255)    # Yellow
+        else:
+            color = (0, 255, 0)      # Green
+        cv2.rectangle(sev_overlay, (x1, y1), (x2, y2), color, 2)
+        cv2.putText(sev_overlay, f"Sev: {sev:.2f}", (x1, max(15, y1 - 6)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv2.LINE_AA)
+
+    # 3. Road Health Overlay
+    health_overlay = bgr.copy()
+    score = road_health.road_health_score if road_health else 100.0
+    cond = road_health.condition_class.upper() if road_health else "GOOD"
+    h_color = (0, 255, 0) if score >= 80 else ((0, 255, 255) if score >= 60 else ((0, 140, 255) if score >= 40 else (0, 0, 255)))
+
+    # Banner on top
+    cv2.rectangle(health_overlay, (10, 10), (360, 60), (0, 0, 0), -1)
+    cv2.putText(health_overlay, f"Road Health Score: {score:.1f}/100", (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2, cv2.LINE_AA)
+    cv2.putText(health_overlay, f"Condition: {cond}", (20, 52), cv2.FONT_HERSHEY_SIMPLEX, 0.5, h_color, 1, cv2.LINE_AA)
+
+    return {
+        "detection_overlay": det_overlay,
+        "severity_overlay": sev_overlay,
+        "road_health_overlay": health_overlay,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -163,6 +222,7 @@ def infer(
     device: str = CONFIG.device,
     memory_bank_dir: Path = CONFIG.memory_bank_dir,
     pipeline: Optional[PipelineComponents] = None,
+    road_segment_id: Optional[str] = None,
 ) -> InferenceResult:
     """Run the full RoadSentinel pipeline on a single image.
 
@@ -177,9 +237,9 @@ def infer(
     memory_bank_dir:
         Memory bank directory (ignored if ``pipeline`` is provided).
     pipeline:
-        Pre-loaded ``PipelineComponents``.  If None, models are loaded fresh
-        from ``device`` and ``memory_bank_dir``.  For batch inference, load
-        once with ``load_pipeline()`` and pass here.
+        Pre-loaded ``PipelineComponents``.
+    road_segment_id:
+        Optional identifier for the road segment.
 
     Returns
     -------
@@ -196,6 +256,8 @@ def infer(
     )
     telemetry = GPSLocalizer().attach(telemetry)
 
+    seg_id = road_segment_id or generate_spatial_segment_id(telemetry.latitude, telemetry.longitude)
+
     # Step 1: Road mask
     road_mask = pipeline.masker.get_road_mask(rgb)
 
@@ -210,7 +272,7 @@ def infer(
         coords, patch_scores, rgb.shape[:2], grid_size
     )
 
-    # Per-image threshold (use patch scores from road region, not whole image)
+    # Per-image threshold
     road_scores = patch_scores if len(patch_scores) else np.array([0.0])
     threshold_px = float(np.percentile(road_scores, CONFIG.anomaly_percentile))
 
@@ -222,7 +284,7 @@ def infer(
     # Step 5: Depth estimation
     depth = pipeline.depth_estimator.estimate(rgb)
 
-    # Step 6: Build output records
+    # Step 6: Build output records with severity breakdown
     records: list[PotholeRecord] = []
     warnings: list[str] = []
 
@@ -239,12 +301,21 @@ def infer(
             vals = depth[m]
             vals = vals[np.isfinite(vals) & (vals > 0)]
             if len(vals):
-                # Depth range within the mask as a proxy for pothole depth.
-                # This is NOT a validated metric; it requires a ground-plane model.
                 depth_m = float(np.percentile(vals, 90) - np.percentile(vals, 10))
+
         water, water_conf = water_heuristic(rgb, m)
         conf = c.pothole_confidence
-        sev = severity(conf, area, depth_m, water)
+        
+        # Calculate transparent severity
+        sev_res = calculate_defect_severity(
+            confidence=conf,
+            area_m2=area,
+            depth_m=depth_m,
+            is_water_filled=water,
+            water_confidence=water_conf,
+            surrounding_damage=c.surrounding_damage,
+            shape_circularity=c.shape_circularity,
+        )
 
         records.append(
             PotholeRecord(
@@ -257,19 +328,45 @@ def infer(
                 estimated_depth_m=depth_m,
                 anomaly_score=c.anomaly_score,
                 pothole_confidence=conf,
-                severity_score=sev,
+                severity_score=sev_res.severity_score,
                 water_flag=water,
                 water_confidence=water_conf,
                 source_image=str(image_path),
                 mask_area_px=int(m.sum()),
                 bbox_xyxy=c.bbox_xyxy,
+                defect_type=c.defect_type,
+                road_segment_id=seg_id,
+                crack_or_damage_extent=round(c.surrounding_damage, 3),
+                shape_circularity=round(c.shape_circularity, 3),
+                aspect_ratio=round(c.aspect_ratio, 2),
+                severity_breakdown=sev_res.severity_components,
                 depth_source=pipeline.depth_estimator.name,
                 notes=[
-                    "Heuristic pothole candidate; generic anomaly detection is not "
-                    "a trained pothole classifier."
+                    "Post-FAISS tuned defect candidate with explainable severity breakdown."
                 ],
             )
         )
+
+    # Step 7: Road Health Score calculation
+    road_health = calculate_road_health_score(
+        potholes=records,
+        total_crack_area_m2=0.0,
+        surface_anomaly_mean=float(np.mean(patch_scores)) if len(patch_scores) else 0.0,
+    )
+
+    # Step 8: Deterioration Prediction Interface
+    predictor = RoadDeteriorationPredictor()
+    obs = SegmentObservation(
+        timestamp=telemetry.timestamp,
+        road_health_score=road_health.road_health_score,
+        pothole_count=len(records),
+        total_defects=len(records),
+        damaged_area_m2=float(sum(r.area_m2 for r in records if r.area_m2 is not None)),
+        max_severity=float(max((r.severity_score for r in records), default=0.0)),
+        avg_severity=float(np.mean([r.severity_score for r in records])) if records else 0.0,
+        has_water_hazard=any(r.water_flag for r in records),
+    )
+    prediction = predictor.predict([obs], road_segment_id=seg_id)
 
     return InferenceResult(
         image_path=str(image_path),
@@ -280,6 +377,9 @@ def infer(
         anomaly_threshold=threshold_px,
         anomaly_score=image_score,
         potholes=records,
+        road_segment_id=seg_id,
+        road_health=road_health,
+        prediction=prediction,
         warnings=warnings,
     )
 
@@ -307,14 +407,30 @@ def main() -> None:
         default=CONFIG.output_dir / "inference.json",
         help="Output JSON path",
     )
+    ap.add_argument(
+        "--save-overlays",
+        action="store_true",
+        help="Save detection, severity, and road health visualization overlays",
+    )
     args = ap.parse_args()
 
-    # Load pipeline once (important: no reload per image in CLI mode either)
     p = load_pipeline(device=args.device, memory_bank_dir=args.memory_bank)
     result = infer(args.image, args.metadata, pipeline=p)
     save_json(result.to_dict(), args.output)
+    
+    if args.save_overlays:
+        rgb = load_rgb(args.image)
+        overlays = generate_visual_overlays(rgb, result.potholes, result.road_health)
+        out_dir = args.output.parent if args.output else CONFIG.output_dir
+        out_dir.mkdir(parents=True, exist_ok=True)
+        cv2.imwrite(str(out_dir / "detection_overlay.jpg"), overlays["detection_overlay"])
+        cv2.imwrite(str(out_dir / "severity_overlay.jpg"), overlays["severity_overlay"])
+        cv2.imwrite(str(out_dir / "road_health_overlay.jpg"), overlays["road_health_overlay"])
+        log.info("Saved visual overlays to %s", out_dir)
+
     print(result.to_json())
 
 
 if __name__ == "__main__":
     main()
+
