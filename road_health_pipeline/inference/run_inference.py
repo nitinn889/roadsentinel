@@ -1,320 +1,272 @@
-"""End-to-end RoadSentinel inference pipeline.
-
-Usage (CLI)
------------
-python inference/run_inference.py path/to/image.jpg \\
-    --device cuda \\
-    --memory-bank output/memory_bank \\
-    --output output/result.json
-
-Usage (Python API — model reuse across images)
-----------------------------------------------
-from inference.run_inference import load_pipeline, infer
-
-# Load all models once
-pipeline = load_pipeline(device="cuda")
-
-# Process many images reusing the same models
-for path in image_list:
-    result = infer(path, pipeline=pipeline)
-    ...
-"""
-
 from __future__ import annotations
 
-import argparse
-import logging
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
-import sys
+from typing import Any, Dict, List, Optional
 import json
-
+import time
 import cv2
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
-
-from config import CONFIG
-from common.io_utils import load_rgb, load_json, save_json, utc_iso
-from common.schemas import CandidateRegion, InferenceResult, PotholeRecord
-from inference.sam2_mask import RoadMasker
-from inference.dinov2_embed import Dinov2Embedder
-from inference.anomaly_detector import AnomalyDetector
-from inference.pothole_localizer import PotholeLocalizer
-from inference.depth_estimator import NullDepthEstimator
-from inference.area_estimator import estimate_area_m2
-from inference.gps_localizer import GPSLocalizer, telemetry_from_dict
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s",
+from common.schemas import (
+    CandidateRegion,
+    DefectMeasurement,
+    DefectType,
+    InferenceResult,
+    PotholeRecord,
+    PredictionResult,
+    RoadHealthScore,
+    RoadSegmentAggregate,
+    Telemetry,
 )
-log = logging.getLogger("run_inference")
+from config import CONFIG, Config
+from inference.area_estimator import estimate_area_m2
+from inference.defect_classifier import DefectClassifier
+from inference.depth_estimator import DepthEstimator, NullDepthEstimator
+from inference.gps_localizer import GPSLocalizer, telemetry_from_dict
+from inference.road_health_scorer import RoadHealthScorer
+from inference.segment_aggregator import SegmentAggregator
+from inference.severity_estimator import SeverityEstimator
+from inference.visualizer import PipelineVisualizer
+from prediction.progression_model import DeteriorationPredictor, TemporalInspectionRecord
 
 
-# ---------------------------------------------------------------------------
-# Pre-loaded pipeline components
-# ---------------------------------------------------------------------------
+class RoadSentinelPipeline:
+    """Complete analytics pipeline processing SAM2 masks into physical measurements,
 
-@dataclass
-class PipelineComponents:
-    """Container for pre-loaded models.
-
-    Pass this to ``infer()`` to avoid reloading models on every call.
-
-    Attributes
-    ----------
-    masker:
-        SAM2 road masker (also used for pothole refinement).
-    embedder:
-        DINOv2 feature extractor.
-    detector:
-        FAISS-based anomaly detector with a loaded memory bank.
-    localizer:
-        Connected-component pothole candidate localiser.
-    depth_estimator:
-        Depth estimator (defaults to NullDepthEstimator).
+    explainable severity, segment-level road health scores, and temporal deterioration predictions.
     """
 
-    masker: RoadMasker
-    embedder: Dinov2Embedder
-    detector: AnomalyDetector
-    localizer: PotholeLocalizer
-    depth_estimator: NullDepthEstimator
+    def __init__(self,
+                 config: Optional[Config] = None,
+                 depth_estimator: Optional[DepthEstimator] = None,
+                 localizer: Optional[GPSLocalizer] = None):
+        self.cfg = config or CONFIG
+        self.depth_estimator = depth_estimator or NullDepthEstimator()
+        self.localizer = localizer or GPSLocalizer(
+            origin_lat=self.cfg.carla_origin_lat,
+            origin_lon=self.cfg.carla_origin_lon,
+        )
+        self.classifier = DefectClassifier()
+        self.severity_estimator = SeverityEstimator(self.cfg.severity)
+        self.health_scorer = RoadHealthScorer(self.cfg.road_health)
+        self.segment_aggregator = SegmentAggregator(self.cfg.segment_grid_size_m, self.health_scorer)
+        self.predictor = DeteriorationPredictor(self.cfg.prediction)
+        self.visualizer = PipelineVisualizer()
 
+    def process_candidates(self,
+                           rgb_image: np.ndarray,
+                           candidates: List[CandidateRegion],
+                           telemetry: Telemetry,
+                           road_segment_id: Optional[str] = None,
+                           history: Optional[List[TemporalInspectionRecord]] = None
+                           ) -> InferenceResult:
+        """Processes candidate regions from DINOv2+SAM2 through the analytics layer.
 
-def load_pipeline(
-    device: str = CONFIG.device,
-    memory_bank_dir: Path = CONFIG.memory_bank_dir,
-) -> PipelineComponents:
-    """Load all pipeline models once and return a reusable container.
+        Steps:
+        1. Localize frame coordinates / GPS
+        2. Estimate metric depth (if depth sensor/model available)
+        3. Extract defect measurements (area m^2, classification, water detection)
+        4. Calculate transparent severity breakdown
+        5. Score segment-level road health (0-100)
+        6. Forecast temporal deterioration and pothole emergence
+        7. Produce structured, traceable result
+        """
+        # 1. Attach / resolve GPS
+        telemetry = self.localizer.attach(telemetry)
+        h, w = rgb_image.shape[:2]
 
-    Parameters
-    ----------
-    device:
-        Torch device string (e.g. ``"cuda"`` or ``"cpu"``).
-    memory_bank_dir:
-        Path to the directory produced by ``build_memory_bank.py``.
-
-    Returns
-    -------
-    PipelineComponents
-    """
-    log.info("Loading SAM2 on %s …", device)
-    masker = RoadMasker(device=device)
-
-    log.info("Loading DINOv2 on %s …", device)
-    embedder = Dinov2Embedder.from_config(device=device)
-
-    log.info("Loading memory bank from %s …", memory_bank_dir)
-    detector = AnomalyDetector(memory_bank_dir)
-
-    return PipelineComponents(
-        masker=masker,
-        embedder=embedder,
-        detector=detector,
-        localizer=PotholeLocalizer(),
-        depth_estimator=NullDepthEstimator(),
-    )
-
-
-# ---------------------------------------------------------------------------
-# Heuristic helpers
-# ---------------------------------------------------------------------------
-
-def water_heuristic(rgb: np.ndarray, mask: np.ndarray) -> tuple[bool, float]:
-    """Low-risk RGB heuristic; not a trained water classifier."""
-    if mask.sum() < 50:
-        return False, 0.0
-    hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
-    region = hsv[mask]
-    val = region[:, 2].astype(np.float32)
-    gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
-    local_std = float(cv2.Laplacian(gray, cv2.CV_32F).var())
-    low_texture = float(np.clip(1.0 - local_std / 1500.0, 0, 1))
-    dark = float(np.clip(1.0 - val.mean() / 180.0, 0, 1))
-    score = float(np.clip(0.55 * low_texture + 0.45 * dark, 0, 1))
-    return score >= 0.70, score
-
-
-def severity(
-    conf: float,
-    area_m2: Optional[float],
-    depth_m: Optional[float],
-    water: bool,
-) -> float:
-    area_score = 0.0 if area_m2 is None else float(np.clip(area_m2 / 2.0, 0, 1))
-    depth_score = 0.0 if depth_m is None else float(np.clip(depth_m / 0.15, 0, 1))
-    s = 0.60 * conf + 0.25 * area_score + 0.15 * depth_score
-    if water:
-        s = max(s, min(1.0, s + 0.15))
-    return float(np.clip(s, 0, 1))
-
-
-# ---------------------------------------------------------------------------
-# Main inference function
-# ---------------------------------------------------------------------------
-
-def infer(
-    image_path: Path,
-    metadata_path: Optional[Path] = None,
-    device: str = CONFIG.device,
-    memory_bank_dir: Path = CONFIG.memory_bank_dir,
-    pipeline: Optional[PipelineComponents] = None,
-) -> InferenceResult:
-    """Run the full RoadSentinel pipeline on a single image.
-
-    Parameters
-    ----------
-    image_path:
-        Path to the input RGB image.
-    metadata_path:
-        Optional JSON file with GPS/telemetry metadata.
-    device:
-        Torch device (ignored if ``pipeline`` is provided).
-    memory_bank_dir:
-        Memory bank directory (ignored if ``pipeline`` is provided).
-    pipeline:
-        Pre-loaded ``PipelineComponents``.  If None, models are loaded fresh
-        from ``device`` and ``memory_bank_dir``.  For batch inference, load
-        once with ``load_pipeline()`` and pass here.
-
-    Returns
-    -------
-    InferenceResult
-    """
-    if pipeline is None:
-        pipeline = load_pipeline(device=device, memory_bank_dir=memory_bank_dir)
-
-    rgb = load_rgb(image_path)
-    telemetry = (
-        telemetry_from_dict(load_json(metadata_path))
-        if metadata_path and metadata_path.exists()
-        else telemetry_from_dict({"timestamp": utc_iso()})
-    )
-    telemetry = GPSLocalizer().attach(telemetry)
-
-    # Step 1: Road mask
-    road_mask = pipeline.masker.get_road_mask(rgb)
-
-    # Step 2: DINOv2 patch embeddings (road pixels only)
-    embeddings, coords = pipeline.embedder.extract_road_patch_embeddings(rgb, road_mask)
-
-    # Step 3: Anomaly scoring
-    patch_scores = pipeline.detector.score_patches(embeddings)
-    image_score, threshold = pipeline.detector.summarize(patch_scores)
-    grid_size = CONFIG.dinov2_input_size // CONFIG.patch_size
-    amap = pipeline.detector.build_anomaly_map(
-        coords, patch_scores, rgb.shape[:2], grid_size
-    )
-
-    # Per-image threshold (use patch scores from road region, not whole image)
-    road_scores = patch_scores if len(patch_scores) else np.array([0.0])
-    threshold_px = float(np.percentile(road_scores, CONFIG.anomaly_percentile))
-
-    # Step 4: Candidate localisation + SAM2 refinement
-    candidates: list[CandidateRegion] = pipeline.localizer.localize(
-        rgb, amap, road_mask, threshold_px, sam2=pipeline.masker
-    )
-
-    # Step 5: Depth estimation
-    depth = pipeline.depth_estimator.estimate(rgb)
-
-    # Step 6: Build output records
-    records: list[PotholeRecord] = []
-    warnings: list[str] = []
-
-    if depth is None:
-        warnings.append(
-            "Metric RGB depth model was not provided; estimated_depth_m is null."
+        # Determine segment ID
+        seg_id = road_segment_id or self.segment_aggregator.generate_segment_id(
+            latitude=telemetry.latitude,
+            longitude=telemetry.longitude,
+            world_x=telemetry.world_x,
+            world_y=telemetry.world_y,
         )
 
-    for i, c in enumerate(candidates):
-        m = c.mask
-        area = estimate_area_m2(m, telemetry.altitude_m)
-        depth_m: Optional[float] = None
-        if depth is not None:
-            vals = depth[m]
-            vals = vals[np.isfinite(vals) & (vals > 0)]
-            if len(vals):
-                # Depth range within the mask as a proxy for pothole depth.
-                # This is NOT a validated metric; it requires a ground-plane model.
-                depth_m = float(np.percentile(vals, 90) - np.percentile(vals, 10))
-        water, water_conf = water_heuristic(rgb, m)
-        conf = c.pothole_confidence
-        sev = severity(conf, area, depth_m, water)
+        # 2. Depth estimation
+        depth_map = self.depth_estimator.estimate(rgb_image)
+        depth_source = self.depth_estimator.name
 
-        records.append(
-            PotholeRecord(
-                pothole_id=f"{telemetry.timestamp.replace(':', '').replace('-', '')}-{i:03d}",
+        detections: List[DefectMeasurement] = []
+        legacy_potholes: List[PotholeRecord] = []
+
+        # 3 & 4. Process each candidate
+        for idx, cand in enumerate(candidates):
+            mask = cand.sam2_result.mask if cand.sam2_result is not None else cand.mask
+            conf = cand.sam2_result.confidence if cand.sam2_result is not None else cand.pothole_confidence
+            bbox = cand.sam2_result.bbox_xyxy if cand.sam2_result is not None else cand.bbox_xyxy
+            mask_px = int(np.sum(mask))
+
+            # Physical area estimation
+            area_m2 = estimate_area_m2(
+                mask=mask,
+                altitude_m=telemetry.altitude_m,
+                horizontal_fov_deg=self.cfg.horizontal_fov_deg,
+            )
+
+            # Depth measurement within mask
+            estimated_depth_m: Optional[float] = None
+            if depth_map is not None:
+                masked_depths = depth_map[mask]
+                valid_d = masked_depths[np.isfinite(masked_depths) & (masked_depths > 0)]
+                if len(valid_d) > 0:
+                    estimated_depth_m = float(np.median(valid_d))
+
+            # Fine-grained classification & water detection
+            defect_type, is_water, water_conf, morph = self.classifier.classify(
+                mask=mask,
+                rgb_image=rgb_image,
+                anomaly_score=cand.anomaly_score,
+                confidence=conf,
+            )
+
+            # Crack or damage extent
+            crack_extent = None
+            if defect_type == DefectType.CRACK.value:
+                # Approximate perimeter / length in metres if altitude known
+                crack_extent = area_m2 * 2.0 if area_m2 is not None else float(morph["perimeter"]) * 0.001
+
+            # Severity computation
+            severity = self.severity_estimator.compute_severity(
+                area_m2=area_m2,
+                depth_m=estimated_depth_m,
+                is_water_filled=is_water,
+                water_confidence=water_conf,
+                crack_or_damage_extent=crack_extent,
+                confidence=conf,
+                mask_area_px=mask_px,
+            )
+
+            defect_id = f"DEF_{telemetry.timestamp}_{idx:03d}"
+
+            measurement = DefectMeasurement(
+                defect_id=defect_id,
+                defect_type=defect_type,
+                confidence=float(conf),
+                bbox=bbox,
+                mask_area_pixels=mask_px,
+                estimated_area_m2=area_m2,
+                estimated_depth_m=estimated_depth_m,
+                is_water_filled=is_water,
+                water_confidence=float(water_conf),
+                crack_or_damage_extent=crack_extent,
+                road_segment_id=seg_id,
+                timestamp=telemetry.timestamp,
+                latitude=telemetry.latitude,
+                longitude=telemetry.longitude,
+                severity=severity,
+                depth_source=depth_source,
+            )
+            detections.append(measurement)
+
+            # Legacy compatibility record
+            legacy_potholes.append(PotholeRecord(
+                pothole_id=defect_id,
                 timestamp=telemetry.timestamp,
                 latitude=telemetry.latitude,
                 longitude=telemetry.longitude,
                 altitude_m=telemetry.altitude_m,
-                area_m2=area,
-                estimated_depth_m=depth_m,
-                anomaly_score=c.anomaly_score,
+                area_m2=area_m2,
+                estimated_depth_m=estimated_depth_m,
+                anomaly_score=cand.anomaly_score,
                 pothole_confidence=conf,
-                severity_score=sev,
-                water_flag=water,
+                severity_score=severity.severity_score,
+                water_flag=is_water,
                 water_confidence=water_conf,
-                source_image=str(image_path),
-                mask_area_px=int(m.sum()),
-                bbox_xyxy=c.bbox_xyxy,
-                depth_source=pipeline.depth_estimator.name,
-                notes=[
-                    "Heuristic pothole candidate; generic anomaly detection is not "
-                    "a trained pothole classifier."
-                ],
-            )
+                source_image=getattr(telemetry, "frame_id", "") or "frame",
+                mask_area_px=mask_px,
+                bbox_xyxy=bbox,
+                depth_source=depth_source,
+            ))
+
+        # 5. Road Health Score
+        road_health = self.health_scorer.calculate_health(detections)
+
+        # 6. Temporal Deterioration Prediction
+        hist_records = list(history or [])
+        # Append current observation
+        total_damaged_area = sum(d.estimated_area_m2 or 0.0 for d in detections)
+        pothole_count = sum(1 for d in detections if "pothole" in d.defect_type)
+        crack_count = sum(1 for d in detections if d.defect_type == DefectType.CRACK.value)
+        max_sev = max((d.severity.severity_score for d in detections), default=0.0)
+        has_water = any(d.is_water_filled for d in detections)
+
+        current_record = TemporalInspectionRecord(
+            timestamp_days=0.0,
+            road_health_score=road_health.road_health_score,
+            total_damaged_area_m2=total_damaged_area,
+            pothole_count=pothole_count,
+            crack_count=crack_count,
+            max_severity_score=max_sev,
+            water_present=has_water,
+        )
+        combined_hist = hist_records + [current_record]
+
+        prediction = self.predictor.predict(
+            road_segment_id=seg_id,
+            history=combined_hist,
+            horizon_days=self.cfg.prediction.default_horizon_days,
         )
 
-    return InferenceResult(
-        image_path=str(image_path),
-        timestamp=telemetry.timestamp,
-        frame_id=telemetry.frame_id,
-        telemetry=telemetry.__dict__,
-        image_shape=list(rgb.shape),
-        anomaly_threshold=threshold_px,
-        anomaly_score=image_score,
-        potholes=records,
-        warnings=warnings,
-    )
+        return InferenceResult(
+            image_id=f"IMG_{telemetry.timestamp}",
+            timestamp=telemetry.timestamp,
+            road_segment_id=seg_id,
+            geolocation={
+                "lat": telemetry.latitude,
+                "lon": telemetry.longitude,
+            },
+            image_shape=[h, w, 3],
+            anomaly_threshold=self.cfg.anomaly_percentile,
+            anomaly_score=float(np.mean([c.anomaly_score for c in candidates])) if candidates else 0.0,
+            detections=detections,
+            road_health=road_health,
+            prediction=prediction,
+            potholes=legacy_potholes,
+            telemetry={
+                "latitude": telemetry.latitude,
+                "longitude": telemetry.longitude,
+                "altitude_m": telemetry.altitude_m,
+                "heading_deg": telemetry.heading_deg,
+                "world_x": telemetry.world_x,
+                "world_y": telemetry.world_y,
+                "speed_mps": telemetry.speed_mps,
+            },
+            frame_id=telemetry.frame_id,
+        )
 
+    def generate_diagnostic_overlays(self,
+                                     rgb_image: np.ndarray,
+                                     result: InferenceResult,
+                                     output_dir: Path) -> Dict[str, Path]:
+        """Renders and saves detection_overlay.jpg, severity_overlay.jpg, and road_health_overlay.jpg."""
+        output_dir.mkdir(parents=True, exist_ok=True)
 
-# ---------------------------------------------------------------------------
-# CLI entry point
-# ---------------------------------------------------------------------------
+        det_overlay = self.visualizer.draw_detection_overlay(rgb_image, result.detections)
+        sev_overlay = self.visualizer.draw_severity_overlay(rgb_image, result.detections)
+        health_overlay = self.visualizer.draw_road_health_overlay(
+            rgb_image=rgb_image,
+            road_health=result.road_health,
+            road_segment_id=result.road_segment_id,
+            prediction=result.prediction,
+        )
 
-def main() -> None:
-    ap = argparse.ArgumentParser(
-        description="Run RoadSentinel inference on a single image."
-    )
-    ap.add_argument("image", type=Path, help="Input RGB image path")
-    ap.add_argument("--metadata", type=Path, default=None, help="Telemetry JSON")
-    ap.add_argument("--device", default=CONFIG.device, help="Torch device (cuda/cpu)")
-    ap.add_argument(
-        "--memory-bank",
-        type=Path,
-        default=CONFIG.memory_bank_dir,
-        help="Memory bank directory",
-    )
-    ap.add_argument(
-        "--output",
-        type=Path,
-        default=CONFIG.output_dir / "inference.json",
-        help="Output JSON path",
-    )
-    args = ap.parse_args()
+        det_path = output_dir / "detection_overlay.jpg"
+        sev_path = output_dir / "severity_overlay.jpg"
+        health_path = output_dir / "road_health_overlay.jpg"
+        json_path = output_dir / "result.json"
 
-    # Load pipeline once (important: no reload per image in CLI mode either)
-    p = load_pipeline(device=args.device, memory_bank_dir=args.memory_bank)
-    result = infer(args.image, args.metadata, pipeline=p)
-    save_json(result.to_dict(), args.output)
-    print(result.to_json())
+        # Save BGR for OpenCV
+        cv2.imwrite(str(det_path), cv2.cvtColor(det_overlay, cv2.COLOR_RGB2BGR))
+        cv2.imwrite(str(sev_path), cv2.cvtColor(sev_overlay, cv2.COLOR_RGB2BGR))
+        cv2.imwrite(str(health_path), cv2.cvtColor(health_overlay, cv2.COLOR_RGB2BGR))
 
+        with open(json_path, "w") as f:
+            f.write(result.to_json(indent=2))
 
-if __name__ == "__main__":
-    main()
+        return {
+            "detection_overlay": det_path,
+            "severity_overlay": sev_path,
+            "road_health_overlay": health_path,
+            "result_json": json_path,
+        }
