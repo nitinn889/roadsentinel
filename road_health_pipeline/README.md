@@ -93,16 +93,31 @@ Outputs generated in `output/analytics_demo/`:
 - `detection_overlay.jpg`: Defect boxes with classification and confidence
 - `severity_overlay.jpg`: Color-coded severity masks
 - `road_health_overlay.jpg`: Segment health index banner
+- `work_orders.json`: Automated text-based repair work orders generated via VLM
 
 ---
 
-## 5. Running Automated Tests
+## 5. Automated VLM Work Order Generation
+
+The `vlm_work_order_gen.py` module ingests analytics results, filters critical and high-severity defects, matches visual defect bounding regions, and prompts a Vision-Language Model to draft actionable 3-sentence municipal maintenance work orders.
+
+```bash
+# Generate repair work orders from analytics demo outputs:
+python vlm_work_order_gen.py \
+    --result-json output/analytics_demo/result.json \
+    --output output/analytics_demo/work_orders.json
+```
+
+---
+
+## 6. Running Automated Tests
 
 ```bash
 pytest tests/ -v
 ```
 
-82 unit and integration tests covering:
+94 unit and integration tests covering:
+- VLM prompt construction, PIL visual matching, severity filtering, and JSON export
 - Defect severity calculation and rebalancing
 - 0-100 road health scoring and penalty contributions
 - Segment aggregation and geospatial ID generation
@@ -112,12 +127,13 @@ pytest tests/ -v
 
 ---
 
-## 6. Git Branch & Safety
+## 7. Git Branch & Safety
 
-All work is committed to branch `marion-road-health-analytics`:
+All work is committed to branch `feature/vlm-work-orders`:
 
 ```bash
-git checkout marion-road-health-analytics
-git push -u origin marion-road-health-analytics
+git checkout feature/vlm-work-orders
+git push -u origin feature/vlm-work-orders
 ```
+
 
