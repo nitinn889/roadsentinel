@@ -1,348 +1,123 @@
-# RoadSentinel — SAM2 + DINOv2 Road Health Pipeline
+# RoadSentinel — Road Health Scoring, Defect Analytics & Deterioration Prediction
 
-End-to-end prototype for detecting road surface anomalies (potholes and defects)
-from aerial RGB imagery using DINOv2 feature extraction, a healthy-road memory bank,
-and SAM2 segmentation.
+Post-inference analytics and degradation prediction layer for RoadSentinel. Turns raw DINOv2 + SAM2 defect detections into measurable physical properties, transparent multi-factor severity ratings, an explainable 0–100 segment-level Road Health Index, CARLA ground-truth evaluation metrics, and a longitudinal deterioration prediction baseline.
 
 ```
 RGB image → DINOv2 patch features → Healthy-road memory bank → Anomaly map
-         → Candidate regions → SAM2 segmentation → Pothole mask
-         → Area estimation → Depth interface → Severity interface → JSON
+         → Candidate regions → SAM2 segmentation → Defect masks
+         → Area & Depth measurements → Multi-factor Severity Breakdown
+         → 0–100 Road Health Scoring → Segment Spatial/Temporal Aggregation
+         → Temporal Deterioration & Pothole Prediction → Structured JSON + Overlays
 ```
-
-CARLA depth camera is used **only** as evaluation ground truth; the real pipeline
-is RGB-only.
 
 ---
 
-## Component Status
+## Scientific Status
 
-| Component | Status | Notes |
+| Component | Status | Details |
 |---|---|---|
-| DINOv2 feature extraction | **IMPLEMENTED** | ViT-S/14, patch tokens + CLS token |
-| Healthy-road memory bank | **IMPLEMENTED** | FAISS inner-product index, coreset selection |
-| Anomaly detection | **IMPLEMENTED** | kNN cosine distance, spatial heat-map |
-| Candidate localisation | **IMPLEMENTED** | Connected components + heuristic scoring |
-| SAM2 segmentation | **IMPLEMENTED** | Box prompt → mask + confidence |
-| Area estimation | **IMPLEMENTED** | Requires altitude metadata |
-| Depth estimation | **PLACEHOLDER** | NullDepthEstimator — requires metric RGB depth model |
-| Severity scoring | **PLACEHOLDER** | Requires calibrated thresholds + real depth |
-| GPS localisation | **PLACEHOLDER** | Requires real GNSS telemetry |
-| Real-data validation | **NOT AVAILABLE** | Pending labelled dataset |
+| **DINOv2 Anomaly Detection** | **IMPLEMENTED** | ViT-S/14 patch embeddings + FAISS cosine distance kNN |
+| **Defect Classification & Filtering** | **IMPLEMENTED** | Distinguishes `pothole`, `water_filled_pothole`, `crack_or_damage`, `unknown_road_anomaly` + shadow suppression |
+| **SAM2 Prompting & Refinement** | **IMPLEMENTED** | Bounding box prompt refinement into binary masks |
+| **Area Estimation** | **IMPLEMENTED** | Closed-form ground projection from altitude & camera FOV |
+| **Depth Estimation** | **PROTOTYPE** | NullDepthEstimator default; metric RGB depth requires calibrated mono-depth model |
+| **Multi-Factor Severity Scoring** | **IMPLEMENTED** | Configurable, explainable continuous [0, 1] score & qualitative classes with component breakdown |
+| **0–100 Road Health Index** | **IMPLEMENTED** | Segment-level score (100 = healthy, 0 = hazardous) with explicit penalty decomposition |
+| **Road Segment Aggregation** | **IMPLEMENTED** | Geospatial / segment-ID grouping retaining 100% defect-level traceability |
+| **CARLA Ground-Truth Evaluation** | **IMPLEMENTED** | Error metrics for area MAE, depth RMSE, 3D location, and water classification |
+| **Temporal Progression Simulation** | **CARLA-SYNTHETIC ONLY** | Synthetic longitudinal wear sequences ($t_1 \to t_4$) for controlled model benchmarking |
+| **Deterioration Prediction Model** | **PROTOTYPE** | Random Forest baseline on rate-of-change features + rule-based heuristic fallback |
+| **Real Longitudinal Validation** | **REQUIRES REAL DATA** | Longitudinal real-world drone inspection datasets required for calibrated field deployment |
 
 ---
 
-## GPU Requirements
+## 1. Defect Severity Formulation
 
-| Resource | Minimum (tested) |
-|---|---|
-| GPU | NVIDIA GeForce RTX 5060 Laptop GPU (8 GB VRAM) |
-| CUDA | 12.x / 13.x |
-| RAM | 16 GB recommended |
+Severity is computed per defect as an explainable weighted combination of physical attributes:
 
-Memory bank building requires CUDA. Inference can run on CPU (slow).
+$$\text{Severity Score} = \frac{\sum w_i \cdot c_i}{\sum w_i} + \Delta_{\text{water}}$$
 
----
+- **Confidence ($c_{\text{conf}}$)**: Detection confidence $[0, 1]$ ($w = 0.30$)
+- **Area ($c_{\text{area}}$)**: $\min(1.0, \text{Area}_{m^2} / 2.0)$ ($w = 0.25$)
+- **Depth ($c_{\text{depth}}$)**: $\min(1.0, \text{Depth}_m / 0.15)$ ($w = 0.20$)
+- **Water Hazard ($c_{\text{water}}$)**: Water pooling indicator $[0, 1]$ ($w = 0.15$)
+- **Surrounding Damage ($c_{\text{damage}}$)**: Pavement fatigue / cracking variance $[0, 1]$ ($w = 0.10$)
 
-## Installation
-
-### 1. Python environment (GPU machine)
-
-Use a CUDA-enabled PyTorch build matching your NVIDIA driver:
-
-```bash
-cd road_health_pipeline
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements-gpu.txt
-```
-
-> **Note**: `requirements-gpu.txt` does **not** install a CUDA-enabled PyTorch
-> automatically. Install the appropriate wheel first:
-> ```bash
-> pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
-> ```
-
-### 2. Verify CUDA
-
-```bash
-python - <<'PY'
-import torch
-print("torch:", torch.__version__)
-print("CUDA:", torch.cuda.is_available())
-if not torch.cuda.is_available():
-    raise SystemExit("CUDA not available; install a CUDA-enabled PyTorch build.")
-PY
-```
-
-### 3. SAM2 installation
-
-SAM2 is installed via pip as part of `requirements-gpu.txt`:
-
-```bash
-pip install sam2>=1.1.0
-```
-
-Verify:
-
-```bash
-python -c "from sam2.build_sam import build_sam2; print('SAM2 OK')"
-```
-
-### 4. SAM2 checkpoint download
-
-The checkpoint is **not** committed to the repository (it is excluded by `.gitignore`).
-Download it once:
-
-```bash
-wget -P road_health_pipeline/checkpoints/ \
-  https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_small.pt
-```
-
-Expected path: `road_health_pipeline/checkpoints/sam2.1_hiera_small.pt` (~180 MB).
-
-### 5. DINOv2 setup
-
-DINOv2 is loaded automatically via `torch.hub` on first use:
-
-```python
-from inference.dinov2_embed import Dinov2Embedder
-e = Dinov2Embedder.from_config(device="cuda")  # downloads ~330 MB on first run
-```
-
-The model is cached in `~/.cache/torch/hub/`.
-
-### 6. Raspberry Pi
-
-```bash
-cd road_health_pipeline
-python3 -m venv .venv-pi
-source .venv-pi/bin/activate
-pip install -r requirements-pi.txt
-```
-
-Pi code does **not** import SAM2, DINOv2, FAISS, or CUDA libraries.
+Qualitative classification:
+- **Low**: $[0.00, 0.35)$
+- **Medium**: $[0.35, 0.65)$
+- **High**: $[0.65, 0.85)$
+- **Critical**: $[0.85, 1.00]$
 
 ---
 
-## Configuration
+## 2. Road Health Score (0–100 Index)
 
-All settings are in [`config.py`](config.py). Key parameters:
+$$\text{Road Health Score} = 100.0 - \left( P_{\text{count}} + P_{\text{severity}} + P_{\text{crack}} + P_{\text{water}} + P_{\text{surface}} \right)$$
 
-| Setting | Default | Environment variable |
-|---|---|---|
-| `device` | `"cuda"` | `ROADSENTINEL_DEVICE` |
-| `camera_mode` | `"nadir"` | `ROADSENTINEL_CAMERA_MODE` |
-| `dinov2_model_name` | `"dinov2_vits14"` | — |
-| `sam2_checkpoint` | `checkpoints/sam2.1_hiera_small.pt` | — |
-| `memory_bank_dir` | `output/memory_bank` | — |
-| `anomaly_percentile` | `98.0` | — |
-| `knn_k` | `5` | — |
-| `pothole_confidence_threshold` | `0.55` | — |
+- **Pothole Count Penalty ($P_{\text{count}}$)**: $\text{Weight (25.0)} \times \min(1.0, \text{Count} / 5)$
+- **Pothole Severity Penalty ($P_{\text{severity}}$)**: $\text{Weight (30.0)} \times (0.65 \times \text{MaxSev} + 0.35 \times \text{MeanSev})$
+- **Crack Extent Penalty ($P_{\text{crack}}$)**: $\text{Weight (20.0)} \times \min(1.0, \text{CrackArea}_{m^2} / 5.0)$
+- **Water Hazard Penalty ($P_{\text{water}}$)**: $\text{Weight (15.0)} \times \min(1.0, \text{WaterPotholes} / 2)$
+- **Surface Roughness Penalty ($P_{\text{surface}}$)**: $\text{Weight (10.0)} \times \min(1.0, \text{MeanAnomaly} \times 2.0)$
 
-Thresholds must be calibrated on a labelled validation set before deployment.
-
----
-
-## DINOv2 Architecture Reference
-
-| Property | Value |
-|---|---|
-| Model | `dinov2_vits14` (ViT-Small) |
-| Feature dim | 384 |
-| Patch size | 14 px |
-| Input size | 518 px (37 × 37 = 1369 tokens) |
-| Normalisation | ImageNet mean/std |
-| Token layout | `x_norm_patchtokens` (1, 1369, 384) + `x_norm_clstoken` (1, 384) |
-
-Token at grid `(r, c)` covers pixels `[r*14:(r+1)*14, c*14:(c+1)*14]` in the
-resized 518×518 input. After upsampling the anomaly map back to original image
-resolution, spatial correspondence is preserved by bilinear interpolation.
+Condition classes:
+- **Good**: $80.0 - 100.0$
+- **Fair**: $60.0 - 79.9$
+- **Poor**: $40.0 - 59.9$
+- **Critical**: $0.0 - 39.9$
 
 ---
 
-## Building the Memory Bank
+## 3. Deterioration Prediction Architecture
 
-Build from a directory of healthy-road images:
-
-```bash
-python memory_bank/build_memory_bank.py \
-    --healthy-dir data/healthy_roads \
-    --output-dir output/memory_bank \
-    --device cuda
-```
-
-For CPU-only development (slow):
-
-```bash
-python memory_bank/build_memory_bank.py \
-    --healthy-dir data/healthy_roads \
-    --allow-cpu
-```
-
-Validate the result:
-
-```bash
-python memory_bank/validate_memory_bank.py
-```
+The prediction interface accepts longitudinal segment histories:
+1. **Temporal Feature Extractor**: Computes rates of change ($\Delta \text{Health} / \Delta t$, $\Delta \text{Area} / \Delta t$, $\Delta \text{Severity} / \Delta t$).
+2. **Machine Learning Baseline**: Random Forest model trained on synthetic CARLA sequences without segment identity leakage between train/test.
+3. **Outputs**:
+   - `deterioration_probability`: Risk of significant pavement condition drop over horizon (e.g. 30 days).
+   - `pothole_formation_probability`: Likelihood of crack/wear developing into a structural pothole.
+   - `progression_direction`: `stable`, `improving`, `degrading`, or `critical`.
 
 ---
 
-## Running Inference
-
-Single image:
+## 4. Running the Analytics E2E Demo
 
 ```bash
-python inference/run_inference.py path/to/image.jpg \
-    --device cuda \
-    --memory-bank output/memory_bank \
-    --output output/result.json
+# Run end-to-end analytics demo generating JSON and visualization overlays:
+python scripts/run_analytics_e2e.py
 ```
 
-With telemetry metadata:
-
-```bash
-python inference/run_inference.py image.jpg \
-    --metadata image_meta.json \
-    --device cuda \
-    --output output/result.json
-```
-
-Python API (model reuse across images):
-
-```python
-from inference.run_inference import load_pipeline, infer
-
-pipeline = load_pipeline(device="cuda")
-for path in image_list:
-    result = infer(path, pipeline=pipeline)
-```
-
-Inference server (GPU machine):
-
-```bash
-python inference/server.py --host 0.0.0.0 --port 8000
-```
+Outputs generated in `output/analytics_demo/`:
+- `result.json`: Comprehensive segment summary with full defect traceability
+- `detection_overlay.jpg`: Defect boxes with classification and confidence
+- `severity_overlay.jpg`: Color-coded severity masks
+- `road_health_overlay.jpg`: Segment health index banner
 
 ---
 
-## Running Tests
-
-### Unit and integration tests
+## 5. Running Automated Tests
 
 ```bash
-cd road_health_pipeline
-source .venv/bin/activate
-
-# All tests (DINOv2 tests require model; SAM2 real tests require checkpoint)
-pytest tests/ -v --tb=short
-
-# Only fast tests (no model loading)
-pytest tests/ -v --tb=short -m "not slow"
-
-# Explicit test classes
-pytest tests/test_memory_bank.py tests/test_anomaly_detector.py -v
+pytest tests/ -v
 ```
 
-SAM2 checkpoint-dependent tests are automatically skipped when the checkpoint
-file is absent. DINOv2 tests (`@pytest.mark.slow`) require the model to be
-downloaded (~330 MB on first run).
-
-### End-to-end test (no real dataset needed)
-
-```bash
-python tests/run_e2e.py --device cuda
-```
-
-Expected output directory: `output/e2e_test/`
+82 unit and integration tests covering:
+- Defect severity calculation and rebalancing
+- 0-100 road health scoring and penalty contributions
+- Segment aggregation and geospatial ID generation
+- Temporal feature extraction and deterioration prediction
+- CARLA simulation ground-truth metrics
+- Edge cases (no defects, missing depth, missing GPS, low confidence)
 
 ---
 
-## Expected Output
+## 6. Git Branch & Safety
 
-### JSON result schema
-
-```json
-{
-  "image_path": "path/to/image.jpg",
-  "timestamp": "2026-08-30T09:00:00Z",
-  "frame_id": null,
-  "telemetry": {},
-  "image_shape": [720, 1280, 3],
-  "anomaly_threshold": 0.42,
-  "anomaly_score": 0.55,
-  "potholes": [
-    {
-      "pothole_id": "20260830T090000Z-000",
-      "timestamp": "2026-08-30T09:00:00Z",
-      "latitude": null,
-      "longitude": null,
-      "altitude_m": null,
-      "area_m2": null,
-      "estimated_depth_m": null,
-      "anomaly_score": 0.62,
-      "pothole_confidence": 0.48,
-      "severity_score": 0.29,
-      "water_flag": false,
-      "water_confidence": 0.0,
-      "source_image": "path/to/image.jpg",
-      "mask_area_px": 4200,
-      "bbox_xyxy": [120, 80, 340, 250],
-      "depth_source": "unavailable",
-      "notes": ["Heuristic pothole candidate; generic anomaly detection is not a trained pothole classifier."]
-    }
-  ],
-  "warnings": ["Metric RGB depth model was not provided; estimated_depth_m is null."]
-}
-```
-
-### Output visualisations (from `run_e2e.py`)
-
-| File | Description |
-|---|---|
-| `original.jpg` | Input image |
-| `dinov2_anomaly_heatmap.jpg` | JET-colourised anomaly map overlaid on image |
-| `candidate_regions.jpg` | Candidate bounding boxes + road mask tint |
-| `sam2_mask.png` | Binary combined segmentation mask |
-| `result.json` | Structured inference result |
-
----
-
-## Scientific Limitations
-
-1. **DINOv2 anomaly score ≠ pothole classifier.** High scores arise from road
-   markings, shadows, repaired asphalt, stains, debris, cracks, and lighting
-   changes — not only potholes.
-
-2. **Memory bank quality depends on the healthy dataset.** The no-XML-damage
-   filter is not a verified label of perfect health. Images used to build the
-   bank should be reviewed.
-
-3. **Heuristic confidence is not a trained score.** The formula weights
-   (anomaly 0.40, shape 0.20, darkness 0.20, area 0.20) are heuristic starting
-   points; do not report them as classifier accuracy.
-
-4. **Depth is unavailable without a metric RGB depth model.** `estimated_depth_m`
-   is `null` by default. The `NullDepthEstimator` is intentional and honest.
-
-5. **Severity requires real depth and calibrated thresholds.** The current severity
-   formula is a placeholder.
-
-6. **GPS coordinates require real GNSS telemetry.** CARLA georeference is a
-   simulation convenience; it is not real-world GNSS.
-
-7. **No accuracy claims.** No detection accuracy, segmentation IoU, recall, or
-   depth accuracy figures are reported because no labelled evaluation dataset
-   has been processed on this branch.
-
----
-
-## Git workflow
-
-This code lives on branch `marion-sam2-dinov2`. Do **not** merge into `main`
-without review.
+All work is committed to branch `marion-road-health-analytics`:
 
 ```bash
-git branch --show-current   # must be: marion-sam2-dinov2
-git push -u origin marion-sam2-dinov2
+git checkout marion-road-health-analytics
+git push -u origin marion-road-health-analytics
 ```
+
