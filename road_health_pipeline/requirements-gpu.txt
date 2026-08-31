@@ -10,4 +10,5 @@ torch>=2.5
 torchvision>=0.20
 sam2>=1.1.0
 pytest>=8.0
+scikit-learn>=1.4.0
 # Install the official Meta SAM 2 checkpoint separately; see README.md.
