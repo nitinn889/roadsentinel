@@ -97,9 +97,40 @@ class Config:
 
     # Inference thresholds. These should be calibrated on a labeled validation set.
     anomaly_percentile: float = 98.0
+    faiss_distance_threshold: float = 0.45
     candidate_min_area_px: int = 100
     candidate_max_area_fraction: float = 0.35
     pothole_confidence_threshold: float = 0.55
+    shadow_suppression_threshold: float = 0.30
+    patch_texture_min_var: float = 80.0
+
+    # Defect Severity Model Weights & Thresholds
+    severity_weight_confidence: float = 0.30
+    severity_weight_area: float = 0.25
+    severity_weight_depth: float = 0.20
+    severity_weight_water: float = 0.15
+    severity_weight_damage: float = 0.10
+    severity_area_norm_m2: float = 2.0
+    severity_depth_norm_m: float = 0.15
+
+    # Road Health Scoring (0-100 index)
+    health_base_score: float = 100.0
+    health_pothole_weight: float = 25.0
+    health_severity_weight: float = 30.0
+    health_crack_weight: float = 20.0
+    health_water_weight: float = 15.0
+    health_surface_weight: float = 10.0
+    health_max_pothole_penalty_count: int = 5
+
+    # Condition Class Thresholds (0-100)
+    health_good_threshold: float = 80.0
+    health_fair_threshold: float = 60.0
+    health_poor_threshold: float = 40.0
+
+    # Deterioration & Pothole Prediction
+    prediction_default_horizon_days: int = 30
+    prediction_deterioration_threshold: float = 0.50
+    prediction_pothole_formation_threshold: float = 0.40
 
     # Camera / flight
     image_width: int = 1280
@@ -136,3 +167,4 @@ class Config:
 
 
 CONFIG = Config()
+

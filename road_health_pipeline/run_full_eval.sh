@@ -23,3 +23,9 @@ echo "========================================"
 python scripts/evaluate_real_dataset.py --mode rdd_xml --subset india --device cuda
 
 echo "Full Dataset Evaluation Complete!"
+
+echo "========================================"
+echo " Generating VLM Work Orders (Critical / High Defects)"
+echo "========================================"
+python vlm_work_order_gen.py
+
