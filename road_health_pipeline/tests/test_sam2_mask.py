@@ -112,7 +112,8 @@ class TestMockMasker:
 @pytest.mark.slow
 class TestRealSAM2:
     @pytest.fixture(scope="class")
-    def masker(self):
+    @classmethod
+    def masker(cls):
         from inference.sam2_mask import RoadMasker
         return RoadMasker(device="cpu")
 

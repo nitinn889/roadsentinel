@@ -9,6 +9,7 @@ PIPELINE_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PIPELINE_ROOT))
 
 import tests.test_analytics_layer as tal
+import tests.test_spatial_index as tsi
 
 
 def run_all_unit_tests():
@@ -22,6 +23,7 @@ def run_all_unit_tests():
         ("Severity Calculation (With & Without Depth)", tal.test_severity_calculation_with_and_without_depth),
         ("Road Health Scoring & Deductions", tal.test_road_health_scoring),
         ("Segment Aggregation & Defect Traceability", tal.test_segment_aggregation_traceability),
+        ("Spatial Index KD-Tree & Geofencing", tsi.test_spatial_index_kd_tree),
         ("CARLA Ground Truth Validation", tal.test_carla_ground_truth_comparison),
         ("Temporal Prediction Interface", tal.test_temporal_prediction_interface),
         ("CARLA Temporal Dataset & Split Integrity", tal.test_carla_synthetic_temporal_dataset_and_evaluator),

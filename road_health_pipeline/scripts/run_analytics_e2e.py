@@ -1,4 +1,4 @@
-﻿"""End-to-End Analytics, Road-Health Scoring, and Deterioration Demo for RoadSentinel.
+"""End-to-End Analytics, Road-Health Scoring, and Deterioration Demo for RoadSentinel.
 
 Executes the complete post-inference analytics layer:
 1. Generates mock/real road images with defects
@@ -223,10 +223,22 @@ def main():
 
     log.info("  Deterioration Probability    : %.3f", pred_result.deterioration_probability)
     log.info("  Pothole Formation Probability: %.3f", pred_result.pothole_formation_probability)
-    log.info("  Progression Direction        : %s", pred_result.progression_direction.upper())
+    # 7. Spatial Index & Geofencing Zones
+    from inference.spatial_index import DefectSpatialIndex
+    spatial_index = DefectSpatialIndex(potholes)
+    geofence_zones = spatial_index.create_geofence_zones(default_radius_m=50.0)
+    log.info("Constructed 2D KD-Tree Spatial Index with %d geofenced hazard zone(s).", len(geofence_zones))
 
-    # Save summary JSON
-    save_json(summary.to_dict(), out_dir / "result.json")
+    # Save summary JSON with spatial geofence payload
+    summary_dict = summary.to_dict()
+    summary_dict["geofence_zones"] = geofence_zones
+    summary_dict["spatial_index"] = {
+        "indexed_defects_count": len(potholes),
+        "reference_lat": spatial_index.ref_lat,
+        "reference_lon": spatial_index.ref_lon,
+        "kdtree_enabled": spatial_index.kdtree is not None,
+    }
+    save_json(summary_dict, out_dir / "result.json")
     log.info("Full results exported to: %s", out_dir / "result.json")
     log.info("=" * 65)
     log.info("E2E Analytics Pipeline Execution Complete!")
