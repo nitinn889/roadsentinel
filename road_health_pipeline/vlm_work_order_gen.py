@@ -286,8 +286,9 @@ def generate_vlm_work_orders(
     api_key: Optional[str] = None,
     model_name: str = "gemini-2.0-flash",
     crop_defects: bool = True,
+    min_severity: float = 0.0,
 ) -> dict[str, Any]:
-    """Generate VLM work orders for high/critical defects from analytics result.
+    """Generate VLM work orders for deduplicated defects from analytics result.
 
     Parameters
     ----------
@@ -303,6 +304,8 @@ def generate_vlm_work_orders(
         Model identifier.
     crop_defects:
         Whether to crop defect regions using bounding boxes.
+    min_severity:
+        Minimum severity score threshold (default: 0.0 to create 1 work order per unique defect).
 
     Returns
     -------
@@ -337,7 +340,16 @@ def generate_vlm_work_orders(
     else:
         raise ValueError(f"Unsupported result data format: {type(data)}")
 
-    search_dirs = [result_dir, ROOT / "output" / "analytics_demo", ROOT / "output", ROOT.parent / "output" / "images"]
+    search_dirs = [
+        result_dir,
+        result_dir / "patches",
+        ROOT / "output" / "analytics_demo",
+        ROOT / "output" / "analytics_demo" / "patches",
+        ROOT / "output",
+        ROOT.parent / "env" / "output" / "images",
+        ROOT.parent / "env" / "output",
+        ROOT.parent / "output" / "images",
+    ]
     if images_dir:
         search_dirs.insert(0, Path(images_dir))
 
@@ -345,7 +357,7 @@ def generate_vlm_work_orders(
     by_segment: dict[str, dict[str, Any]] = {}
     total_processed_defects = 0
 
-    log.info("Processing %d segment(s) for critical/high defect work orders...", len(segment_list))
+    log.info("Processing %d segment(s) for defect work orders...", len(segment_list))
 
     for seg in segment_list:
         seg_id = seg.get("road_segment_id", "seg_unknown")
@@ -354,7 +366,7 @@ def generate_vlm_work_orders(
         # If no explicit detections list, create one from segment-level metrics if severe
         if not detections:
             max_sev = float(seg.get("max_severity", 0.0))
-            if max_sev >= 0.65:
+            if max_sev >= 0.65 or max_sev >= min_severity:
                 detections = [{
                     "pothole_id": f"{seg_id}-def-001",
                     "defect_type": "pothole",
@@ -374,8 +386,8 @@ def generate_vlm_work_orders(
             sev_score = float(det.get("severity_score", 0.0))
             sev_tier = det.get("severity_tier") or classify_severity_label(sev_score)
             
-            # Filter: only High or Critical defects (score >= 0.65 or tier in {'high', 'critical'})
-            if sev_tier.lower() not in {"high", "critical"} and sev_score < 0.65:
+            # Filter based on min_severity threshold
+            if sev_score < min_severity:
                 continue
 
             total_processed_defects += 1
@@ -436,8 +448,9 @@ def generate_vlm_work_orders(
             final_text = vlm_text if vlm_text else fallback["work_order_text"]
             engine_name = f"gemini-vlm ({model_name})" if vlm_text else fallback["engine"]
 
+            clean_cid = str(pothole_id).replace("carla-", "").replace("road_", "R").replace("_", "-")
             wo_record = {
-                "work_order_id": f"WO-{seg_id.upper()}-{pothole_id}",
+                "work_order_id": f"WO-{seg_id.upper()[:10]}-{clean_cid}",
                 "road_segment_id": seg_id,
                 "pothole_id": pothole_id,
                 "defect_class": defect_class,
@@ -445,6 +458,8 @@ def generate_vlm_work_orders(
                 "severity_score": round(sev_score, 4),
                 "area_m2": round(area_m2, 4) if area_m2 is not None else None,
                 "estimated_depth_m": round(depth_m, 4) if depth_m is not None else None,
+                "latitude": det.get("latitude") or det.get("lat"),
+                "longitude": det.get("longitude") or det.get("lon"),
                 "water_hazard": water_flag,
                 "prompt": prompt,
                 "work_order_text": final_text,
@@ -536,6 +551,12 @@ def main() -> None:
         help="Google Gemini API key (or set GEMINI_API_KEY env var)",
     )
     parser.add_argument(
+        "--min-severity",
+        type=float,
+        default=0.0,
+        help="Minimum severity threshold to generate a work order (default: 0.0)",
+    )
+    parser.add_argument(
         "--no-crop",
         action="store_true",
         help="Do not crop defect bounding box; use full scene image",
@@ -557,7 +578,7 @@ def main() -> None:
                 break
 
     if not result_path.exists():
-        log.error("Analytics result file not found at %s. Please run run_analytics_e2e.py first.", args.result_json)
+        log.error("Analytics result file not found at %s. Please run run_analytics_e2e.py or carla_pipeline.py first.", args.result_json)
         sys.exit(1)
 
     log.info("=" * 65)
@@ -573,6 +594,7 @@ def main() -> None:
         api_key=args.api_key,
         model_name=args.model,
         crop_defects=not args.no_crop,
+        min_severity=args.min_severity,
     )
 
     log.info("=" * 65)

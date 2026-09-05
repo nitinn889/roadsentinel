@@ -239,7 +239,7 @@ class RoadMasker:
             masks, scores, _ = self.predictor.predict(
                 box=box[None, :], multimask_output=True
             )
-        masks, scores = self._filter_masks(masks, scores, h, w)
+        # Select best road mask (not subject to pothole candidate_max_area_fraction filter)
         return self._choose_road_mask(masks, scores, h, w)
 
     def refine_box(

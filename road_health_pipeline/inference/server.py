@@ -56,8 +56,188 @@ DEMO_OUTPUT_DIRS = [
     ROOT / "output",
 ]
 
+DRONE_IMAGE_DIRS = [
+    ROOT.parent / "env" / "output" / "images",
+    ROOT.parent.parent / "env" / "output" / "images",
+    Path("/home/nitin-nandakumar/Downloads/roadsentinel/env/output/images"),
+]
+
+DRONE_METADATA_DIRS = [
+    ROOT.parent / "env" / "output",
+    ROOT.parent.parent / "env" / "output",
+    Path("/home/nitin-nandakumar/Downloads/roadsentinel/env/output"),
+]
+
 _CACHED_PIPELINE = None
 _SPATIAL_INDEX: Optional[DefectSpatialIndex] = None
+
+
+def get_drone_images_dir() -> Optional[Path]:
+    """Find the directory containing captured drone inspection images."""
+    for d in DRONE_IMAGE_DIRS:
+        if d.is_dir():
+            return d
+    return None
+
+
+def get_drone_metadata() -> Dict[str, Dict[str, Any]]:
+    """Load drone telemetry and metadata from metadata.csv."""
+    import csv
+    meta: Dict[str, Dict[str, Any]] = {}
+    for d in DRONE_METADATA_DIRS:
+        csv_p = d / "metadata.csv"
+        if csv_p.is_file():
+            try:
+                with open(csv_p, "r", encoding="utf-8") as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        img_name = row.get("image_name", "")
+                        if not img_name:
+                            continue
+                        meta[img_name] = {
+                            "image_name": img_name,
+                            "sim_time_s": float(row.get("sim_time_s", 0.0) or 0.0),
+                            "local_x_m": float(row.get("local_x_m", 0.0) or 0.0),
+                            "local_y_m": float(row.get("local_y_m", 0.0) or 0.0),
+                            "altitude_m": float(row.get("altitude_m", 100.0) or 100.0),
+                            "latitude": float(row.get("latitude", 13.0827) or 13.0827),
+                            "longitude": float(row.get("longitude", 80.2744) or 80.2744),
+                            "yaw_deg": float(row.get("yaw_deg", -82.83) or -82.83),
+                            "pitch_deg": float(row.get("pitch_deg", -90.0) or -90.0),
+                            "roll_deg": float(row.get("roll_deg", 0.0) or 0.0),
+                            "gsd_cm_per_px": float(row.get("gsd_cm_per_px", 6.014) or 6.014),
+                        }
+                if meta:
+                    break
+            except Exception as e:
+                log.warning("Failed parsing metadata.csv from %s: %s", csv_p, e)
+    return meta
+
+
+def get_all_drone_images_data() -> List[Dict[str, Any]]:
+    """Collect all drone images from env/output/images with associated metadata and detections."""
+    img_dir = get_drone_images_dir()
+    if not img_dir:
+        return []
+
+    res_data = get_latest_result_data()
+    all_dets = res_data.get("detections") or res_data.get("potholes") or []
+    dets_by_img: Dict[str, List[Dict[str, Any]]] = {}
+    for d in all_dets:
+        src = d.get("source_image") or Path(d.get("image_path", "")).name
+        if src:
+            dets_by_img.setdefault(src, []).append(d)
+
+    meta_by_img = get_drone_metadata()
+
+    # Sort files naturally: road_00000.jpg, road_00001.jpg, ...
+    raw_files = sorted(
+        [p for p in img_dir.iterdir() if p.suffix.lower() in (".jpg", ".jpeg", ".png") and not p.name.startswith(".")],
+        key=lambda x: x.name,
+    )
+
+    images_data: List[Dict[str, Any]] = []
+    for idx, p in enumerate(raw_files):
+        fname = p.name
+        img_dets = dets_by_img.get(fname, [])
+        m = meta_by_img.get(fname, {})
+
+        max_sev = max([float(d.get("severity_score") or 0.0) for d in img_dets], default=0.0)
+        total_area = sum([float(d.get("area_m2") or 0.0) for d in img_dets])
+        max_depth = max([float(d.get("estimated_depth_m") or 0.0) for d in img_dets], default=0.0)
+        has_water = any(bool(d.get("is_water_filled") or d.get("water_flag")) for d in img_dets)
+
+        images_data.append({
+            "index": idx,
+            "filename": fname,
+            "image_path": str(p),
+            "image_url": f"/api/drone_image/{fname}",
+            "annotated_url": f"/api/annotated_image/{fname}",
+            "metadata": m,
+            "detections": img_dets,
+            "pothole_count": len(img_dets),
+            "max_severity_score": round(max_sev, 2),
+            "total_area_m2": round(total_area, 2),
+            "max_depth_m": round(max_depth, 3),
+            "has_water_hazard": has_water,
+            "status": "Clean / Nominal" if len(img_dets) == 0 else f"{len(img_dets)} Defect{'s' if len(img_dets) > 1 else ''} Detected",
+        })
+    return images_data
+
+
+def annotate_full_drone_image(
+    image_path: Path,
+    detections: List[Dict[str, Any]],
+    meta: Optional[Dict[str, Any]] = None,
+) -> bytes:
+    """Burn bounding boxes, defect callout badges, and telemetry HUD onto the full drone photo."""
+    try:
+        img = Image.open(image_path).convert("RGB")
+        draw = ImageDraw.Draw(img)
+        w, h = img.size
+
+        # Telemetry HUD banner at top-left
+        fname = image_path.name
+        det_cnt = len(detections)
+        lat_str = f"{meta['latitude']:.5f}° N" if meta and meta.get("latitude") else "13.08° N"
+        lon_str = f"{meta['longitude']:.5f}° E" if meta and meta.get("longitude") else "80.27° E"
+        alt_str = f"Alt: {meta.get('altitude_m', 100.0):.1f}m" if meta else "Alt: 100.0m"
+        time_str = f"T+{meta.get('sim_time_s', 0.0):.1f}s" if meta and 'sim_time_s' in meta else ""
+
+        hud_text = f"ROADSENTINEL SURVEY  |  {fname}  |  {lat_str}, {lon_str}  |  {alt_str}  |  {time_str}  |  Defects: {det_cnt}"
+        banner_w = min(w - 20, len(hud_text) * 8 + 30)
+        draw.rectangle([10, 10, 10 + banner_w, 38], fill=(7, 10, 17), outline=(0, 242, 254), width=1)
+        draw.text((20, 16), hud_text, fill=(240, 249, 255))
+
+        for i, det in enumerate(detections):
+            box = det.get("bbox_xyxy")
+            if not box or len(box) != 4:
+                continue
+            x1, y1, x2, y2 = [int(v) for v in box]
+            x1 = max(0, min(w - 1, x1))
+            y1 = max(0, min(h - 1, y1))
+            x2 = max(0, min(w - 1, x2))
+            y2 = max(0, min(h - 1, y2))
+            if x2 <= x1 or y2 <= y1:
+                continue
+
+            sev = float(det.get("severity_score") or 0.0)
+            conf = float(det.get("pothole_confidence") or det.get("confidence") or 0.0)
+            is_water = bool(det.get("is_water_filled") or det.get("water_flag"))
+            area = float(det.get("area_m2") or 0.45)
+            depth = float(det.get("estimated_depth_m") or 0.08)
+            def_type = (det.get("defect_type") or "Pothole").replace("_", " ").title()
+
+            color = (56, 189, 248) if is_water else (239, 68, 68) if sev >= 0.85 else (249, 115, 22) if sev >= 0.65 else (245, 158, 11)
+
+            # High-visibility bounding box
+            draw.rectangle([x1, y1, x2, y2], outline=color, width=4)
+
+            # Technical corner brackets
+            c_len = min(16, max(4, (x2 - x1) // 3), max(4, (y2 - y1) // 3))
+            draw.rectangle([x1 - 2, y1 - 2, x1 + c_len, y1 + 3], fill=color)
+            draw.rectangle([x1 - 2, y1 - 2, x1 + 3, y1 + c_len], fill=color)
+            draw.rectangle([x2 - c_len, y2 - 3, x2 + 2, y2 + 2], fill=color)
+            draw.rectangle([x2 - 3, y2 - c_len, x2 + 2, y2 + 2], fill=color)
+
+            # Informative label badge above bounding box
+            water_tag = " [WATER HAZARD]" if is_water else ""
+            tag = f"#{i+1} {def_type}  |  Conf: {conf*100:.0f}%  |  Sev: {sev*100:.0f}%  |  {area:.2f}m²  |  {depth*100:.0f}cm{water_tag}"
+            tag_w = len(tag) * 8 + 16
+            tag_h = 22
+            ty = max(45, y1 - tag_h - 4)
+            tx = max(10, min(w - tag_w - 10, x1))
+
+            draw.rectangle([tx, ty, tx + tag_w, ty + tag_h], fill=(15, 23, 42), outline=color, width=1)
+            draw.rectangle([tx, ty, tx + 4, ty + tag_h], fill=color)
+            draw.text((tx + 10, ty + 4), tag, fill=(255, 255, 255))
+
+        out_buf = io.BytesIO()
+        img.save(out_buf, format="JPEG", quality=90)
+        return out_buf.getvalue()
+    except Exception as exc:
+        log.warning("annotate_full_drone_image failed: %s", exc)
+        return image_path.read_bytes()
 
 
 # ---------------------------------------------------------------------------
@@ -134,6 +314,7 @@ class SpatialDeduplicator:
         self._all_bboxes: Dict[str, List[List[Union[int, float]]]] = {}
         self._cluster_sizes: Dict[str, int] = {}
         self._work_orders: Dict[str, Dict[str, Any]] = {}
+        self._observations: Dict[str, List[Dict[str, Any]]] = {}
 
     def _generate_work_order(self, cluster_id: str, detection: Dict[str, Any]) -> Dict[str, Any]:
         sev_score = float(detection.get("severity_score") or 0.70)
@@ -149,8 +330,9 @@ class SpatialDeduplicator:
         urgency = "URGENT IMMEDIATE" if sev_tier == "critical" else "SCHEDULED HIGH-PRIORITY"
         water_note = "Significant water pooling present; cavity must be dewatered prior to tack application." if is_water else "No active ponding observed."
 
+        clean_cid = cluster_id.replace("carla-", "").replace("road_", "R").replace("_", "-")
         return {
-            "work_order_id": f"WO-{seg_id.upper()[:14]}-{cluster_id[-8:]}",
+            "work_order_id": f"WO-{seg_id.upper()[:10]}-{clean_cid}",
             "road_segment_id": seg_id,
             "pothole_id": cluster_id,
             "defect_class": def_class,
@@ -195,17 +377,32 @@ class SpatialDeduplicator:
             cid = det.get("pothole_id") or det.get("defect_id") or str(uuid.uuid4())
             if cid not in self._clusters:
                 d = dict(det)
-                d["all_bboxes"] = [det["bbox_xyxy"]] if det.get("bbox_xyxy") else []
-                d["merged_count"] = 1
+                d["all_bboxes"] = list(det.get("all_bboxes") or ([det["bbox_xyxy"]] if det.get("bbox_xyxy") else []))
+                d["merged_count"] = det.get("merged_count", len(d["all_bboxes"]))
                 self._clusters[cid] = d
                 self._all_bboxes[cid] = list(d["all_bboxes"])
-                self._cluster_sizes[cid] = 1
+                self._cluster_sizes[cid] = d["merged_count"]
+                self._observations[cid] = list(det.get("observations") or [d])
+                b64_img = det.get("_image_b64")
+                if b64_img and cid not in self._patch_images:
+                    try:
+                        self._patch_images[cid] = base64.b64decode(b64_img)
+                    except Exception:
+                        pass
 
         if work_orders:
             for wo in work_orders:
                 pid = wo.get("pothole_id") or wo.get("work_order_id")
                 if pid:
                     self._work_orders[pid] = dict(wo)
+                for cid in list(self._clusters.keys()):
+                    if cid == wo.get("pothole_id") or cid in wo.get("work_order_id", ""):
+                        self._work_orders[cid] = dict(wo)
+
+        # Guarantee exactly one work order exists for each unique cluster
+        for cid, cluster_det in self._clusters.items():
+            if cid not in self._work_orders:
+                self._work_orders[cid] = self._generate_work_order(cid, cluster_det)
 
     # ------------------------------------------------------------------
     def ingest(
@@ -235,6 +432,8 @@ class SpatialDeduplicator:
                     merged_bboxes.append(incoming_bbox)
                 self._cluster_sizes[cid] = self._cluster_sizes.get(cid, 1) + 1
 
+                self._observations.setdefault(cid, []).append(dict(detection))
+
                 stored_conf = float(canonical.get("pothole_confidence") or canonical.get("confidence") or 0.0)
 
                 # Select the image & record with the highest confidence score
@@ -249,6 +448,7 @@ class SpatialDeduplicator:
 
                 self._clusters[cid]["all_bboxes"] = merged_bboxes
                 self._clusters[cid]["merged_count"] = len(merged_bboxes)
+                self._clusters[cid]["observations"] = self._observations[cid]
 
                 # DO NOT DUPLICATE THE WORK ORDER:
                 # If a work order exists, preserve it. If incoming has higher severity, update in-place.
@@ -258,7 +458,7 @@ class SpatialDeduplicator:
                     if new_sev > float(wo.get("severity_score") or 0.0):
                         wo["severity_score"] = round(new_sev, 2)
                         wo["severity_tier"] = "critical" if new_sev >= 0.85 else "high"
-                elif float(self._clusters[cid].get("severity_score") or 0.0) >= 0.65:
+                elif cid not in self._work_orders:
                     self._work_orders[cid] = self._generate_work_order(cid, self._clusters[cid])
 
                 log.info(
@@ -281,16 +481,16 @@ class SpatialDeduplicator:
 
         detection["all_bboxes"] = [incoming_bbox] if incoming_bbox else []
         detection["merged_count"] = 1
+        self._observations[cid] = [dict(detection)]
+        detection["observations"] = self._observations[cid]
         self._clusters[cid] = dict(detection)
         self._all_bboxes[cid] = list(detection["all_bboxes"])
         self._cluster_sizes[cid] = 1
         if image_bytes:
             self._patch_images[cid] = image_bytes
 
-        # Create 1 work order if severity warrants it
-        sev_score = float(detection.get("severity_score") or 0.0)
-        if sev_score >= 0.60 or detection.get("severity_tier") in ("high", "critical"):
-            self._work_orders[cid] = self._generate_work_order(cid, detection)
+        # Create exactly 1 work order per unique defect cluster
+        self._work_orders[cid] = self._generate_work_order(cid, detection)
 
         log.info("DEDUP: new cluster %s at (%.5f, %.5f). Work orders count: %d", cid, lat, lon, len(self._work_orders))
         return {
@@ -310,6 +510,12 @@ class SpatialDeduplicator:
 
     def get_all_work_orders(self) -> List[Dict[str, Any]]:
         return list(self._work_orders.values())
+
+    def get_observations(self, cluster_id: str) -> List[Dict[str, Any]]:
+        return self._observations.get(cluster_id, [])
+
+    def get_all_observations(self) -> Dict[str, List[Dict[str, Any]]]:
+        return self._observations
 
     def cluster_count(self) -> int:
         return len(self._clusters)
@@ -639,7 +845,7 @@ async def ingest_detection(request: Request):
 # /api/patch_image/{defect_id} — serve annotated patch image with bboxes
 # ---------------------------------------------------------------------------
 
-@app.get("/api/patch_image/{defect_id}")
+@app.api_route("/api/patch_image/{defect_id}", methods=["GET", "HEAD"])
 def get_patch_image(defect_id: str):
     """Return the patch image with visually overlaid bounding boxes for a defect cluster."""
     dedup = get_deduplicator()
@@ -668,40 +874,93 @@ def get_patch_image(defect_id: str):
                 )
                 return Response(content=annotated, media_type="image/jpeg")
 
-            # Fallback: crop from demo output detection_overlay or input_frame
-            bbox = det.get("bbox_xyxy")
+            # Check base64 in detection payload
+            b64_val = det.get("_image_b64")
+            if b64_val:
+                try:
+                    dec_bytes = base64.b64decode(b64_val)
+                    annotated = annotate_patch_image(
+                        dec_bytes,
+                        bboxes,
+                        label=def_type,
+                        is_water=is_water,
+                        severity=sev,
+                        confidence=conf,
+                        merged_count=merged_count,
+                    )
+                    return Response(content=annotated, media_type="image/jpeg")
+                except Exception:
+                    pass
+
+            # Check on-disk patch cache
+            for d in DEMO_OUTPUT_DIRS:
+                for patch_name in (f"{cid}.jpg", f"{pid}.jpg", f"{cid}.png", f"{pid}.png"):
+                    p_file = d / "patches" / patch_name
+                    if p_file.is_file():
+                        try:
+                            p_bytes = p_file.read_bytes()
+                            annotated = annotate_patch_image(
+                                p_bytes,
+                                bboxes,
+                                label=def_type,
+                                is_water=is_water,
+                                severity=sev,
+                                confidence=conf,
+                                merged_count=merged_count,
+                            )
+                            return Response(content=annotated, media_type="image/jpeg")
+                        except Exception:
+                            pass
+
+            # Search source CARLA image from env/output/images or source_image
+            src_name = det.get("source_image") or det.get("image_path")
+            src_candidates: List[Path] = []
+            if src_name:
+                p_src = Path(src_name)
+                src_candidates.extend([
+                    p_src,
+                    ROOT.parent.parent / "env" / "output" / "images" / p_src.name,
+                    ROOT.parent.parent / "env" / "output" / p_src.name,
+                    ROOT.parent / "env" / "output" / "images" / p_src.name,
+                ])
+                for d in DEMO_OUTPUT_DIRS:
+                    src_candidates.append(d / p_src.name)
+
             for d in DEMO_OUTPUT_DIRS:
                 for fname in ("input_frame.jpg", "detection_overlay.jpg"):
-                    fpath = d / fname
-                    if fpath.is_file():
-                        try:
-                            from PIL import Image
-                            full_img = Image.open(fpath).convert("RGB")
-                            iw, ih = full_img.size
-                            if bbox and len(bbox) == 4:
-                                x1, y1, x2, y2 = [int(v) for v in bbox]
-                                pad = 35
-                                x1p, y1p = max(0, x1 - pad), max(0, y1 - pad)
-                                x2p, y2p = min(iw, x2 + pad), min(ih, y2 + pad)
-                                crop = full_img.crop((x1p, y1p, x2p, y2p))
-                                crop_bboxes = []
-                                for b in bboxes:
-                                    if b and len(b) == 4:
-                                        crop_bboxes.append([b[0] - x1p, b[1] - y1p, b[2] - x1p, b[3] - y1p])
-                                c_buf = io.BytesIO()
-                                crop.save(c_buf, format="JPEG", quality=90)
-                                annotated = annotate_patch_image(
-                                    c_buf.getvalue(),
-                                    crop_bboxes,
-                                    label=def_type,
-                                    is_water=is_water,
-                                    severity=sev,
-                                    confidence=conf,
-                                    merged_count=merged_count,
-                                )
-                                return Response(content=annotated, media_type="image/jpeg")
-                        except Exception as exc:
-                            log.warning("Crop fallback failed for %s: %s", defect_id, exc)
+                    src_candidates.append(d / fname)
+
+            bbox = det.get("bbox_xyxy")
+            for fpath in src_candidates:
+                if fpath and Path(fpath).is_file():
+                    try:
+                        from PIL import Image
+                        full_img = Image.open(str(fpath)).convert("RGB")
+                        iw, ih = full_img.size
+                        if bbox and len(bbox) == 4:
+                            x1, y1, x2, y2 = [int(v) for v in bbox]
+                            pad = 40
+                            x1p, y1p = max(0, x1 - pad), max(0, y1 - pad)
+                            x2p, y2p = min(iw, x2 + pad), min(ih, y2 + pad)
+                            crop = full_img.crop((x1p, y1p, x2p, y2p))
+                            crop_bboxes = []
+                            for b in bboxes:
+                                if b and len(b) == 4:
+                                    crop_bboxes.append([b[0] - x1p, b[1] - y1p, b[2] - x1p, b[3] - y1p])
+                            c_buf = io.BytesIO()
+                            crop.save(c_buf, format="JPEG", quality=90)
+                            annotated = annotate_patch_image(
+                                c_buf.getvalue(),
+                                crop_bboxes,
+                                label=def_type,
+                                is_water=is_water,
+                                severity=sev,
+                                confidence=conf,
+                                merged_count=merged_count,
+                            )
+                            return Response(content=annotated, media_type="image/jpeg")
+                    except Exception as exc:
+                        log.warning("Crop fallback failed for %s from %s: %s", defect_id, fpath, exc)
 
     # Last resort: serve the full input frame
     for d in DEMO_OUTPUT_DIRS:
@@ -763,6 +1022,68 @@ async def check_proximity(request: Request):
     return JSONResponse(alert_info)
 
 
+@app.get("/api/drone_images")
+def get_drone_images():
+    """Return list of all drone photos in env/output/images with metadata and detections."""
+    images = get_all_drone_images_data()
+    total_dets = sum(img["pothole_count"] for img in images)
+    img_dir = get_drone_images_dir()
+    return JSONResponse({
+        "total_images": len(images),
+        "total_detections": total_dets,
+        "images_dir": str(img_dir) if img_dir else "",
+        "images": images,
+    })
+
+
+@app.api_route("/api/drone_image/{filename}", methods=["GET", "HEAD"])
+def get_drone_image_file(filename: str):
+    """Serve the raw original drone aerial photo."""
+    img_dir = get_drone_images_dir()
+    if img_dir:
+        p = img_dir / filename
+        if p.is_file():
+            return FileResponse(str(p), media_type="image/jpeg")
+    # Search fallbacks
+    for d in DRONE_IMAGE_DIRS + DEMO_OUTPUT_DIRS:
+        p = d / filename
+        if p.is_file():
+            return FileResponse(str(p), media_type="image/jpeg")
+    raise HTTPException(404, f"Drone image '{filename}' not found")
+
+
+@app.api_route("/api/annotated_image/{filename}", methods=["GET", "HEAD"])
+def get_annotated_drone_image(filename: str):
+    """Serve the drone image with bounding boxes, telemetry, and defect callouts burned in."""
+    img_dir = get_drone_images_dir()
+    img_path: Optional[Path] = None
+    if img_dir:
+        candidate = img_dir / filename
+        if candidate.is_file():
+            img_path = candidate
+    if not img_path:
+        for d in DRONE_IMAGE_DIRS + DEMO_OUTPUT_DIRS:
+            candidate = d / filename
+            if candidate.is_file():
+                img_path = candidate
+                break
+
+    if not img_path:
+        raise HTTPException(404, f"Drone image '{filename}' not found")
+
+    # Find detections and metadata for this image
+    res_data = get_latest_result_data()
+    all_dets = res_data.get("detections") or res_data.get("potholes") or []
+    img_dets = [
+        d for d in all_dets
+        if (d.get("source_image") or Path(d.get("image_path", "")).name) == filename
+    ]
+    meta_dict = get_drone_metadata().get(filename)
+
+    annotated_bytes = annotate_full_drone_image(img_path, img_dets, meta=meta_dict)
+    return Response(content=annotated_bytes, media_type="image/jpeg")
+
+
 @app.get("/api/map/town04.png")
 def get_town04_map():
     for d in DEMO_OUTPUT_DIRS:
@@ -775,7 +1096,7 @@ def get_town04_map():
     raise HTTPException(status_code=404, detail="Town04 map not found")
 
 
-@app.get("/api/overlays/{filename}")
+@app.api_route("/api/overlays/{filename}", methods=["GET", "HEAD"])
 def get_overlay_image(filename: str):
     for d in DEMO_OUTPUT_DIRS:
         fpath = d / filename
@@ -815,7 +1136,7 @@ async def infer_endpoint(image: UploadFile = File(...), metadata_json: str = For
 # Three-Tab Government Dashboard UI
 # ---------------------------------------------------------------------------
 
-DASHBOARD_HTML = """<!DOCTYPE html>
+DASHBOARD_HTML = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -970,6 +1291,7 @@ DASHBOARD_HTML = """<!DOCTYPE html>
     .panel-header {
       display: flex; justify-content: space-between; align-items: center;
       border-bottom: 1px solid var(--border-card); padding-bottom: 12px;
+      flex-wrap: wrap; gap: 10px;
     }
     .panel-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 9px; }
 
@@ -1009,6 +1331,123 @@ DASHBOARD_HTML = """<!DOCTYPE html>
     .bar-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); }
     .progress-track { height: 7px; background: rgba(255,255,255,.08); border-radius: 999px; overflow: hidden; margin-top: 4px; }
     .progress-fill { height: 100%; border-radius: 999px; transition: width .6s ease; }
+
+    /* ── Drone Survey Photos Tab ── */
+    .survey-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(15,23,42,.9); backdrop-filter: blur(12px);
+      border: 1px solid var(--border-card); border-radius: var(--radius);
+      padding: 12px 20px; gap: 14px; flex-wrap: wrap;
+    }
+    .survey-nav-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .btn-survey-nav {
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border-card);
+      color: #fff; padding: 7px 15px; border-radius: 9px; font-weight: 600; font-size: 13px;
+      cursor: pointer; transition: all .2s; display: flex; align-items: center; gap: 6px;
+    }
+    .btn-survey-nav:hover { background: rgba(0,242,254,0.18); border-color: var(--cyan); color: var(--cyan); }
+    .btn-survey-nav:disabled { opacity: 0.35; cursor: not-allowed; border-color: transparent; }
+    .select-survey-photo {
+      background: #090e17; border: 1px solid var(--border-card); color: #f1f5f9;
+      padding: 7px 14px; border-radius: 9px; font-size: 13px; font-family: 'JetBrains Mono', monospace;
+      outline: none; cursor: pointer; transition: border .2s;
+    }
+    .select-survey-photo:focus { border-color: var(--cyan); }
+    .survey-toggle-group { display: flex; background: rgba(0,0,0,0.4); border-radius: 9px; padding: 3px; border: 1px solid var(--border-card); }
+    .btn-toggle-view {
+      background: none; border: none; color: var(--text-muted); font-size: 12px; font-weight: 700;
+      padding: 6px 14px; border-radius: 7px; cursor: pointer; transition: all .2s;
+    }
+    .btn-toggle-view.active {
+      background: linear-gradient(135deg, rgba(0,242,254,0.25), rgba(139,92,246,0.25));
+      color: #fff; border: 1px solid var(--border-accent); box-shadow: 0 0 12px var(--cyan-glow);
+    }
+
+    .survey-inspector-grid {
+      display: grid; grid-template-columns: 1.25fr 0.75fr; gap: 22px;
+    }
+    @media (max-width: 1200px) { .survey-inspector-grid { grid-template-columns: 1fr; } }
+
+    .survey-photo-viewer {
+      background: #020617; border: 1px solid var(--border-card); border-radius: var(--radius);
+      overflow: hidden; position: relative; display: flex; flex-direction: column; min-height: 480px;
+      box-shadow: var(--shadow);
+    }
+    .survey-photo-header {
+      padding: 10px 16px; background: rgba(7,10,17,0.85); border-bottom: 1px solid var(--border-card);
+      display: flex; justify-content: space-between; align-items: center; font-size: 12px;
+    }
+    .survey-photo-canvas-wrap {
+      flex: 1; display: flex; align-items: center; justify-content: center; position: relative;
+      background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+      padding: 12px; overflow: hidden; min-height: 420px;
+    }
+    .survey-photo-canvas-wrap img {
+      max-width: 100%; max-height: 600px; object-fit: contain; border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6); transition: opacity .2s ease;
+    }
+    .photo-overlay-tag {
+      position: absolute; bottom: 20px; left: 20px; background: rgba(7,10,17,0.85);
+      backdrop-filter: blur(10px); border: 1px solid var(--border-accent);
+      padding: 6px 14px; border-radius: 8px; font-size: 11px; font-family: 'JetBrains Mono', monospace;
+      color: var(--cyan);
+    }
+
+    .survey-telemetry-panel {
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .telemetry-card {
+      background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius);
+      padding: 18px 20px; box-shadow: var(--shadow);
+    }
+    .telemetry-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin-top: 12px;
+    }
+    .telemetry-item { display: flex; flex-direction: column; gap: 2px; }
+    .telemetry-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
+    .telemetry-val { font-size: 13px; color: #f8fafc; font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+
+    .defect-list-wrap {
+      display: flex; flex-direction: column; gap: 10px; max-height: 380px; overflow-y: auto; padding-right: 4px;
+    }
+    .defect-item-card {
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border-card);
+      border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;
+      transition: all .2s ease; cursor: pointer;
+    }
+    .defect-item-card:hover {
+      background: rgba(255,255,255,0.06); border-color: rgba(0,242,254,0.4);
+    }
+    .defect-item-header {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    /* ── Thumbnail Gallery Strip ── */
+    .thumbnail-gallery-wrap {
+      background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius);
+      padding: 16px 20px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 12px;
+    }
+    .thumbnail-gallery-strip {
+      display: flex; gap: 14px; overflow-x: auto; padding-bottom: 8px; scroll-behavior: smooth;
+    }
+    .thumb-card {
+      flex: 0 0 160px; background: rgba(0,0,0,0.4); border: 2px solid transparent;
+      border-radius: 10px; overflow: hidden; cursor: pointer; transition: all .2s ease;
+      display: flex; flex-direction: column; position: relative;
+    }
+    .thumb-card:hover { transform: translateY(-3px); border-color: rgba(0,242,254,0.5); }
+    .thumb-card.active { border-color: var(--cyan); box-shadow: 0 0 16px var(--cyan-glow); }
+    .thumb-img { width: 100%; height: 95px; object-fit: cover; background: #060a12; }
+    .thumb-info {
+      padding: 6px 8px; font-size: 11px; display: flex; justify-content: space-between; align-items: center;
+      background: rgba(7,10,17,0.8);
+    }
+    .thumb-name { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #cbd5e1; font-weight: 600; }
+    .thumb-badge {
+      font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 999px;
+    }
+    .thumb-badge-clean { background: rgba(16,185,129,0.2); color: var(--green); }
+    .thumb-badge-defect { background: rgba(249,115,22,0.2); color: var(--orange); }
 
     /* ── Patch Inspection ── */
     .patch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; }
@@ -1103,7 +1542,11 @@ DASHBOARD_HTML = """<!DOCTYPE html>
 
 <!-- ── Tab Navigation ── -->
 <nav class="tab-nav">
-  <button class="tab-nav-btn active" onclick="switchTab('map')" id="tab-btn-map">
+  <button class="tab-nav-btn active" onclick="switchTab('survey')" id="tab-btn-survey">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    Drone Survey Photos (<span id="tab-photo-count">12</span>)
+  </button>
+  <button class="tab-nav-btn" onclick="switchTab('map')" id="tab-btn-map">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
     Map View
   </button>
@@ -1120,8 +1563,190 @@ DASHBOARD_HTML = """<!DOCTYPE html>
 <!-- ── Main Content ── -->
 <main>
 
-  <!-- ════════════ TAB 1: MAP VIEW ════════════ -->
-  <div class="tab-panel active" id="tab-map">
+  <!-- ════════════ TAB 1: DRONE SURVEY PHOTOS & DETECTIONS ════════════ -->
+  <div class="tab-panel active" id="tab-survey">
+
+    <!-- KPI Strip -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-header"><span class="kpi-title">Surveyed Photos</span><span class="badge badge-live">Live CARLA</span></div>
+        <div class="kpi-value" id="kpi-survey-photos">—</div>
+        <div class="kpi-desc">Captured in <code>env/output/images</code></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-header"><span class="kpi-title">Total Pothole Detections</span></div>
+        <div class="kpi-value" style="color:var(--orange);" id="kpi-survey-dets">—</div>
+        <div class="kpi-desc">Identified across flight session</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-header"><span class="kpi-title">Current Photo Defects</span></div>
+        <div class="kpi-value" style="color:var(--cyan);" id="kpi-current-photo-dets">—</div>
+        <div class="kpi-desc" id="kpi-current-photo-status">Inspection active</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-header"><span class="kpi-title">Road Health Index</span><span class="badge" id="kpi-survey-cond-badge" style="background:rgba(239,68,68,.15);color:var(--orange);">POOR</span></div>
+        <div class="kpi-value" id="kpi-survey-score">—<span style="font-size:15px;color:var(--text-muted);font-weight:500;">/100</span></div>
+        <div class="kpi-desc" id="kpi-survey-seg">Segment: —</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-header"><span class="kpi-title">Work Orders Active</span></div>
+        <div class="kpi-value" style="color:var(--purple);" id="kpi-survey-wo">—</div>
+        <div class="kpi-desc">3m Deduplicated Dispatches</div>
+      </div>
+    </div>
+
+    <!-- Survey Navigation & View Toggle Toolbar -->
+    <div class="survey-toolbar">
+      <div class="survey-nav-group">
+        <button class="btn-survey-nav" id="btn-prev-photo" onclick="prevSurveyPhoto()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Previous Photo
+        </button>
+        <select class="select-survey-photo" id="select-survey-photo" onchange="onSelectSurveyPhoto(this.value)">
+          <option value="0">Loading survey photos…</option>
+        </select>
+        <button class="btn-survey-nav" id="btn-next-photo" onclick="nextSurveyPhoto()">
+          Next Photo
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <span style="font-size:12px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;" id="survey-counter-text">Photo 1 of 12</span>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <span id="current-photo-defect-badge" class="badge" style="background:rgba(249,115,22,.15);color:var(--orange);border:1px solid rgba(249,115,22,.35);">
+          Loading…
+        </span>
+        <div class="survey-toggle-group">
+          <button class="btn-toggle-view active" id="btn-toggle-annotated" onclick="setSurveyViewMode('annotated')">
+            🎯 Bounding Boxes / Overlay
+          </button>
+          <button class="btn-toggle-view" id="btn-toggle-raw" onclick="setSurveyViewMode('raw')">
+            🖼 Original Aerial Photo
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inspector Main View (Image Viewer + Telemetry & Assessment) -->
+    <div class="survey-inspector-grid">
+      <!-- Left: High-Resolution Photo Viewer -->
+      <div class="survey-photo-viewer">
+        <div class="survey-photo-header">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:#fff;" id="survey-viewer-filename">road_00000.jpg</span>
+          </div>
+          <span style="font-size:11px;color:var(--text-muted);" id="survey-viewer-mode-label">Mode: Bounding Box Overlay (Hotkeys: ← / → / O)</span>
+        </div>
+        <div class="survey-photo-canvas-wrap">
+          <img id="survey-main-image" src="" alt="Drone Survey Photo" onerror="this.alt='Image loading error'" />
+          <div class="photo-overlay-tag" id="survey-photo-tag">Photo 1 • road_00000.jpg</div>
+        </div>
+      </div>
+
+      <!-- Right: Telemetry & Assessment Details Panel -->
+      <div class="survey-telemetry-panel">
+        <!-- Telemetry Card -->
+        <div class="telemetry-card">
+          <div class="panel-header" style="border-bottom:1px solid var(--border-card);padding-bottom:10px;">
+            <div class="panel-title" style="font-size:14px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+              Flight &amp; Telemetry Metadata
+            </div>
+            <span style="font-size:11px;color:var(--cyan);font-family:'JetBrains Mono',monospace;" id="telemetry-simtime">T+0.00s</span>
+          </div>
+          <div class="telemetry-grid">
+            <div class="telemetry-item">
+              <span class="telemetry-label">Filename</span>
+              <span class="telemetry-val" id="tel-filename">road_00000.jpg</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-label">Altitude (AGL)</span>
+              <span class="telemetry-val" id="tel-altitude">100.0 m</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-label">Latitude</span>
+              <span class="telemetry-val" id="tel-lat">13.08267° N</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-label">Longitude</span>
+              <span class="telemetry-val" id="tel-lon">80.27443° E</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-label">Ground Sampling (GSD)</span>
+              <span class="telemetry-val" id="tel-gsd">6.01 cm/px</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-label">Gimbal Attitude</span>
+              <span class="telemetry-val" id="tel-attitude">-90.0° Nadir</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Photo Assessment Summary Card -->
+        <div class="telemetry-card">
+          <div class="panel-header" style="border-bottom:1px solid var(--border-card);padding-bottom:10px;">
+            <div class="panel-title" style="font-size:14px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              Photo Assessment Summary
+            </div>
+            <span class="badge" id="survey-assess-badge" style="background:rgba(16,185,129,.15);color:var(--green);">Clean</span>
+          </div>
+          <div class="telemetry-grid" style="grid-template-columns:1fr 1fr 1fr;margin-top:10px;">
+            <div class="telemetry-item">
+              <span class="telemetry-label">Potholes</span>
+              <span class="telemetry-val" id="assess-potholes-cnt">0</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-label">Max Severity</span>
+              <span class="telemetry-val" id="assess-max-sev">0%</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-label">Damaged Area</span>
+              <span class="telemetry-val" id="assess-total-area">0.00 m²</span>
+            </div>
+          </div>
+          <div style="margin-top:12px;font-size:12px;" id="assess-water-note">
+            <span style="color:var(--green);font-weight:600;">✓ No water or hydroplaning hazards detected in this frame.</span>
+          </div>
+        </div>
+
+        <!-- Itemized Defect List for Current Photo -->
+        <div class="telemetry-card" style="flex:1;">
+          <div class="panel-header" style="border-bottom:1px solid var(--border-card);padding-bottom:10px;">
+            <div class="panel-title" style="font-size:14px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              Detected Potholes in This Photo (<span id="current-photo-defect-items-cnt">0</span>)
+            </div>
+          </div>
+          <div class="defect-list-wrap" id="current-photo-defect-list">
+            <div class="empty-state" style="padding:20px 0;">
+              <div class="icon" style="font-size:24px;margin-bottom:6px;">✓</div>
+              Nominal surface — no potholes detected in this photo.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Thumbnail Gallery Strip -->
+    <div class="thumbnail-gallery-wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Captured Survey Gallery (Click thumbnail to inspect)
+        </span>
+        <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">Folder: env/output/images</span>
+      </div>
+      <div class="thumbnail-gallery-strip" id="survey-thumbnail-strip">
+        <!-- Populated dynamically via JS -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ════════════ TAB 2: MAP VIEW ════════════ -->
+  <div class="tab-panel" id="tab-map">
 
     <!-- KPI Strip -->
     <div class="kpi-grid">
@@ -1229,7 +1854,7 @@ DASHBOARD_HTML = """<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- ════════════ TAB 2: PATCH INSPECTION ════════════ -->
+  <!-- ════════════ TAB 3: PATCH INSPECTION ════════════ -->
   <div class="tab-panel" id="tab-patches">
     <div class="panel">
       <div class="panel-header">
@@ -1250,7 +1875,7 @@ DASHBOARD_HTML = """<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- ════════════ TAB 3: WORK ORDERS ════════════ -->
+  <!-- ════════════ TAB 4: WORK ORDERS ════════════ -->
   <div class="tab-panel" id="tab-workorders">
     <div class="panel">
       <div class="panel-header">
@@ -1296,7 +1921,7 @@ DASHBOARD_HTML = """<!DOCTYPE html>
 
 <!-- ── Footer ── -->
 <footer>
-  <div>RoadSentinel v3.0 • Multi-Tab Dashboard • Spatial Dedup (3m radius) • feature/dashboard-rebuild</div>
+  <div>RoadSentinel v3.0 • Multi-Tab Dashboard • Drone Survey Gallery • Spatial Dedup (3m radius)</div>
   <div style="font-family:'JetBrains Mono',monospace;">DINOv2 • SAM2.1 • KD-Tree • Gemini VLM</div>
 </footer>
 
@@ -1312,8 +1937,10 @@ setInterval(tick, 1000); tick();
 function switchTab(name) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  document.getElementById('tab-btn-' + name).classList.add('active');
+  const panel = document.getElementById('tab-' + name);
+  const btn = document.getElementById('tab-btn-' + name);
+  if (panel) panel.classList.add('active');
+  if (btn) btn.classList.add('active');
   if (name === 'map') {
     setTimeout(() => {
       map.invalidateSize();
@@ -1321,6 +1948,251 @@ function switchTab(name) {
     }, 150);
   }
 }
+
+/* ═══════════════════════════════════════
+   DRONE SURVEY PHOTOS TAB CONTROLLER
+═══════════════════════════════════════ */
+let surveyImages = [];
+let currentSurveyIdx = 0;
+let currentViewMode = 'annotated'; // 'annotated' | 'raw'
+
+async function fetchDroneSurveyImages() {
+  try {
+    const res = await fetch('/api/drone_images');
+    const data = await res.json();
+    surveyImages = data.images || [];
+
+    document.getElementById('kpi-survey-photos').innerText = surveyImages.length;
+    document.getElementById('kpi-survey-dets').innerText = data.total_detections || 0;
+    document.getElementById('tab-photo-count').innerText = surveyImages.length;
+
+    renderSurveyDropdown();
+    renderThumbnailGallery();
+    if (surveyImages.length > 0) {
+      if (currentSurveyIdx >= surveyImages.length) currentSurveyIdx = 0;
+      displaySurveyPhoto(currentSurveyIdx);
+    }
+  } catch (err) {
+    console.error('Failed fetching drone images:', err);
+  }
+}
+
+function renderSurveyDropdown() {
+  const sel = document.getElementById('select-survey-photo');
+  sel.innerHTML = '';
+  surveyImages.forEach((img, idx) => {
+    const opt = document.createElement('option');
+    opt.value = idx;
+    const defCount = img.pothole_count;
+    const defLabel = defCount === 0 ? 'Nominal' : `${defCount} defect${defCount !== 1 ? 's' : ''}`;
+    opt.innerText = `Photo #${idx + 1}: ${img.filename} (${defLabel})`;
+    sel.appendChild(opt);
+  });
+}
+
+function renderThumbnailGallery() {
+  const strip = document.getElementById('survey-thumbnail-strip');
+  strip.innerHTML = '';
+  surveyImages.forEach((img, idx) => {
+    const card = document.createElement('div');
+    card.className = 'thumb-card' + (idx === currentSurveyIdx ? ' active' : '');
+    card.id = `thumb-card-${idx}`;
+    card.onclick = () => {
+      currentSurveyIdx = idx;
+      displaySurveyPhoto(idx);
+    };
+
+    const isClean = img.pothole_count === 0;
+    const badgeCls = isClean ? 'thumb-badge-clean' : 'thumb-badge-defect';
+    const badgeText = isClean ? 'CLEAN' : `${img.pothole_count} DEF`;
+
+    card.innerHTML = `
+      <img class="thumb-img" src="${img.image_url}" alt="${img.filename}" loading="lazy" />
+      <div class="thumb-info">
+        <span class="thumb-name">${img.filename}</span>
+        <span class="thumb-badge ${badgeCls}">${badgeText}</span>
+      </div>
+    `;
+    strip.appendChild(card);
+  });
+}
+
+function displaySurveyPhoto(idx) {
+  if (!surveyImages || surveyImages.length === 0 || idx < 0 || idx >= surveyImages.length) return;
+  currentSurveyIdx = idx;
+  const imgData = surveyImages[idx];
+
+  // Update selection UI
+  const sel = document.getElementById('select-survey-photo');
+  if (sel) sel.value = idx;
+  document.getElementById('btn-prev-photo').disabled = (idx === 0);
+  document.getElementById('btn-next-photo').disabled = (idx === surveyImages.length - 1);
+  document.getElementById('survey-counter-text').innerText = `Photo ${idx + 1} of ${surveyImages.length}`;
+
+  // Update thumbnail active state & auto-scroll
+  document.querySelectorAll('.thumb-card').forEach((el, i) => {
+    if (i === idx) {
+      el.classList.add('active');
+      el.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+    } else {
+      el.classList.remove('active');
+    }
+  });
+
+  // Photo viewer image src
+  const imgEl = document.getElementById('survey-main-image');
+  const targetUrl = currentViewMode === 'annotated' ? imgData.annotated_url : imgData.image_url;
+  imgEl.src = targetUrl;
+  document.getElementById('survey-viewer-filename').innerText = imgData.filename;
+  document.getElementById('survey-photo-tag').innerText = `Photo ${idx + 1} of ${surveyImages.length} • ${imgData.filename}`;
+
+  // Top defect badge
+  const defBadge = document.getElementById('current-photo-defect-badge');
+  if (imgData.pothole_count === 0) {
+    defBadge.className = 'badge';
+    defBadge.style.background = 'rgba(16,185,129,0.15)';
+    defBadge.style.color = 'var(--green)';
+    defBadge.style.borderColor = 'rgba(16,185,129,0.35)';
+    defBadge.innerHTML = '✓ Nominal Surface (0 Defects)';
+  } else {
+    defBadge.className = 'badge';
+    defBadge.style.background = imgData.max_severity_score >= 0.65 ? 'rgba(239,68,68,0.18)' : 'rgba(249,115,22,0.18)';
+    defBadge.style.color = imgData.max_severity_score >= 0.65 ? 'var(--red)' : 'var(--orange)';
+    defBadge.style.borderColor = imgData.max_severity_score >= 0.65 ? 'rgba(239,68,68,0.4)' : 'rgba(249,115,22,0.4)';
+    defBadge.innerHTML = `⚠ ${imgData.pothole_count} Pothole${imgData.pothole_count > 1 ? 's' : ''} Detected • Max Sev: ${(imgData.max_severity_score*100).toFixed(0)}%`;
+  }
+
+  // Header KPI update
+  document.getElementById('kpi-current-photo-dets').innerText = imgData.pothole_count;
+  document.getElementById('kpi-current-photo-status').innerText = imgData.pothole_count === 0 ? 'Clean / Nominal' : `${imgData.pothole_count} Defect${imgData.pothole_count>1?'s':''} (Sev ${(imgData.max_severity_score*100).toFixed(0)}%)`;
+
+  // Telemetry Card
+  const m = imgData.metadata || {};
+  document.getElementById('tel-filename').innerText = imgData.filename;
+  document.getElementById('tel-altitude').innerText = `${(m.altitude_m || 100).toFixed(1)} m`;
+  document.getElementById('tel-lat').innerText = `${(m.latitude || 13.0827).toFixed(5)}° N`;
+  document.getElementById('tel-lon').innerText = `${(m.longitude || 80.2744).toFixed(5)}° E`;
+  document.getElementById('tel-gsd').innerText = `${(m.gsd_cm_per_px || 6.01).toFixed(2)} cm/px`;
+  document.getElementById('tel-attitude').innerText = `${(m.pitch_deg || -90).toFixed(0)}° Nadir, ${(m.yaw_deg || -82.8).toFixed(1)}° Yaw`;
+  document.getElementById('telemetry-simtime').innerText = m.sim_time_s != null ? `T+${m.sim_time_s.toFixed(2)}s` : 'Flight Active';
+
+  // Assessment summary card
+  document.getElementById('assess-potholes-cnt').innerText = imgData.pothole_count;
+  document.getElementById('assess-max-sev').innerText = `${(imgData.max_severity_score*100).toFixed(0)}%`;
+  document.getElementById('assess-total-area').innerText = `${imgData.total_area_m2.toFixed(2)} m²`;
+
+  const assessBadge = document.getElementById('survey-assess-badge');
+  if (imgData.pothole_count === 0) {
+    assessBadge.style.background = 'rgba(16,185,129,.15)';
+    assessBadge.style.color = 'var(--green)';
+    assessBadge.innerText = 'Nominal / Clean';
+  } else if (imgData.max_severity_score >= 0.65) {
+    assessBadge.style.background = 'rgba(239,68,68,.18)';
+    assessBadge.style.color = 'var(--red)';
+    assessBadge.innerText = 'High/Critical Hazard';
+  } else {
+    assessBadge.style.background = 'rgba(249,115,22,.15)';
+    assessBadge.style.color = 'var(--orange)';
+    assessBadge.innerText = 'Moderate Potholes';
+  }
+
+  const waterNote = document.getElementById('assess-water-note');
+  if (imgData.has_water_hazard) {
+    waterNote.innerHTML = '<span style="color:#38bdf8;font-weight:700;">💧 Water Hazard Alert: Submerged pothole cavity present with high hydroplaning risk.</span>';
+  } else if (imgData.pothole_count > 0) {
+    waterNote.innerHTML = '<span style="color:var(--text-muted);">Cavity is dry. Standard pavement patching recommended.</span>';
+  } else {
+    waterNote.innerHTML = '<span style="color:var(--green);font-weight:600;">✓ No water or hydroplaning hazards detected in this frame.</span>';
+  }
+
+  // Itemized Defect List
+  const defList = document.getElementById('current-photo-defect-list');
+  document.getElementById('current-photo-defect-items-cnt').innerText = imgData.pothole_count;
+  defList.innerHTML = '';
+
+  if (imgData.pothole_count === 0) {
+    defList.innerHTML = `
+      <div class="empty-state" style="padding:24px 0;">
+        <div class="icon" style="font-size:24px;margin-bottom:6px;color:var(--green);">✓</div>
+        <div style="font-weight:600;color:#e2e8f0;">Nominal Asphalt Surface</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">No cavitation or distress detected in this aerial photo frame.</div>
+      </div>
+    `;
+  } else {
+    imgData.detections.forEach((det, i) => {
+      const pid = det.pothole_id || det.defect_id || `Pothole #${i+1}`;
+      const defType = (det.defect_type || 'pothole').replace(/_/g, ' ');
+      const sev = parseFloat(det.severity_score || 0);
+      const conf = parseFloat(det.pothole_confidence || det.confidence || 0);
+      const area = parseFloat(det.area_m2 || 0.45).toFixed(2);
+      const depth = (parseFloat(det.estimated_depth_m || 0.08) * 100).toFixed(1);
+      const isWater = !!(det.is_water_filled || det.water_flag);
+      const box = det.bbox_xyxy || [];
+      const boxStr = box.length === 4 ? `[${box.join(', ')}]` : '—';
+      const col = isWater ? '#38bdf8' : (sev >= 0.85 ? 'var(--red)' : sev >= 0.65 ? 'var(--orange)' : 'var(--yellow)');
+
+      const item = document.createElement('div');
+      item.className = 'defect-item-card';
+      item.innerHTML = `
+        <div class="defect-item-header">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--cyan);">${pid}</span>
+          <span class="patch-defect-badge" style="background:${col}22;color:${col};border:1px solid ${col}44;">${defType}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:11px;margin-top:2px;">
+          <div><span style="color:var(--text-muted);">Conf:</span> <b style="color:#f8fafc;">${(conf*100).toFixed(0)}%</b></div>
+          <div><span style="color:var(--text-muted);">Area:</span> <b style="color:#f8fafc;">${area} m²</b></div>
+          <div><span style="color:var(--text-muted);">Depth:</span> <b style="color:#f8fafc;">${depth} cm</b></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:11px;">
+          <span style="color:var(--text-muted);min-width:55px;">Severity:</span>
+          <div style="flex:1;" class="progress-track"><div class="progress-fill" style="width:${Math.round(sev*100)}%;background:${col};"></div></div>
+          <span style="font-weight:700;color:${col};font-family:'JetBrains Mono',monospace;">${(sev*100).toFixed(0)}%</span>
+        </div>
+        <div style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">
+          BBox: ${boxStr} ${isWater ? ' • <b style="color:#38bdf8;">💧 Water-Filled</b>' : ''}
+        </div>
+      `;
+      defList.appendChild(item);
+    });
+  }
+}
+
+function prevSurveyPhoto() {
+  if (currentSurveyIdx > 0) {
+    displaySurveyPhoto(currentSurveyIdx - 1);
+  }
+}
+
+function nextSurveyPhoto() {
+  if (currentSurveyIdx < surveyImages.length - 1) {
+    displaySurveyPhoto(currentSurveyIdx + 1);
+  }
+}
+
+function onSelectSurveyPhoto(val) {
+  displaySurveyPhoto(parseInt(val, 10));
+}
+
+function setSurveyViewMode(mode) {
+  currentViewMode = mode;
+  document.getElementById('btn-toggle-annotated').classList.toggle('active', mode === 'annotated');
+  document.getElementById('btn-toggle-raw').classList.toggle('active', mode === 'raw');
+  document.getElementById('survey-viewer-mode-label').innerText =
+    mode === 'annotated' ? 'Mode: Bounding Box Overlay (Hotkeys: ← / → / O)' : 'Mode: Original Aerial Photo (Hotkeys: ← / → / O)';
+  displaySurveyPhoto(currentSurveyIdx);
+}
+
+// Keyboard navigation listeners
+window.addEventListener('keydown', (e) => {
+  if (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+  if (e.key === 'ArrowLeft') {
+    prevSurveyPhoto();
+  } else if (e.key === 'ArrowRight') {
+    nextSurveyPhoto();
+  } else if (e.key === 'o' || e.key === 'O' || e.key === 'a' || e.key === 'A') {
+    setSurveyViewMode(currentViewMode === 'annotated' ? 'raw' : 'annotated');
+  }
+});
 
 /* ═══════════════════════════════════════
    MAP — Leaflet initialisation
@@ -1697,14 +2569,26 @@ async function fetchAll(showRefreshMsg = false) {
       `${Math.round((statsRes.deterioration_probability||0)*100)}<span style="font-size:15px;font-weight:500;">%</span>`;
     document.getElementById('dedup-count').innerText = statsRes.active_clusters || '—';
 
+    // Survey Tab KPIs
+    document.getElementById('kpi-survey-score').innerHTML =
+      `${statsRes.road_health_score}<span style="font-size:15px;color:var(--text-muted);font-weight:500;">/100</span>`;
+    document.getElementById('kpi-survey-seg').innerText =
+      `Segment: ${statsRes.road_segment_id}`;
+    document.getElementById('kpi-survey-wo').innerText = statsRes.work_orders_count;
+
     /* Condition badge */
     const cb = document.getElementById('kpi-cond-badge');
-    cb.innerText = statsRes.condition_class;
+    const scb = document.getElementById('kpi-survey-cond-badge');
     const s = statsRes.road_health_score;
-    if (s >= 80) { cb.style.background='rgba(16,185,129,.15)'; cb.style.color='var(--green)'; }
-    else if (s >= 60) { cb.style.background='rgba(245,158,11,.15)'; cb.style.color='var(--yellow)'; }
-    else if (s >= 40) { cb.style.background='rgba(249,115,22,.15)'; cb.style.color='var(--orange)'; }
-    else { cb.style.background='rgba(239,68,68,.15)'; cb.style.color='var(--red)'; }
+    const condTxt = statsRes.condition_class;
+    cb.innerText = condTxt;
+    if (scb) scb.innerText = condTxt;
+    const badgeColor = s >= 80 ? ['rgba(16,185,129,.15)', 'var(--green)']
+      : s >= 60 ? ['rgba(245,158,11,.15)', 'var(--yellow)']
+      : s >= 40 ? ['rgba(249,115,22,.15)', 'var(--orange)']
+      : ['rgba(239,68,68,.15)', 'var(--red)'];
+    cb.style.background = badgeColor[0]; cb.style.color = badgeColor[1];
+    if (scb) { scb.style.background = badgeColor[0]; scb.style.color = badgeColor[1]; }
 
     /* Score breakdown */
     const rh = resultsRes.road_health || {};
@@ -1736,6 +2620,9 @@ async function fetchAll(showRefreshMsg = false) {
     cachedDefects = resultsRes.detections || resultsRes.potholes || [];
     renderDefects(cachedDefects);
 
+    /* Drone Survey Gallery */
+    await fetchDroneSurveyImages();
+
     /* Patch Inspection */
     renderPatchTab(cachedDefects);
 
@@ -1749,7 +2636,7 @@ async function fetchAll(showRefreshMsg = false) {
 }
 
 fetchAll();
-setInterval(fetchAll, 6000);
+setInterval(fetchAll, 8000);
 </script>
 </body>
 </html>

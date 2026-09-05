@@ -174,24 +174,25 @@ def preprocess_captured_images(images_dir: Path):
 
 
 def stage_2_and_3_feature_extraction_and_inference(capture_dir: Path) -> Path:
-    """Step 2 & 3: DINOv2 & SAM2 Feature Extraction, Severity Estimation, Road Health & KD-Tree Geofencing."""
+    """Step 2 & 3: Real CARLA ML Feature Extraction, 3-Meter Spatial Deduplication & Road Health Analytics."""
     print_step(2, 5, "DINOv2 & SAM2 Feature Extraction & Segmentation",
-               "Extracting dense patch embeddings, querying FAISS memory bank, and segmenting defect contours with SAM2.")
+               "Extracting dense patch embeddings, querying FAISS memory bank, and segmenting defect contours with SAM2 on real CARLA flight images.")
 
-    analytics_script = WORKSPACE_ROOT / "road_health_pipeline" / "scripts" / "run_analytics_e2e.py"
+    carla_script = WORKSPACE_ROOT / "road_health_pipeline" / "inference" / "carla_pipeline.py"
     target_out_dir = WORKSPACE_ROOT / "road_health_pipeline" / "output" / "analytics_demo"
     target_out_dir.mkdir(parents=True, exist_ok=True)
 
-    print_step(3, 5, "Road-Health Scoring, Deterioration Prediction & Spatial KD-Tree Indexing",
-               "Executing physical area estimation, multi-factor severity scoring, 30-day temporal forecasting, and establishing Geofence boundaries.")
+    print_step(3, 5, "Road-Health Scoring, 3-Meter Spatial Deduplication & Deterioration Forecasting",
+               "Executing physical area estimation, multi-factor severity scoring, 3-meter spatial deduplication, and establishing Geofence boundaries.")
 
     cmd = [
         str(ML_ENV_PYTHON),
-        str(analytics_script),
+        str(carla_script),
+        "--input-dir", str(capture_dir),
         "--output-dir", str(target_out_dir),
     ]
 
-    print_info(f"Running local ML inference & analytics: {' '.join(cmd)}")
+    print_info(f"Running real CARLA ML inference & spatial deduplication: {' '.join(cmd)}")
     env = os.environ.copy()
     env["PYTHONPATH"] = str(WORKSPACE_ROOT / "road_health_pipeline") + ":" + env.get("PYTHONPATH", "")
 
@@ -203,29 +204,31 @@ def stage_2_and_3_feature_extraction_and_inference(capture_dir: Path) -> Path:
         raise RuntimeError("Inference stage failed.")
 
     print(res.stdout.strip())
-    print_success(f"ML Pipeline, Analytics & KD-Tree Spatial Index complete in {time.time() - start_t:.2f}s.")
+    print_success(f"ML Pipeline, Analytics & 3m Spatial Deduplication complete in {time.time() - start_t:.2f}s.")
 
     result_json = target_out_dir / "result.json"
     if result_json.is_file():
-        print_success(f"Inference Result JSON exported with Geofencing metadata: {result_json}")
+        print_success(f"Inference Result JSON exported with Deduplication metadata: {result_json}")
 
     return result_json
 
 
-def stage_4_vlm_analysis(result_json: Path) -> Path:
+def stage_4_vlm_analysis(result_json: Path, capture_dir: Path) -> Path:
     """Step 4: Execute Vision-Language Model Analysis for Automated Work Orders."""
     print_step(4, 5, "Vision-Language Model (VLM) Analysis & Work Order Dispatch",
                "Generating structured municipal maintenance work orders via Gemini VLM / domain engine.")
 
     vlm_script = WORKSPACE_ROOT / "road_health_pipeline" / "vlm_work_order_gen.py"
     work_orders_json = result_json.parent / "work_orders.json"
+    img_dir = capture_dir / "images" if (capture_dir / "images").is_dir() else capture_dir
 
     cmd = [
         str(ML_ENV_PYTHON),
         str(vlm_script),
         "--result-json", str(result_json),
         "--output", str(work_orders_json),
-        "--images-dir", str(result_json.parent),
+        "--images-dir", str(img_dir),
+        "--min-severity", "0.0",
     ]
 
     print_info(f"Executing VLM work order generation: {' '.join(cmd)}")
@@ -345,7 +348,7 @@ def main():
     result_json = stage_2_and_3_feature_extraction_and_inference(capture_dir)
 
     # 4. VLM Analysis & Work Orders
-    work_orders_json = stage_4_vlm_analysis(result_json)
+    work_orders_json = stage_4_vlm_analysis(result_json, capture_dir)
 
     print_success(f"Full pipeline run completed in {time.time() - total_start:.2f} seconds.")
 

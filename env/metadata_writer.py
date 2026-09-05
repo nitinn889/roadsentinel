@@ -31,10 +31,12 @@ class MetadataWriter:
 
         self.geo_path = os.path.join(self.output_dir, "geo.txt")
         self.csv_path = os.path.join(self.output_dir, "metadata.csv")
+        self.trajectory_path = os.path.join(self.output_dir, "drone_trajectory.csv")
         self.log_path = os.path.join(self.output_dir, "capture_log.json")
 
         self._geo_lines = ["EPSG:4326"]
         self._csv_rows = []
+        self._trajectory_rows = []
         self._run_start_wall = time.time()
         self._image_count = 0
 
@@ -44,7 +46,8 @@ class MetadataWriter:
 
     def record(self, image_name: str, lat: float, lon: float, alt_m: float,
                x_m: float, y_m: float, yaw_deg: float, pitch_deg: float,
-               roll_deg: float, sim_time_s: float, gsd_cm_px: float):
+               roll_deg: float, sim_time_s: float, gsd_cm_px: float,
+               z_m: float = None):
         self._geo_lines.append(f"{image_name} {lon:.8f} {lat:.8f} {alt_m:.2f}")
         self._csv_rows.append({
             "image_name": image_name,
@@ -59,10 +62,21 @@ class MetadataWriter:
             "roll_deg": round(roll_deg, 2),
             "gsd_cm_per_px": round(gsd_cm_px, 3),
         })
+
+        z_val = z_m if z_m is not None else alt_m
+        self._trajectory_rows.append({
+            "frame": self._image_count,
+            "x": round(x_m, 4),
+            "y": round(y_m, 4),
+            "z": round(z_val, 4),
+            "pitch": round(pitch_deg, 4),
+            "yaw": round(yaw_deg, 4),
+            "roll": round(roll_deg, 4),
+        })
         self._image_count += 1
 
     def flush(self):
-        """Write geo.txt and metadata.csv to disk (called periodically + at shutdown)."""
+        """Write geo.txt, metadata.csv, and drone_trajectory.csv to disk."""
         with open(self.geo_path, "w") as f:
             f.write("\n".join(self._geo_lines) + "\n")
 
@@ -71,6 +85,20 @@ class MetadataWriter:
                 writer = csv.DictWriter(f, fieldnames=list(self._csv_rows[0].keys()))
                 writer.writeheader()
                 writer.writerows(self._csv_rows)
+
+        if self._trajectory_rows:
+            with open(self.trajectory_path, "w", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=["frame", "x", "y", "z", "pitch", "yaw", "roll"])
+                writer.writeheader()
+                writer.writerows(self._trajectory_rows)
+            try:
+                root_traj = os.path.join(os.getcwd(), "drone_trajectory.csv")
+                with open(root_traj, "w", newline="") as f:
+                    writer = csv.DictWriter(f, fieldnames=["frame", "x", "y", "z", "pitch", "yaw", "roll"])
+                    writer.writeheader()
+                    writer.writerows(self._trajectory_rows)
+            except Exception:
+                pass
 
     def write_run_log(self, extra: dict):
         self.flush()

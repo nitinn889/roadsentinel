@@ -16,17 +16,8 @@ METERS_PER_DEG_LAT = 111_320.0
 
 def carla_transform_to_geolocation(carla_map: Any, location: Any) -> Tuple[float, float, float]:
     """Convert CARLA Location (X, Y, Z in meters) to real-world georeferenced (lat, lon, alt)
-
-    using CARLA's OpenDRIVE map method `transform_to_geolocation()`.
+    using the standardized project datum projection (REFERENCE_LAT, REFERENCE_LON).
     """
-    if carla_map is not None and hasattr(carla_map, "transform_to_geolocation"):
-        try:
-            geo_loc = carla_map.transform_to_geolocation(location)
-            return float(geo_loc.latitude), float(geo_loc.longitude), float(geo_loc.altitude)
-        except Exception:
-            pass
-
-    # Fallback to datum projection if map transform is not available
     x_m = getattr(location, "x", float(location[0] if isinstance(location, (list, tuple)) else 0.0))
     y_m = getattr(location, "y", float(location[1] if isinstance(location, (list, tuple)) else 0.0))
     z_m = getattr(location, "z", float(location[2] if isinstance(location, (list, tuple)) else config.ALTITUDE_M))

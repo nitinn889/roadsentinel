@@ -24,14 +24,33 @@ Controls
 """
 
 import math
-import carla
+try:
+    import carla
+except ImportError:
+    class _DummyLocation:
+        def __init__(self, x=0.0, y=0.0, z=0.0):
+            self.x, self.y, self.z = float(x), float(y), float(z)
+    class _DummyRotation:
+        def __init__(self, pitch=0.0, yaw=0.0, roll=0.0):
+            self.pitch, self.yaw, self.roll = float(pitch), float(yaw), float(roll)
+    class _DummyTransform:
+        def __init__(self, location=None, rotation=None):
+            self.location = location or _DummyLocation()
+            self.rotation = rotation or _DummyRotation()
+    class DummyCarla:
+        Location = _DummyLocation
+        Rotation = _DummyRotation
+        Transform = _DummyTransform
+    carla = DummyCarla()
+
 import pygame
 import config
 
 
 class DroneController:
-    def __init__(self, initial_transform: "carla.Transform"):
+    def __init__(self, initial_transform: "carla.Transform", speed_mps: float = config.SPEED_MPS):
         self.transform = initial_transform
+        self.speed_mps = speed_mps
         self.paused = False
         self.road_segment_index = 0
         self.manual_capture_requested = False
@@ -87,8 +106,8 @@ class DroneController:
             fwd_x, fwd_y = math.cos(yaw_rad), math.sin(yaw_rad)
             right_x, right_y = -math.sin(yaw_rad), math.cos(yaw_rad)
 
-            dx = (fwd_x * forward_input + right_x * right_input) * config.SPEED_MPS * dt
-            dy = (fwd_y * forward_input + right_y * right_input) * config.SPEED_MPS * dt
+            dx = (fwd_x * forward_input + right_x * right_input) * self.speed_mps * dt
+            dy = (fwd_y * forward_input + right_y * right_input) * self.speed_mps * dt
             loc.x += dx
             loc.y += dy
 

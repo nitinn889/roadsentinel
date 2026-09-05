@@ -461,7 +461,7 @@ def infer(
     # Step 3: Anomaly scoring & map
     patch_scores = pipeline.detector.score_patches(embeddings)
     anomaly_map = pipeline.detector.build_anomaly_map(
-        coords, patch_scores, rgb.shape[:2], pipeline.embedder.patch_size
+        coords, patch_scores, rgb.shape[:2], pipeline.embedder.grid_size
     )
 
     # Per-image threshold
@@ -471,11 +471,11 @@ def infer(
 
     # Step 4: Candidate localization
     candidates = pipeline.localizer.localize(
-        anomaly_map,
-        road_mask,
-        rgb,
+        rgb=rgb,
+        anomaly_map=anomaly_map,
+        road_mask=road_mask,
         threshold=threshold_px,
-        min_area_px=CONFIG.candidate_min_area_px,
+        sam2=pipeline.masker,
     )
 
     # Step 5: Depth estimation
