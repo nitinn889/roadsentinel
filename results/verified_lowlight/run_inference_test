@@ -1,0 +1,65 @@
+{
+  "image_id": "drone_capture_20260906_181924",
+  "image_path": "env/output/captures/drone_capture_20260906_181924.png",
+  "timestamp": "2026-09-06T13:26:04Z",
+  "road_segment_id": "segment_2d_test",
+  "geolocation": {
+    "lat": null,
+    "lon": null
+  },
+  "image_shape": [
+    1080,
+    1920,
+    3
+  ],
+  "anomaly_threshold": 0.6761,
+  "anomaly_score": 0.458,
+  "detections": [],
+  "potholes": [],
+  "road_health": {
+    "road_health_score": 90.84,
+    "condition_class": "good",
+    "components": {
+      "pothole_count_penalty": 0.0,
+      "pothole_severity_penalty": 0.0,
+      "crack_penalty": 0.0,
+      "water_hazard_penalty": 0.0,
+      "surface_roughness_penalty": 9.16,
+      "total_penalty": 9.16
+    },
+    "confidence": 1.0,
+    "explanation": ""
+  },
+  "prediction": {
+    "deterioration_probability": 0.0458,
+    "pothole_formation_probability": 0.0321,
+    "prediction_horizon_days": 30,
+    "progression_direction": "stable",
+    "progression_trend": "stable",
+    "scientific_status": "CARLA-SYNTHETIC ONLY",
+    "feature_importances": {
+      "health_score": 90.84,
+      "health_slope_per_day": 0.0,
+      "damaged_area_m2": 0.0,
+      "area_growth_rate": 0.0,
+      "max_severity": 0.0,
+      "pothole_count": 0
+    },
+    "features_used": {},
+    "notes": [
+      "Single inspection baseline: temporal rate-of-change estimated via standard degradation prior."
+    ]
+  },
+  "segment_summary": null,
+  "telemetry": {
+    "latitude": null,
+    "longitude": null,
+    "altitude_m": null,
+    "heading_deg": null,
+    "world_x": null,
+    "world_y": null,
+    "speed_mps": null
+  },
+  "frame_id": "drone_capture_20260906_181924",
+  "warnings": []
+}

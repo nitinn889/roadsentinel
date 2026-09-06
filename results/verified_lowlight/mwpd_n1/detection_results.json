@@ -1,0 +1,121 @@
+{
+  "metadata": {
+    "generated_at": "2026-09-06T13:23:09Z",
+    "total_images_processed": 1,
+    "total_defects_detected": 7,
+    "confidence_threshold": 0.4,
+    "min_area_px": 80,
+    "elapsed_time_s": 1.4
+  },
+  "results": [
+    {
+      "image_name": "n1_jpg.rf.51d79faeb8d34874f92db76dd2158869.jpg",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/RoadSentinel_datasets/mwpd/Multi-Weather Pothole Detection (MWPD)/MWPD/test/images/n1_jpg.rf.51d79faeb8d34874f92db76dd2158869.jpg",
+      "test_mode_2d": true,
+      "timestamp": "2026-09-06T13:23:09Z",
+      "image_shape": [
+        640,
+        640,
+        3
+      ],
+      "anomaly_threshold": 0.7499,
+      "confidence_threshold": 0.4,
+      "min_area_px": 80,
+      "detections": [
+        {
+          "index": 1,
+          "bbox_xyxy": [
+            382,
+            228,
+            416,
+            262
+          ],
+          "confidence": 0.702,
+          "mask_area_px": 1137,
+          "defect_type": "water_filled_pothole",
+          "anomaly_score": 0.7819
+        },
+        {
+          "index": 2,
+          "bbox_xyxy": [
+            279,
+            163,
+            384,
+            271
+          ],
+          "confidence": 0.6781,
+          "mask_area_px": 6819,
+          "defect_type": "pothole",
+          "anomaly_score": 0.8252
+        },
+        {
+          "index": 3,
+          "bbox_xyxy": [
+            318,
+            43,
+            356,
+            96
+          ],
+          "confidence": 0.6743,
+          "mask_area_px": 3841,
+          "defect_type": "water_filled_pothole",
+          "anomaly_score": 0.7793
+        },
+        {
+          "index": 4,
+          "bbox_xyxy": [
+            319,
+            281,
+            342,
+            289
+          ],
+          "confidence": 0.6436,
+          "mask_area_px": 218,
+          "defect_type": "water_filled_pothole",
+          "anomaly_score": 0.7674
+        },
+        {
+          "index": 5,
+          "bbox_xyxy": [
+            211,
+            240,
+            281,
+            271
+          ],
+          "confidence": 0.6309,
+          "mask_area_px": 2395,
+          "defect_type": "pothole",
+          "anomaly_score": 0.7826
+        },
+        {
+          "index": 6,
+          "bbox_xyxy": [
+            190,
+            163,
+            217,
+            229
+          ],
+          "confidence": 0.6187,
+          "mask_area_px": 1211,
+          "defect_type": "water_filled_pothole",
+          "anomaly_score": 0.7781
+        },
+        {
+          "index": 7,
+          "bbox_xyxy": [
+            250,
+            43,
+            264,
+            80
+          ],
+          "confidence": 0.6159,
+          "mask_area_px": 530,
+          "defect_type": "pothole",
+          "anomaly_score": 0.7551
+        }
+      ],
+      "total_defects": 7,
+      "overlay_path": "/home/nitin-nandakumar/Downloads/roadsentinel/results/verified_lowlight/mwpd_n1/n1_jpg.rf.51d79faeb8d34874f92db76dd2158869_detection_overlay.jpg"
+    }
+  ]
+}

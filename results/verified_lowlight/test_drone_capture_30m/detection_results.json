@@ -1,0 +1,56 @@
+{
+  "metadata": {
+    "generated_at": "2026-09-06T13:22:17Z",
+    "total_images_processed": 1,
+    "total_defects_detected": 2,
+    "confidence_threshold": 0.4,
+    "min_area_px": 80,
+    "elapsed_time_s": 1.18
+  },
+  "results": [
+    {
+      "image_name": "test_drone_capture_30m.jpg",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/env/test_drone_capture_30m.jpg",
+      "test_mode_2d": true,
+      "timestamp": "2026-09-06T13:22:17Z",
+      "image_shape": [
+        720,
+        1280,
+        3
+      ],
+      "anomaly_threshold": 0.6986,
+      "confidence_threshold": 0.4,
+      "min_area_px": 80,
+      "detections": [
+        {
+          "index": 1,
+          "bbox_xyxy": [
+            602,
+            412,
+            618,
+            443
+          ],
+          "confidence": 0.6382,
+          "mask_area_px": 324,
+          "defect_type": "pothole",
+          "anomaly_score": 0.7293
+        },
+        {
+          "index": 2,
+          "bbox_xyxy": [
+            521,
+            456,
+            539,
+            495
+          ],
+          "confidence": 0.613,
+          "mask_area_px": 745,
+          "defect_type": "pothole",
+          "anomaly_score": 0.7166
+        }
+      ],
+      "total_defects": 2,
+      "overlay_path": "/home/nitin-nandakumar/Downloads/roadsentinel/results/verified_lowlight/test_drone_capture_30m/test_drone_capture_30m_detection_overlay.jpg"
+    }
+  ]
+}

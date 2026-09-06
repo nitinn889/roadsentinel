@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RoadSentinel | Live Aerial Drone Inspection</title>
+  <link rel="stylesheet" href="/static/rs/css/rs_dashboard.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="rs-nav">
+    <a href="/rs/" class="rs-brand">
+      <div class="rs-brand-icon">RS</div>
+      <span>RoadSentinel Aerial Rig</span>
+    </a>
+    <div class="rs-nav-links">
+      <a href="/rs/" class="rs-nav-link active">Live Telemetry</a>
+      <a href="/rs/control" class="rs-nav-link">Mission Controls</a>
+      <div class="rs-status-pill" id="val-status-pill">
+        <div class="rs-status-dot"></div>
+        <span id="val-server-status">CARLA / SIM ACTIVE</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="rs-container">
+    <div class="rs-grid-dashboard">
+
+      <!-- Left Column: Video Stream & Viewport -->
+      <section>
+        <div class="rs-card">
+          <div class="rs-card-title">
+            <span>Downward Inspection Camera (1920x1080 @ 90° FOV)</span>
+            <span class="rs-status-pill" style="font-size: 0.75rem; padding: 4px 10px;">LIVE MJPEG STREAM</span>
+          </div>
+
+          <div class="rs-viewport-container">
+            <img src="/rs/stream" alt="Live Drone Camera Stream" class="rs-stream-img" id="rs-main-stream" onerror="this.src='/static/rs/preview_fallback.jpg';">
+            <div class="rs-overlay-badge" id="overlay-mode-badge">Mode: HOVER</div>
+            <div class="rs-overlay-weather" id="overlay-weather-badge">Weather: ClearNoon</div>
+          </div>
+
+          <!-- Telemetry Metric Boxes -->
+          <div class="rs-telemetry-grid">
+            <div class="rs-metric-box">
+              <div class="rs-metric-label">Drone Altitude</div>
+              <div class="rs-metric-value"><span id="val-altitude">25.0</span> <span class="rs-metric-unit">m AGL</span></div>
+            </div>
+            <div class="rs-metric-box">
+              <div class="rs-metric-label">Survey Speed</div>
+              <div class="rs-metric-value"><span id="val-speed">5.0</span> <span class="rs-metric-unit">m/s</span></div>
+            </div>
+            <div class="rs-metric-box">
+              <div class="rs-metric-label">Active Weather</div>
+              <div class="rs-metric-value" style="font-size: 1.1rem; color: var(--accent-cyan);" id="val-weather-badge">ClearNoon</div>
+            </div>
+            <div class="rs-metric-box">
+              <div class="rs-metric-label">Free Disk Space</div>
+              <div class="rs-metric-value"><span id="val-disk-free">2.1</span> <span class="rs-metric-unit">GB</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Status Summary & Quick Actions -->
+      <section>
+        <div class="rs-card" style="margin-bottom: 24px;">
+          <div class="rs-card-title">Mission Overview</div>
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+              <span style="color: var(--text-muted); font-size: 0.9rem;">Total Captured Frames:</span>
+              <span style="font-weight: 700; color: #fff;" id="val-frame-count">0</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+              <span style="color: var(--text-muted); font-size: 0.9rem;">Defects in Last Frame:</span>
+              <span style="font-weight: 700; color: var(--accent-amber);" id="val-frame-defects">0</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+              <span style="color: var(--text-muted); font-size: 0.9rem;">Storage Directory:</span>
+              <span style="font-family: monospace; font-size: 0.8rem; color: var(--accent-cyan);">env/output/images</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-muted); font-size: 0.9rem;">Disk Guard:</span>
+              <span style="color: var(--accent-green); font-size: 0.85rem; font-weight: 600;">ACTIVE (> 2 GB)</span>
+            </div>
+          </div>
+          <div style="margin-top: 20px;">
+            <a href="/rs/control" class="rs-btn rs-btn-primary" style="width: 100%;">Open Mission Controls</a>
+          </div>
+        </div>
+
+        <div class="rs-card">
+          <div class="rs-card-title">Ground-Truth Annotations</div>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+            Downwards camera co-registers Phase 2 8-corner bounding boxes into sub-pixel 2D image coordinates.
+          </p>
+          <a href="/rs/annotations/latest" target="_blank" class="rs-btn rs-btn-secondary" style="width: 100%;">
+            View Latest Annotation JSON
+          </a>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script src="/static/rs/js/rs_dashboard.js"></script>
+</body>
+</html>

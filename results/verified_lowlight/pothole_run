@@ -1,0 +1,167 @@
+{
+  "image_id": "test_drone_capture_30m",
+  "image_path": "env/test_drone_capture_30m.jpg",
+  "timestamp": "2026-09-06T13:39:30Z",
+  "road_segment_id": "segment_2d_test",
+  "geolocation": {
+    "lat": null,
+    "lon": null
+  },
+  "image_shape": [
+    720,
+    1280,
+    3
+  ],
+  "anomaly_threshold": 0.6849,
+  "anomaly_score": 0.5295,
+  "detections": [
+    {
+      "defect_id": "pothole_000",
+      "defect_type": "pothole",
+      "confidence": 0.6276,
+      "bbox": [
+        508,
+        456,
+        540,
+        498
+      ],
+      "mask_area_pixels": 1144,
+      "estimated_area_m2": null,
+      "estimated_depth_m": null,
+      "is_water_filled": false,
+      "water_confidence": 0.3518,
+      "crack_or_damage_extent": 0.4308,
+      "road_segment_id": "segment_2d_test",
+      "timestamp": "2026-09-06T13:39:30Z",
+      "latitude": null,
+      "longitude": null,
+      "severity": {
+        "severity": "medium",
+        "severity_score": 0.5166,
+        "severity_components": {
+          "severity": "low",
+          "severity_score": 0.0,
+          "severity_components": {
+            "area": null,
+            "depth": null,
+            "water": 0.3518,
+            "surrounding_damage": 0.4308,
+            "shape": 0.4608,
+            "confidence": 0.6276
+          },
+          "area": null,
+          "depth": null,
+          "shape": 0.4608,
+          "water": 0.3518,
+          "surrounding_damage": 0.4308,
+          "confidence": 0.6276
+        },
+        "area": null,
+        "depth": null,
+        "shape": 0.4608,
+        "water": 0.3518,
+        "surrounding_damage": 0.4308,
+        "confidence": 0.6276
+      },
+      "depth_source": "2D_bypassed",
+      "notes": []
+    }
+  ],
+  "potholes": [
+    {
+      "pothole_id": "pothole_000",
+      "timestamp": "2026-09-06T13:39:30Z",
+      "latitude": null,
+      "longitude": null,
+      "altitude_m": null,
+      "area_m2": null,
+      "estimated_depth_m": null,
+      "anomaly_score": 0.7059392333030701,
+      "pothole_confidence": 0.6275651790834845,
+      "severity_score": 0.5166,
+      "water_flag": false,
+      "water_confidence": 0.35178035467465724,
+      "source_image": "env/test_drone_capture_30m.jpg",
+      "mask_area_px": 1144,
+      "bbox_xyxy": [
+        508,
+        456,
+        540,
+        498
+      ],
+      "defect_type": "pothole",
+      "road_segment_id": "segment_2d_test",
+      "crack_or_damage_extent": 0.431,
+      "shape_circularity": 0.461,
+      "aspect_ratio": 1.31,
+      "severity_breakdown": {
+        "severity": "low",
+        "severity_score": 0.0,
+        "severity_components": {
+          "area": null,
+          "depth": null,
+          "water": 0.3518,
+          "surrounding_damage": 0.4308,
+          "shape": 0.4608,
+          "confidence": 0.6276
+        },
+        "area": null,
+        "depth": null,
+        "shape": 0.4608,
+        "water": 0.3518,
+        "surrounding_damage": 0.4308,
+        "confidence": 0.6276
+      },
+      "depth_source": "2D_bypassed",
+      "notes": [
+        "2D test mode detection with SAM2 mask overlay"
+      ]
+    }
+  ],
+  "road_health": {
+    "road_health_score": 69.5,
+    "condition_class": "fair",
+    "components": {
+      "pothole_count_penalty": 5.0,
+      "pothole_severity_penalty": 15.5,
+      "crack_penalty": 0.0,
+      "water_hazard_penalty": 0.0,
+      "surface_roughness_penalty": 10.0,
+      "total_penalty": 30.5
+    },
+    "confidence": 1.0,
+    "explanation": ""
+  },
+  "prediction": {
+    "deterioration_probability": 0.1525,
+    "pothole_formation_probability": 0.5915,
+    "prediction_horizon_days": 30,
+    "progression_direction": "stable",
+    "progression_trend": "stable",
+    "scientific_status": "CARLA-SYNTHETIC ONLY",
+    "feature_importances": {
+      "health_score": 69.5,
+      "health_slope_per_day": 0.0,
+      "damaged_area_m2": 0.0,
+      "area_growth_rate": 0.0,
+      "max_severity": 0.517,
+      "pothole_count": 1
+    },
+    "features_used": {},
+    "notes": [
+      "Single inspection baseline: temporal rate-of-change estimated via standard degradation prior."
+    ]
+  },
+  "segment_summary": null,
+  "telemetry": {
+    "latitude": null,
+    "longitude": null,
+    "altitude_m": null,
+    "heading_deg": null,
+    "world_x": null,
+    "world_y": null,
+    "speed_mps": null
+  },
+  "frame_id": "test_drone_capture_30m",
+  "warnings": []
+}

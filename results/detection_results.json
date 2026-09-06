@@ -1,0 +1,340 @@
+{
+  "metadata": {
+    "generated_at": "2026-09-06T14:20:01Z",
+    "total_images_processed": 6,
+    "total_defects_detected": 17,
+    "confidence_threshold": 0.4,
+    "min_area_px": 80,
+    "elapsed_time_s": 4.53
+  },
+  "results": [
+    {
+      "image_name": "drone_capture_20260906_181924.png",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/env/output/captures/drone_capture_20260906_181924.png",
+      "test_mode_2d": true,
+      "timestamp": "2026-09-06T14:19:57Z",
+      "image_shape": [
+        1080,
+        1920,
+        3
+      ],
+      "anomaly_threshold": 0.6329,
+      "confidence_threshold": 0.4,
+      "min_area_px": 80,
+      "detections": [],
+      "total_defects": 0,
+      "overlay_path": "/home/nitin-nandakumar/Downloads/roadsentinel/results/drone_capture_20260906_181924_detection_overlay.jpg"
+    },
+    {
+      "image_name": "drone_capture_20260906_182002.png",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/env/output/captures/drone_capture_20260906_182002.png",
+      "test_mode_2d": true,
+      "timestamp": "2026-09-06T14:19:58Z",
+      "image_shape": [
+        1080,
+        1920,
+        3
+      ],
+      "anomaly_threshold": 0.6308,
+      "confidence_threshold": 0.4,
+      "min_area_px": 80,
+      "detections": [
+        {
+          "index": 1,
+          "bbox_xyxy": [
+            389,
+            506,
+            417,
+            512
+          ],
+          "confidence": 0.5484,
+          "mask_area_px": 506,
+          "defect_type": "crack_or_damage",
+          "anomaly_score": 0.632
+        }
+      ],
+      "total_defects": 1,
+      "overlay_path": "/home/nitin-nandakumar/Downloads/roadsentinel/results/drone_capture_20260906_182002_detection_overlay.jpg"
+    },
+    {
+      "image_name": "drone_capture_20260906_182110.png",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/env/output/captures/drone_capture_20260906_182110.png",
+      "test_mode_2d": true,
+      "timestamp": "2026-09-06T14:19:59Z",
+      "image_shape": [
+        1080,
+        1920,
+        3
+      ],
+      "anomaly_threshold": 0.6294,
+      "confidence_threshold": 0.4,
+      "min_area_px": 80,
+      "detections": [
+        {
+          "index": 1,
+          "bbox_xyxy": [
+            1318,
+            532,
+            1329,
+            543
+          ],
+          "confidence": 0.6609,
+          "mask_area_px": 307,
+          "defect_type": "pothole",
+          "anomaly_score": 0.634
+        },
+        {
+          "index": 2,
+          "bbox_xyxy": [
+            389,
+            506,
+            409,
+            512
+          ],
+          "confidence": 0.5641,
+          "mask_area_px": 425,
+          "defect_type": "crack_or_damage",
+          "anomaly_score": 0.6306
+        }
+      ],
+      "total_defects": 2,
+      "overlay_path": "/home/nitin-nandakumar/Downloads/roadsentinel/results/drone_capture_20260906_182110_detection_overlay.jpg"
+    },
+    {
+      "image_name": "drone_capture_20260906_185214.png",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/env/output/captures/drone_capture_20260906_185214.png",
+      "test_mode_2d": true,
+      "timestamp": "2026-09-06T14:20:00Z",
+      "image_shape": [
+        1080,
+        1920,
+        3
+      ],
+      "anomaly_threshold": 0.4845,
+      "confidence_threshold": 0.4,
+      "min_area_px": 80,
+      "detections": [
+        {
+          "index": 1,
+          "bbox_xyxy": [
+            628,
+            178,
+            651,
+            212
+          ],
+          "confidence": 0.6678,
+          "mask_area_px": 1093,
+          "defect_type": "pothole",
+          "anomaly_score": 0.4932
+        },
+        {
+          "index": 2,
+          "bbox_xyxy": [
+            623,
+            233,
+            660,
+            263
+          ],
+          "confidence": 0.6659,
+          "mask_area_px": 1202,
+          "defect_type": "pothole",
+          "anomaly_score": 0.4878
+        },
+        {
+          "index": 3,
+          "bbox_xyxy": [
+            804,
+            160,
+            1098,
+            249
+          ],
+          "confidence": 0.6368,
+          "mask_area_px": 13217,
+          "defect_type": "crack_or_damage",
+          "anomaly_score": 0.4929
+        },
+        {
+          "index": 4,
+          "bbox_xyxy": [
+            1780,
+            452,
+            1802,
+            459
+          ],
+          "confidence": 0.6145,
+          "mask_area_px": 191,
+          "defect_type": "crack_or_damage",
+          "anomaly_score": 0.4872
+        },
+        {
+          "index": 5,
+          "bbox_xyxy": [
+            627,
+            72,
+            800,
+            178
+          ],
+          "confidence": 0.6125,
+          "mask_area_px": 6631,
+          "defect_type": "pothole",
+          "anomaly_score": 0.4986
+        },
+        {
+          "index": 6,
+          "bbox_xyxy": [
+            1153,
+            247,
+            1170,
+            259
+          ],
+          "confidence": 0.6015,
+          "mask_area_px": 455,
+          "defect_type": "pothole",
+          "anomaly_score": 0.4935
+        },
+        {
+          "index": 7,
+          "bbox_xyxy": [
+            323,
+            184,
+            460,
+            256
+          ],
+          "confidence": 0.5858,
+          "mask_area_px": 6210,
+          "defect_type": "unknown_road_anomaly",
+          "anomaly_score": 0.4934
+        },
+        {
+          "index": 8,
+          "bbox_xyxy": [
+            1310,
+            305,
+            1353,
+            315
+          ],
+          "confidence": 0.5702,
+          "mask_area_px": 475,
+          "defect_type": "crack_or_damage",
+          "anomaly_score": 0.4917
+        },
+        {
+          "index": 9,
+          "bbox_xyxy": [
+            1414,
+            334,
+            1453,
+            343
+          ],
+          "confidence": 0.5614,
+          "mask_area_px": 556,
+          "defect_type": "crack_or_damage",
+          "anomaly_score": 0.4916
+        }
+      ],
+      "total_defects": 9,
+      "overlay_path": "/home/nitin-nandakumar/Downloads/roadsentinel/results/drone_capture_20260906_185214_detection_overlay.jpg"
+    },
+    {
+      "image_name": "drone_capture_20260906_185429.png",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/env/output/captures/drone_capture_20260906_185429.png",
+      "test_mode_2d": true,
+      "timestamp": "2026-09-06T14:20:01Z",
+      "image_shape": [
+        1080,
+        1920,
+        3
+      ],
+      "anomaly_threshold": 0.48,
+      "confidence_threshold": 0.4,
+      "min_area_px": 80,
+      "detections": [
+        {
+          "index": 1,
+          "bbox_xyxy": [
+            1234,
+            461,
+            1311,
+            529
+          ],
+          "confidence": 0.7046,
+          "mask_area_px": 2567,
+          "defect_type": "pothole",
+          "anomaly_score": 0.5111
+        },
+        {
+          "index": 2,
+          "bbox_xyxy": [
+            745,
+            474,
+            757,
+            484
+          ],
+          "confidence": 0.6652,
+          "mask_area_px": 218,
+          "defect_type": "pothole",
+          "anomaly_score": 0.483
+        },
+        {
+          "index": 3,
+          "bbox_xyxy": [
+            848,
+            332,
+            1032,
+            416
+          ],
+          "confidence": 0.6237,
+          "mask_area_px": 4616,
+          "defect_type": "pothole",
+          "anomaly_score": 0.4953
+        },
+        {
+          "index": 4,
+          "bbox_xyxy": [
+            741,
+            333,
+            877,
+            474
+          ],
+          "confidence": 0.6063,
+          "mask_area_px": 6239,
+          "defect_type": "unknown_road_anomaly",
+          "anomaly_score": 0.4897
+        }
+      ],
+      "total_defects": 4,
+      "overlay_path": "/home/nitin-nandakumar/Downloads/roadsentinel/results/drone_capture_20260906_185429_detection_overlay.jpg"
+    },
+    {
+      "image_name": "drone_capture_20260906_185520.png",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/env/output/captures/drone_capture_20260906_185520.png",
+      "test_mode_2d": true,
+      "timestamp": "2026-09-06T14:20:01Z",
+      "image_shape": [
+        1080,
+        1920,
+        3
+      ],
+      "anomaly_threshold": 0.583,
+      "confidence_threshold": 0.4,
+      "min_area_px": 80,
+      "detections": [
+        {
+          "index": 1,
+          "bbox_xyxy": [
+            118,
+            505,
+            143,
+            547
+          ],
+          "confidence": 0.6108,
+          "mask_area_px": 1361,
+          "defect_type": "pothole",
+          "anomaly_score": 0.5846
+        }
+      ],
+      "total_defects": 1,
+      "overlay_path": "/home/nitin-nandakumar/Downloads/roadsentinel/results/drone_capture_20260906_185520_detection_overlay.jpg"
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environments
+.venv/
+venv/
+carla_env/
+
+# IDE
+.vscode/
+.idea/
+
+# Hugging Face / ML caches
+.cache/
+cache/
+huggingface/
+hf_cache/
+
+# Datasets
+ml/data/*
+!ml/data/healthy_road/
+!ml/data/test_road/
+!ml/data/healthy_road/.gitkeep
+!ml/data/test_road/.gitkeep
+
+# Large/generated model files
+ml/models/*.npy
+ml/models/*.pt
+ml/models/*.pth
+ml/models/*.bin
+ml/models/*.safetensors
+
+# Generated outputs
+ml/outputs/*
+!ml/outputs/.gitkeep
+
+# ML outputs / caches
+outputs/
+output/
+runs/
+checkpoints/
+*.pt
+*.pth
+*.onnx
+*.engine
+*.ckpt
+
+# Dataset files
+RoadSentinel_datasets/
+
+# Large archives
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.whl
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+*.pem
+*.key
+
+# ---- env/ directory: allow source code, ignore generated/binary content ----
+env/__pycache__/
+env/output/
+env/carla_env/
+env/Blender files/
+env/assets/
+env/road_defects_preview/
+env/*.jpg
+RoadSentinelSim/Intermediate/
+RoadSentinelSim/Binaries/
+RoadSentinelSim/Saved/
+RoadSentinelSim/DerivedDataCache/

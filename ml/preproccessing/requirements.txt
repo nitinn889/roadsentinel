@@ -1,0 +1,9 @@
+torch
+torchvision
+opencv-python
+numpy
+pillow
+tqdm
+faiss-cpu
+# SAM2 isn't on PyPI under a stable name yet -- install from source:
+# pip install git+https://github.com/facebookresearch/sam2.git

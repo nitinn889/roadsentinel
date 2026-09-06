@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RoadSentinel | Interactive Simulation Controls</title>
+  <link rel="stylesheet" href="/static/rs/css/rs_dashboard.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="rs-nav">
+    <a href="/rs/" class="rs-brand">
+      <div class="rs-brand-icon">RS</div>
+      <span>RoadSentinel Mission Controls</span>
+    </a>
+    <div class="rs-nav-links">
+      <a href="/rs/" class="rs-nav-link">Live Telemetry</a>
+      <a href="/rs/control" class="rs-nav-link active">Mission Controls</a>
+      <div class="rs-status-pill">
+        <div class="rs-status-dot"></div>
+        <span>ACTIVE</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="rs-container" style="max-width: 960px;">
+    <div class="rs-card">
+      <div class="rs-card-title">
+        <span>Aerial Survey & Simulation Configuration</span>
+        <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 400;">Real-Time Parameter Overrides</span>
+      </div>
+
+      <form id="rs-control-form">
+
+        <!-- 1. Weather Preset Selection -->
+        <div class="rs-form-group">
+          <label class="rs-form-label" for="input-weather-preset">
+            <span>Dynamic Weather & Lighting Preset</span>
+            <span class="rs-form-label-val" id="val-preset-info">Phase 3 Dynamic Lighting</span>
+          </label>
+          <select id="input-weather-preset" name="weather_preset" class="rs-input-select">
+            <option value="ClearNoon" data-desc="Sun altitude 70°, no fog, dry road roughness 0.85" selected>ClearNoon (Daylight)</option>
+            <option value="OvercastDay" data-desc="Sun altitude 40°, cloud cover 0.8, diffuse sky light">OvercastDay (Diffuse)</option>
+            <option value="HeavyRain" data-desc="Precipitation rate 80 mm/h, road wet roughness 0.25, splash particles">HeavyRain (Wet Surface & Splash)</option>
+            <option value="LightDrizzle" data-desc="Precipitation rate 5 mm/h, road wet roughness 0.55">LightDrizzle (Damp Road)</option>
+            <option value="DuskGoldenHour" data-desc="Sun altitude 5°, warm colour temperature 3200 K, long shadows">DuskGoldenHour (Low Sun)</option>
+            <option value="NightClear" data-desc="Sun altitude −15°, moonlight 0.08 lux, streetlamp emissive enabled">NightClear (Artificial Illumination)</option>
+            <option value="NightFoggy" data-desc="Sun altitude −20°, exponential fog density 0.04, visibility 60 m">NightFoggy (Low Visibility 60m)</option>
+            <option value="NightRain" data-desc="Combines NightClear precipitation + HeavyRain wet road + headlight glare bloom">NightRain (Night Wet + Headlight Glare)</option>
+          </select>
+
+          <!-- Live Preview Thumbnail -->
+          <div class="rs-preset-preview-card">
+            <div class="rs-preset-thumbnail" id="preset-thumbnail-icon">☀️</div>
+            <div>
+              <div style="font-weight: 600; font-size: 0.95rem; color: #fff;">Preset Atmosphere</div>
+              <div style="font-size: 0.8rem; color: var(--text-muted);" id="preset-thumbnail-desc">
+                Sun altitude 70°, no fog, dry road roughness 0.85
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 24px 0;">
+
+        <!-- 2. Defect Density Slider -->
+        <div class="rs-form-group">
+          <label class="rs-form-label" for="input-defect-density">
+            <span>Procedural Defect Density</span>
+            <span class="rs-form-label-val"><span id="val-defect-density">3.0</span> / 100 m²</span>
+          </label>
+          <input type="range" id="input-defect-density" name="defect_density" min="0.5" max="10.0" step="0.5" value="3.0" class="rs-input-slider">
+          <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+            <span>0.5 (Sparse)</span>
+            <span>3.0 (Nominal)</span>
+            <span>10.0 (Severe)</span>
+          </div>
+        </div>
+
+        <!-- 3. Defect Type Filter Multi-Checkbox -->
+        <div class="rs-form-group">
+          <label class="rs-form-label">
+            <span>Defect Catalogue Filter</span>
+            <span class="rs-form-label-val">Poisson-Disc Separation $\ge 1.5$ m</span>
+          </label>
+          <div class="rs-checkbox-group">
+            <label class="rs-checkbox-item">
+              <input type="checkbox" name="defect_types" value="PotholeWet" checked>
+              <span>PotholeWet (Water-filled)</span>
+            </label>
+            <label class="rs-checkbox-item">
+              <input type="checkbox" name="defect_types" value="PotholeDry" checked>
+              <span>PotholeDry (Crater)</span>
+            </label>
+            <label class="rs-checkbox-item">
+              <input type="checkbox" name="defect_types" value="LongitudinalCrack" checked>
+              <span>LongitudinalCrack</span>
+            </label>
+            <label class="rs-checkbox-item">
+              <input type="checkbox" name="defect_types" value="AlligatorCrack" checked>
+              <span>AlligatorCrack (Fatigue)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 4. Water Material IOR Parameter -->
+        <div class="rs-form-group">
+          <label class="rs-form-label" for="input-water-ior">
+            <span>Water Material Refractive Index (RS_WaterIOR)</span>
+            <span class="rs-form-label-val">Physical Optics</span>
+          </label>
+          <input type="number" id="input-water-ior" name="water_ior" min="1.0" max="2.0" step="0.001" value="1.333" class="rs-input-number" style="max-width: 220px;">
+          <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 4px;">
+            Default 1.333 (pure water). Higher values simulate chemical/oil runoff index.
+          </small>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 24px 0;">
+
+        <!-- 5. Drone Camera Altitude Slider -->
+        <div class="rs-form-group">
+          <label class="rs-form-label" for="input-altitude">
+            <span>Survey Altitude (AGL)</span>
+            <span class="rs-form-label-val" id="val-altitude-display">25 m</span>
+          </label>
+          <input type="range" id="input-altitude" name="altitude_m" min="10" max="80" step="1" value="25" class="rs-input-slider">
+          <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+            <span>10 m (High Resolution)</span>
+            <span>25 m (Standard Inspection)</span>
+            <span>80 m (Wide Footprint)</span>
+          </div>
+        </div>
+
+        <!-- 6. Flight Mode Radio Selection -->
+        <div class="rs-form-group">
+          <label class="rs-form-label">
+            <span>Flight Controller Mode</span>
+            <span class="rs-form-label-val">Autonomous Trajectory</span>
+          </label>
+          <div class="rs-radio-group">
+            <label class="rs-radio-item">
+              <input type="radio" name="flight_mode" value="hover" checked>
+              <span>Hover (Stationary Nadir)</span>
+            </label>
+            <label class="rs-radio-item">
+              <input type="radio" name="flight_mode" value="transect">
+              <span>Transect (Straight-Line Corridor @ 5 m/s)</span>
+            </label>
+            <label class="rs-radio-item">
+              <input type="radio" name="flight_mode" value="survey_grid">
+              <span>Survey Grid (70% Overlap Lawnmower)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 7. Capture Toggle & Actions -->
+        <div style="display: flex; gap: 16px; align-items: center; margin-top: 32px; flex-wrap: wrap;">
+          <button type="submit" class="rs-btn rs-btn-primary" id="btn-apply-config">
+            Apply Configuration
+          </button>
+
+          <button type="button" class="rs-btn rs-btn-secondary" id="btn-toggle-capture">
+            ⏺ Start Capture
+          </button>
+
+          <a href="/rs/" class="rs-btn rs-btn-secondary">
+            Return to Stream View
+          </a>
+        </div>
+
+      </form>
+    </div>
+  </main>
+
+  <script src="/static/rs/js/rs_dashboard.js"></script>
+</body>
+</html>

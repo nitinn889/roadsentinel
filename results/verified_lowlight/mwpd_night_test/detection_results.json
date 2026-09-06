@@ -1,0 +1,29 @@
+{
+  "metadata": {
+    "generated_at": "2026-09-06T13:21:47Z",
+    "total_images_processed": 1,
+    "total_defects_detected": 0,
+    "confidence_threshold": 0.4,
+    "min_area_px": 80,
+    "elapsed_time_s": 0.93
+  },
+  "results": [
+    {
+      "image_name": "Vid_Pr_night_00000099_jpg.rf.7b05f0bd3577a224c0464f6a3e32ed15.jpg",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/RoadSentinel_datasets/mwpd/Multi-Weather Pothole Detection (MWPD)/MWPD/test/images/Vid_Pr_night_00000099_jpg.rf.7b05f0bd3577a224c0464f6a3e32ed15.jpg",
+      "test_mode_2d": true,
+      "timestamp": "2026-09-06T13:21:47Z",
+      "image_shape": [
+        640,
+        640,
+        3
+      ],
+      "anomaly_threshold": 0.8008,
+      "confidence_threshold": 0.4,
+      "min_area_px": 80,
+      "detections": [],
+      "total_defects": 0,
+      "overlay_path": "/home/nitin-nandakumar/Downloads/roadsentinel/results/verified_lowlight/mwpd_night_test/Vid_Pr_night_00000099_jpg.rf.7b05f0bd3577a224c0464f6a3e32ed15_detection_overlay.jpg"
+    }
+  ]
+}
