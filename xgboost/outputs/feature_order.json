@@ -1,0 +1,6 @@
+{
+  "feature_order": [
+    "current_severity",
+    "days_ahead"
+  ]
+}

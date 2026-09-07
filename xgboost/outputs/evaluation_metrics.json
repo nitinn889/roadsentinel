@@ -1,0 +1,24 @@
+{
+  "model_id": "roadsentinel_xgb_v1_nyc_rating",
+  "dataset": "NYC Open Data Street Pavement Ratings (6yyb-pb25)",
+  "feature_order": [
+    "current_severity",
+    "days_ahead"
+  ],
+  "target": "future_severity",
+  "xgboost_version": "3.4.1",
+  "scikit_learn_version": "1.9.0",
+  "xgboost": {
+    "mae": 0.09579996373712325,
+    "rmse": 0.12772586186586796,
+    "r2": 0.4425254849574678
+  },
+  "linear_regression": {
+    "mae": 0.10842655286301517,
+    "rmse": 0.14106145101150913,
+    "r2": 0.3200389618110918
+  },
+  "prediction_clipping": "Both model predictions clipped to [0,1] for evaluation.",
+  "model_path": "model/model_v1.json",
+  "baseline_path": "model/linear_baseline_v1.joblib"
+}

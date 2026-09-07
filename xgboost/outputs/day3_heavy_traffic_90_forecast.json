@@ -1,0 +1,32 @@
+{
+  "forecast_status": "MODEL-BASED FORECAST",
+  "forecast_caveat": "Scenario-conditioned model estimate; not a guaranteed future condition.",
+  "model_id": "roadsentinel_xgb_v2_ltpp_scenario",
+  "model_path": "/home/nitin-nandakumar/Downloads/roadsentinel/xgboost/model/scenario_model_v2.json",
+  "image_id": "0454",
+  "segment_id": "SEG_DAY2_TEST",
+  "original_filename": "0454.png",
+  "scenario_status": "USER_SUPPLIED",
+  "scenario_name": "HEAVY_TRAFFIC",
+  "current_severity": 0.6757,
+  "future_severity": 0.7645376324653625,
+  "severity_change": 0.08883763246536258,
+  "prediction_clipped_to_0_1": false,
+  "features_used": {
+    "current_severity": 0.6757,
+    "rainfall_level": 2.737569049,
+    "traffic_level": 784.0,
+    "temperature": 6.396535814,
+    "water_exposure": 0.56626506,
+    "days_ahead": 90.0
+  },
+  "target_definition": "Future LTPP MRI/IRI mapped to [0,1] with training-site P01/P99 bounds.",
+  "scale_transfer_caveat": "RoadSentinel image severity has not been calibrated to the LTPP IRI severity scale.",
+  "unused_perception_fields": [
+    "crack_area_ratio",
+    "defect_area_ratio",
+    "defect_count",
+    "surface_anomaly_score",
+    "water_flag"
+  ]
+}

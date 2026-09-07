@@ -1,0 +1,141 @@
+{
+  "image_id": "IMG_2026-08-30T12:00:00Z",
+  "image_path": "",
+  "timestamp": "2026-08-30T12:00:00Z",
+  "road_segment_id": "SEG_X+000_Y+000",
+  "geolocation": {
+    "lat": 13.0827,
+    "lon": 80.2707
+  },
+  "image_shape": [
+    720,
+    1280,
+    3
+  ],
+  "anomaly_threshold": 98.0,
+  "anomaly_score": 0.82,
+  "detections": [
+    {
+      "defect_id": "DEF_2026-08-30T12:00:00Z_000",
+      "defect_type": "water_filled_pothole",
+      "confidence": 0.91,
+      "bbox": [
+        600,
+        320,
+        680,
+        400
+      ],
+      "mask_area_pixels": 6400,
+      "estimated_area_m2": 14.0625,
+      "estimated_depth_m": null,
+      "is_water_filled": true,
+      "water_confidence": 0.45,
+      "crack_or_damage_extent": null,
+      "road_segment_id": "SEG_X+000_Y+000",
+      "timestamp": "2026-08-30T12:00:00Z",
+      "latitude": 13.0827,
+      "longitude": 80.2707,
+      "severity": {
+        "severity": "high",
+        "severity_score": 66.85,
+        "severity_components": {
+          "area": 100.0,
+          "depth": null,
+          "water": 70.0,
+          "surrounding_damage": 0.0
+        },
+        "area": 100.0,
+        "depth": null,
+        "shape": null,
+        "water": 70.0,
+        "surrounding_damage": 0.0,
+        "confidence": null
+      },
+      "depth_source": "unavailable",
+      "notes": []
+    }
+  ],
+  "potholes": [
+    {
+      "pothole_id": "DEF_2026-08-30T12:00:00Z_000",
+      "timestamp": "2026-08-30T12:00:00Z",
+      "latitude": 13.0827,
+      "longitude": 80.2707,
+      "altitude_m": 30.0,
+      "area_m2": 14.062499999999995,
+      "estimated_depth_m": null,
+      "anomaly_score": 0.82,
+      "pothole_confidence": 0.91,
+      "severity_score": 66.85,
+      "water_flag": true,
+      "water_confidence": 0.45,
+      "source_image": "frame",
+      "mask_area_px": 6400,
+      "bbox_xyxy": [
+        600,
+        320,
+        680,
+        400
+      ],
+      "defect_type": "water_filled_pothole",
+      "road_segment_id": "SEG_X+000_Y+000",
+      "crack_or_damage_extent": null,
+      "shape_circularity": null,
+      "aspect_ratio": null,
+      "severity_breakdown": {
+        "area": 100.0,
+        "depth": null,
+        "water": 70.0,
+        "surrounding_damage": 0.0
+      },
+      "depth_source": "unavailable",
+      "notes": []
+    }
+  ],
+  "road_health": {
+    "road_health_score": 74.47,
+    "condition_class": "Fair",
+    "components": {
+      "pothole_penalty": 18.03,
+      "crack_penalty": 0.0,
+      "water_penalty": 7.5,
+      "surface_penalty": 0.0
+    },
+    "confidence": 1.0,
+    "explanation": "Condition: Fair (74.5/100). 1 pothole(s) (-18.0 pts); 1 water puddle hazard(s) (-7.5 pts)"
+  },
+  "prediction": {
+    "deterioration_probability": 0.4665,
+    "pothole_formation_probability": 0.4013,
+    "prediction_horizon_days": 30,
+    "progression_direction": "stable",
+    "progression_trend": "stable",
+    "scientific_status": "CARLA-SYNTHETIC ONLY",
+    "feature_importances": null,
+    "features_used": {
+      "latest_health": 74.47,
+      "health_velocity": 0.0,
+      "area_growth_rate": 0.0,
+      "severity_velocity": 0.0,
+      "latest_crack_count": 0.0,
+      "latest_pothole_count": 1.0,
+      "water_exposure_ratio": 1.0,
+      "history_length": 1.0
+    },
+    "notes": [
+      "Heuristic baseline used: only 1 inspection observation(s) available."
+    ]
+  },
+  "segment_summary": null,
+  "telemetry": {
+    "latitude": 13.0827,
+    "longitude": 80.2707,
+    "altitude_m": 30.0,
+    "heading_deg": 0.0,
+    "world_x": 10.0,
+    "world_y": 20.0,
+    "speed_mps": null
+  },
+  "frame_id": null,
+  "warnings": []
+}

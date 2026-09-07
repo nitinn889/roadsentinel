@@ -1,0 +1,60 @@
+{
+  "model_id": "roadsentinel_xgb_v2_ltpp_scenario",
+  "dataset": "FHWA LTPP InfoPave SDR 40 joined scenario table",
+  "xgboost_version": "3.4.1",
+  "split_strategy": "seeded site-based holdout",
+  "random_seed": 1,
+  "train_sites": [
+    "02-1001",
+    "02-1004",
+    "02-1008",
+    "02-6010",
+    "02-9035",
+    "15-1003",
+    "15-1008",
+    "15-7080",
+    "22-3056",
+    "22-4001",
+    "36-1011",
+    "36-1643",
+    "36-1644",
+    "36-4018",
+    "38-2001",
+    "38-3005",
+    "44-7401"
+  ],
+  "test_sites": [
+    "02-1002",
+    "15-1006",
+    "36-1008",
+    "36-4017",
+    "38-3006",
+    "38-5002"
+  ],
+  "site_overlap_count": 0,
+  "train_row_count": 89,
+  "test_row_count": 24,
+  "feature_order": [
+    "current_severity",
+    "rainfall_level",
+    "traffic_level",
+    "temperature",
+    "water_exposure",
+    "days_ahead"
+  ],
+  "feature_importance_gain_proxy": {
+    "current_severity": 0.7553457021713257,
+    "rainfall_level": 0.010456143878400326,
+    "traffic_level": 0.1150241568684578,
+    "temperature": 0.05484621226787567,
+    "water_exposure": 0.011283991858363152,
+    "days_ahead": 0.053043730556964874
+  },
+  "test_metrics": {
+    "mae": 0.09241103397686712,
+    "rmse": 0.114372217577622,
+    "r2": 0.8055004670422065
+  },
+  "test_prediction_clipped_count": 0,
+  "model_path": "model/scenario_model_v2.json"
+}

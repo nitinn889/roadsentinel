@@ -1,0 +1,15 @@
+{
+  "source_variable": "NYC SystemRating",
+  "source_documented_range": [
+    1.0,
+    10.0
+  ],
+  "source_direction": "1 is low/poor; 10 is high/good",
+  "formula": "severity = (10 - SystemRating) / 9",
+  "output_range": [
+    0.0,
+    1.0
+  ],
+  "fit_on_training_data": false,
+  "caveat": "This normalized rating is a common forecasting scale and is not asserted to be identical to RoadSentinel image-derived severity."
+}

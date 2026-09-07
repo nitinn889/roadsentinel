@@ -1,0 +1,28 @@
+{
+  "forecast_status": "MODEL-BASED FORECAST",
+  "scenario_status": "MOCK_INTERFACE_ONLY",
+  "model_id": "roadsentinel_xgb_v1_nyc_rating",
+  "image_id": "0454",
+  "segment_id": "SEG_DAY2_TEST",
+  "day": 1,
+  "original_filename": "0454.png",
+  "future_severity": 0.3560028374195099,
+  "prediction_clipped_to_0_1": false,
+  "features_used": {
+    "current_severity": 0.6757,
+    "days_ahead": 30.0
+  },
+  "interface_fields_not_used_by_model_v1": [
+    "crack_area_ratio",
+    "defect_area_ratio",
+    "defect_count",
+    "surface_anomaly_score",
+    "water_flag",
+    "rainfall_level",
+    "traffic_level",
+    "temperature",
+    "water_exposure"
+  ],
+  "target_definition": "Normalized future NYC pavement-rating severity on [0,1].",
+  "target_caveat": "The training target is not asserted to be identical to RoadSentinel image-derived severity."
+}
