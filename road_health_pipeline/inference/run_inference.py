@@ -632,8 +632,13 @@ def infer(
     if road_mask is None or road_mask.sum() < 0.05 * rgb.shape[0] * rgb.shape[1]:
         road_mask = pipeline.masker._extract_road_corridor_fallback(enhanced_rgb)
     if diagnostics is not None:
+        diagnostics["raw_road_mask"] = (
+            pipeline.masker.last_raw_road_mask.copy()
+            if pipeline.masker.last_raw_road_mask is not None else road_mask.copy()
+        )
         diagnostics["road_mask"] = road_mask.copy()
         diagnostics["road_mask_ratio"] = float(np.mean(road_mask))
+        diagnostics["road_mask_diagnostics"] = dict(pipeline.masker.last_road_mask_diagnostics)
         diagnostics["low_light_enhancement_applied"] = bool(was_enhanced)
 
     # Step 2: DINOv2 patch embeddings

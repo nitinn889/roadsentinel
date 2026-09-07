@@ -198,6 +198,74 @@ class PotholeLocalizer:
         )
         return conf, shape, aspect_ratio, surrounding_damage
 
+    @staticmethod
+    def _bbox_from_mask(mask: np.ndarray) -> list[int]:
+        ys, xs = np.nonzero(mask)
+        if xs.size == 0:
+            return [0, 0, 0, 0]
+        return [int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1]
+
+    @staticmethod
+    def _mask_iou(a: np.ndarray, b: np.ndarray) -> float:
+        union = int(np.logical_or(a, b).sum())
+        return float(np.logical_and(a, b).sum() / union) if union else 0.0
+
+    @staticmethod
+    def _centroid(mask: np.ndarray) -> tuple[float, float]:
+        ys, xs = np.nonzero(mask)
+        return (float(xs.mean()), float(ys.mean())) if xs.size else (float("inf"), float("inf"))
+
+    def _consolidate_candidates(self, candidates: list[CandidateRegion]) -> list[CandidateRegion]:
+        """Union only overlapping or immediately adjacent refined masks.
+
+        Adjacent masks are merged only when their centres are close *and* their
+        bounding boxes touch/overlap after a small dilation.  This prevents the
+        four SAM2 fragments of one physical depression becoming four records
+        without indiscriminately joining separate road defects.
+        """
+        groups: list[list[CandidateRegion]] = []
+        for candidate in candidates:
+            placed = False
+            for group in groups:
+                group_mask = np.logical_or.reduce([item.mask for item in group])
+                iou = self._mask_iou(candidate.mask, group_mask)
+                dilated = cv2.dilate(group_mask.astype(np.uint8), np.ones((49, 49), np.uint8)).astype(bool)
+                cx, cy = self._centroid(candidate.mask)
+                gx, gy = self._centroid(group_mask)
+                nearby = np.any(dilated & candidate.mask) and np.hypot(cx - gx, cy - gy) <= CONFIG.road_mask_merge_centroid_px
+                if iou >= CONFIG.road_mask_merge_iou or nearby:
+                    group.append(candidate)
+                    placed = True
+                    break
+            if not placed:
+                groups.append([candidate])
+
+        consolidated: list[CandidateRegion] = []
+        for group in groups:
+            merged = np.logical_or.reduce([item.mask for item in group])
+            representative = max(group, key=lambda item: item.pothole_confidence)
+            shape, aspect = self._shape_score(merged)
+            consolidated.append(CandidateRegion(
+                mask=merged,
+                bbox_xyxy=self._bbox_from_mask(merged),
+                anomaly_score=max(item.anomaly_score for item in group),
+                pothole_confidence=max(item.pothole_confidence for item in group),
+                sam2_result=SegmentationResult(
+                    mask=merged,
+                    confidence=max((item.sam2_result.confidence if item.sam2_result else 0.0) for item in group),
+                    bbox_xyxy=self._bbox_from_mask(merged),
+                    area_px=int(merged.sum()),
+                ),
+                # No trained crack/pothole discriminator is validated here.
+                defect_type="road_defect",
+                shape_circularity=shape,
+                aspect_ratio=aspect,
+                surrounding_damage=max(item.surrounding_damage for item in group),
+                hierarchical_classification=representative.hierarchical_classification,
+                filter_result={"consolidated_fragments": len(group)},
+            ))
+        return consolidated
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -359,9 +427,10 @@ class PotholeLocalizer:
 
             is_water = (in_std < 26.0 and (out_mean - in_mean) > 5.0 and conf >= 0.40 and is_not_marking)
 
-            defect_type = self._classify_defect(
-                rgb, comp_mask, shape_circ, aspect_ratio, is_water
-            )
+            # The current DINOv2/SAM2 geometry path has no validated semantic
+            # classifier.  Preserve the neutral label rather than asserting a
+            # crack or pothole type from shape heuristics.
+            defect_type = "road_defect"
 
             refined_mask = comp_mask
             sam2_result: Optional[SegmentationResult] = None
@@ -379,33 +448,20 @@ class PotholeLocalizer:
                     prompt_diagnostic["sam2_confidence"] = float(result.confidence)
                     prompt_diagnostic["sam2_bbox_xyxy"] = result.bbox_xyxy
                     prompt_diagnostic["sam2_area_px"] = int(result.area_px)
-                    if is_2d:
-                        # In 2D test mode, retain full SAM2 segmentation without cutting off crater boundaries
-                        refined_mask = result.mask
+                    # Always keep a SAM2 region on the stabilized road mask,
+                    # including 2D test mode.  This avoids a prompt seeded on
+                    # road leaking into vegetation or buildings.
+                    refined_road = result.mask & road_mask if road_mask is not None else result.mask
+                    if int(refined_road.sum()) >= effective_min_area:
+                        refined_mask = refined_road
                         sam2_result = SegmentationResult(
-                            mask=refined_mask,
+                            mask=refined_road,
                             confidence=result.confidence,
-                            bbox_xyxy=result.bbox_xyxy,
-                            area_px=int(refined_mask.sum()),
+                            bbox_xyxy=self._bbox_from_mask(refined_road),
+                            area_px=int(refined_road.sum()),
                         )
                     else:
-                        # In 3D simulation mode, intersect with aerial road mask
-                        refined_road = result.mask & road_mask if road_mask is not None else result.mask
-                        if int(refined_road.sum()) >= effective_min_area:
-                            sam2_result = SegmentationResult(
-                                mask=refined_road,
-                                confidence=result.confidence,
-                                bbox_xyxy=result.bbox_xyxy,
-                                area_px=int(refined_road.sum()),
-                            )
-                            refined_mask = refined_road
-                        else:
-                            log.warning(
-                                "SAM2 refinement for box [%d,%d,%d,%d] produced a "
-                                "mask too small after road intersection (%d px); "
-                                "keeping anomaly-map mask.",
-                                x, y, x + w, y + h_cc, int(refined_road.sum()),
-                            )
+                        prompt_diagnostic["sam2_status"] = "rejected_off_road_or_too_small"
                 except Exception as exc:
                     prompt_diagnostic["sam2_status"] = "fallback_to_candidate_mask"
                     prompt_diagnostic["error"] = str(exc)
@@ -430,13 +486,9 @@ class PotholeLocalizer:
                 calibrated_confidence=cal_conf,
             )
             # Refine defect type based on hierarchical classification
-            hier_type_val = hier_res.final_type.value
-            if hier_res.is_water_hazard:
-                defect_type = "water_filled_pothole"
-            elif "crack" in hier_type_val:
-                defect_type = "crack"
-            elif "pothole" in hier_type_val:
-                defect_type = "pothole"
+            # Keep the neutral Day 3 label until a typed classifier has been
+            # tested against labelled crack and pothole examples.
+            defect_type = "road_defect"
 
             out.append(
                 CandidateRegion(
@@ -454,6 +506,7 @@ class PotholeLocalizer:
                 )
             )
 
+        out = self._consolidate_candidates(out)
         out.sort(key=lambda c: c.pothole_confidence, reverse=True)
         if diagnostics is not None:
             diagnostics["accepted_candidate_count"] = len(out)

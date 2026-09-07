@@ -108,6 +108,7 @@ def persist_current_condition(
     localization = diagnostics["localization"]
     candidate_mask = np.asarray(localization["candidate_mask"], dtype=bool)
     _write_mask(output_dir / "candidate_mask.png", candidate_mask)
+    _write_mask(output_dir / "raw_road_mask.png", diagnostics["raw_road_mask"])
     _write_mask(output_dir / "road_mask.png", diagnostics["road_mask"])
 
     candidates = diagnostics["candidates"]
@@ -169,6 +170,7 @@ def persist_current_condition(
         "image_shape": [height, width, int(rgb.shape[2])],
         "camera_mode": camera_mode,
         "road_mask_ratio": diagnostics["road_mask_ratio"],
+        "road_mask": diagnostics["road_mask_diagnostics"],
         "raw_anomaly_scores": describe_scores(diagnostics["raw_patch_scores"]),
         "normalized_anomaly_scores": describe_scores(diagnostics["normalized_patch_scores"]),
         "normalization": diagnostics["normalization"],
