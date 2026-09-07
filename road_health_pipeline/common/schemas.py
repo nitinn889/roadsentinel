@@ -61,6 +61,8 @@ class CandidateRegion:
     shape_circularity: float = 0.0
     aspect_ratio: float = 1.0
     surrounding_damage: float = 0.0
+    hierarchical_classification: Optional[dict[str, Any]] = None
+    filter_result: Optional[dict[str, Any]] = None
 
 
 @dataclass

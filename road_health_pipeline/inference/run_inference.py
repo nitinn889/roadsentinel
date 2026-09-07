@@ -510,8 +510,9 @@ def infer(
     pipeline: Optional[PipelineComponents] = None,
     road_segment_id: Optional[str] = None,
     test_mode_2d: Optional[bool] = None,
+    diagnostics: Optional[Dict[str, Any]] = None,
 ) -> InferenceResult:
-    """Run the full RoadSentinel pipeline on a single image."""
+    """Run inference; optionally expose bounded intermediate diagnostics."""
     is_2d = test_mode_2d if test_mode_2d is not None else getattr(CONFIG, "test_mode_2d", True)
 
     if pipeline is None:
@@ -552,12 +553,21 @@ def infer(
     road_mask = pipeline.masker.get_road_mask(enhanced_rgb)
     if road_mask is None or road_mask.sum() < 0.05 * rgb.shape[0] * rgb.shape[1]:
         road_mask = pipeline.masker._extract_road_corridor_fallback(enhanced_rgb)
+    if diagnostics is not None:
+        diagnostics["road_mask"] = road_mask.copy()
+        diagnostics["road_mask_ratio"] = float(np.mean(road_mask))
+        diagnostics["low_light_enhancement_applied"] = bool(was_enhanced)
 
     # Step 2: DINOv2 patch embeddings
     embeddings, coords = pipeline.embedder.extract_road_patch_embeddings(enhanced_rgb, road_mask)
 
-    # Step 3: Anomaly scoring & map
-    patch_scores = pipeline.detector.score_patches(embeddings)
+    # Step 3: Domain-adaptive anomaly scoring & map.  The raw healthy-memory
+    # distance is first re-centred against the *current road surface* (median
+    # and IQR), which prevents CARLA lighting/material shifts from making an
+    # entire frame look anomalous or, conversely, suppressing every defect.
+    raw_patch_scores, patch_scores, domain_calibration = pipeline.detector.score_patches_adaptive(
+        embeddings
+    )
     anomaly_map = pipeline.detector.build_anomaly_map(
         coords, patch_scores, rgb.shape[:2], pipeline.embedder.grid_size
     )
@@ -574,14 +584,13 @@ def infer(
         anomaly_map[marking_mask] = 0.0
         log.info("Suppressed %d px of painted road markings and roadside barriers.", int(np.sum(marking_mask)))
 
-    # Calibrated statistical anomaly thresholding
-    # Genuine structural road cavities/potholes have anomaly scores >= 0.62;
-    # normal asphalt aggregate, clean road lines, and pebbles stay below 0.60.
-    road_scores = patch_scores if len(patch_scores) else np.array([0.0])
-    mean_val = float(np.mean(road_scores))
-    std_val = float(np.std(road_scores))
-    threshold_px = max(0.62, float(mean_val + 1.70 * std_val))
-    image_score = mean_val
+    # Single source of truth: percentile/clipping constants and empty-score
+    # behavior are defined by AnomalyDetector.select_active_threshold().
+    threshold_px, image_score, threshold_diagnostics = (
+        pipeline.detector.select_active_threshold(patch_scores)
+    )
+
+    localization_diagnostics: Optional[dict] = {} if diagnostics is not None else None
 
     # Step 4: Candidate localization (passes is_2d flag)
     candidates = pipeline.localizer.localize(
@@ -591,6 +600,7 @@ def infer(
         threshold=threshold_px,
         sam2=pipeline.masker,
         test_mode_2d=is_2d,
+        diagnostics=localization_diagnostics,
     )
 
     # Filter any residual candidates overlapping with vehicles or road markings
@@ -598,6 +608,17 @@ def infer(
         candidates = pipeline.vehicle_suppressor.filter_candidate_boxes(candidates, vehicle_mask)
     if marking_mask is not None and np.any(marking_mask):
         candidates = pipeline.marking_suppressor.filter_candidate_regions(candidates, enhanced_rgb, marking_mask)
+
+    if diagnostics is not None:
+        diagnostics["raw_patch_scores"] = raw_patch_scores.copy()
+        diagnostics["normalized_patch_scores"] = patch_scores.copy()
+        diagnostics["normalization"] = dict(domain_calibration)
+        diagnostics["threshold"] = threshold_px
+        diagnostics["image_score"] = image_score
+        diagnostics["threshold_selection"] = threshold_diagnostics
+        diagnostics["anomaly_map"] = anomaly_map.copy()
+        diagnostics["localization"] = localization_diagnostics or {}
+        diagnostics["candidates"] = candidates
 
     # Step 5: Depth estimation (bypassed in 2D mode, active in 3D mode)
     if not is_2d:
@@ -739,7 +760,12 @@ def infer(
             "world_y": telemetry.world_y,
             "speed_mps": telemetry.speed_mps,
         },
-        warnings=warnings,
+        warnings=warnings + [
+            "Domain-adaptive anomaly normalization: "
+            f"baseline={domain_calibration.get('baseline_median', 0.0):.4f}, "
+            f"scale={domain_calibration.get('scale', 0.0):.4f}, "
+            f"threshold={threshold_px:.4f}"
+        ],
     )
 
 

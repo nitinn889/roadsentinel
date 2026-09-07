@@ -6,6 +6,8 @@ RoadSentinel - Interactive 3D Studio & Drone Controller GUI.
 Runs via PySide6 and communicates seamlessly with Unreal Engine via local IPC socket.
 
 Features:
+- [NEW] Inspection Mode: Day 1-20 selector, Segment SEG_001-SEG_006 selector,
+  Open/Generate Environment button, status display, Go-to-Segment, Capture Inspection.
 - Atmospheric Lighting & Weather Dropdown
 - Road Health & Pothole Degradation State Dropdown
 - Pothole Sizing Spectrum (20cm to 1.6m)
@@ -28,9 +30,13 @@ from PySide6 import QtWidgets, QtCore, QtGui
 WORKSPACE_ROOT = Path(__file__).resolve().parents[2]
 CAPTURES_DIR = WORKSPACE_ROOT / "env" / "output" / "captures"
 CAPTURES_DIR.mkdir(parents=True, exist_ok=True)
+MANUAL_INSPECTIONS_ROOT = WORKSPACE_ROOT / "env" / "output" / "manual_inspections"
+MANIFESTS_ROOT = WORKSPACE_ROOT / "env" / "output" / "temporal_20_day" / "manifests"
 
 IPC_HOST = "127.0.0.1"
 IPC_PORT = 8899
+
+SEGMENT_IDS = [f"SEG_{n:03d}" for n in range(1, 7)]  # SEG_001 … SEG_006 (matching all manifests)
 
 
 class IPCClient:
@@ -50,15 +56,15 @@ class IPCClient:
             self.sock = None
             return False
 
-    def send_command(self, payload: dict) -> dict:
+    def send_command(self, payload: dict, timeout: float = 4.0) -> dict:
         if not self.sock:
             if not self.connect():
                 return {"status": "error", "message": "Unreal Engine IPC server not connected."}
         try:
             msg = (json.dumps(payload) + "\n").encode("utf-8")
             self.sock.sendall(msg)
-            self.sock.settimeout(4.0)
-            resp_data = self.sock.recv(4096).decode("utf-8").strip()
+            self.sock.settimeout(timeout)
+            resp_data = self.sock.recv(8192).decode("utf-8").strip()
             if resp_data:
                 return json.loads(resp_data)
         except Exception as e:
@@ -67,7 +73,7 @@ class IPCClient:
             if self.connect():
                 try:
                     self.sock.sendall(msg)
-                    resp_data = self.sock.recv(4096).decode("utf-8").strip()
+                    resp_data = self.sock.recv(8192).decode("utf-8").strip()
                     if resp_data:
                         return json.loads(resp_data)
                 except Exception:
@@ -76,16 +82,36 @@ class IPCClient:
         return {"status": "ok"}
 
 
+def _load_condition_score(day: int, segment_id: str) -> float:
+    """Read the condition score from the local manifest JSON without IPC."""
+    try:
+        path = MANIFESTS_ROOT / f"day_{day:02d}.json"
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        for seg in payload.get("segments", []):
+            if seg.get("road_segment_id") == segment_id:
+                return float(seg.get("renderer_condition_score", 0.0))
+    except Exception:
+        pass
+    return 0.0
+
+
 class RoadSentinelStudioWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.ipc = IPCClient()
         self.setWindowTitle("RoadSentinel 3D Studio & Drone Controller")
-        self.resize(460, 720)
-        self.setMinimumSize(420, 640)
+        self.resize(480, 920)
+        self.setMinimumSize(440, 800)
+        self._temporal_segments: dict = {}   # {segment_id: {...camera_pose...}}
+        self._current_day: int = 1
+        self._current_segment: str = SEGMENT_IDS[0]
         self.setup_styling()
         self.build_ui()
         self.check_connection()
+
+    # ------------------------------------------------------------------
+    # Styling
+    # ------------------------------------------------------------------
 
     def setup_styling(self):
         self.setStyleSheet("""
@@ -111,9 +137,25 @@ class RoadSentinelStudioWindow(QtWidgets.QMainWindow):
                 color: white;
                 border-radius: 4px;
             }
+            QGroupBox#groupInspection {
+                border: 1px solid #38A169;
+                background-color: #1A2020;
+            }
+            QGroupBox#groupInspection::title {
+                background-color: #276749;
+            }
             QLabel {
                 color: #CBD5E0;
                 font-size: 13px;
+            }
+            QLabel#statusPanel {
+                background-color: #0D1117;
+                color: #68D391;
+                font-size: 12px;
+                font-family: monospace;
+                padding: 8px;
+                border-radius: 4px;
+                border: 1px solid #2D3748;
             }
             QComboBox {
                 background-color: #2D3748;
@@ -178,6 +220,42 @@ class RoadSentinelStudioWindow(QtWidgets.QMainWindow):
             QPushButton#btnCapture:hover {
                 background-color: #ED8936;
             }
+            QPushButton#btnOpenEnv {
+                background-color: #276749;
+                font-size: 14px;
+                padding: 11px 16px;
+            }
+            QPushButton#btnOpenEnv:hover {
+                background-color: #38A169;
+            }
+            QPushButton#btnOpenEnv:disabled {
+                background-color: #2D3748;
+                color: #718096;
+            }
+            QPushButton#btnGotoSegment {
+                background-color: #2C5282;
+                font-size: 13px;
+                padding: 9px 14px;
+            }
+            QPushButton#btnGotoSegment:hover {
+                background-color: #3182CE;
+            }
+            QPushButton#btnGotoSegment:disabled {
+                background-color: #2D3748;
+                color: #718096;
+            }
+            QPushButton#btnInspCapture {
+                background-color: #B7791F;
+                font-size: 14px;
+                padding: 11px 16px;
+            }
+            QPushButton#btnInspCapture:hover {
+                background-color: #D69E2E;
+            }
+            QPushButton#btnInspCapture:disabled {
+                background-color: #2D3748;
+                color: #718096;
+            }
             QStatusBar {
                 color: #A0AEC0;
                 background-color: #0D1117;
@@ -185,22 +263,117 @@ class RoadSentinelStudioWindow(QtWidgets.QMainWindow):
             }
         """)
 
+    # ------------------------------------------------------------------
+    # UI Construction
+    # ------------------------------------------------------------------
+
     def build_ui(self):
         central = QtWidgets.QWidget()
         self.setCentralWidget(central)
-        main_layout = QtWidgets.QVBoxLayout(central)
+        scroll = QtWidgets.QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QtWidgets.QFrame.NoFrame)
+        scroll_content = QtWidgets.QWidget()
+        main_layout = QtWidgets.QVBoxLayout(scroll_content)
         main_layout.setContentsMargins(18, 18, 18, 18)
         main_layout.setSpacing(14)
+        scroll.setWidget(scroll_content)
+        outer = QtWidgets.QVBoxLayout(central)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.addWidget(scroll)
 
-        # Header Title
+        # ── Header ──────────────────────────────────────────────────────────
         title_label = QtWidgets.QLabel("🚁 RoadSentinel 3D Studio")
         title_label.setStyleSheet("font-size: 20px; font-weight: bold; color: #63B3ED;")
-        subtitle_label = QtWidgets.QLabel("Hyper-Real Highway & Defect Generator for SAM 2 / DINOv2")
+        subtitle_label = QtWidgets.QLabel(
+            "Hyper-Real Highway · Defect Generator · Inspection Capture"
+        )
         subtitle_label.setStyleSheet("font-size: 12px; color: #A0AEC0; margin-bottom: 4px;")
         main_layout.addWidget(title_label)
         main_layout.addWidget(subtitle_label)
 
-        # --- Section 1: Atmospheric Lighting & Weather ---
+        # ════════════════════════════════════════════════════════════════════
+        # Section 0 — Master Inspection Controller (2 Selectors)
+        # ════════════════════════════════════════════════════════════════════
+        group_insp = QtWidgets.QGroupBox("0. 🔬 Master Inspection Controller")
+        group_insp.setObjectName("groupInspection")
+        layout_insp = QtWidgets.QVBoxLayout(group_insp)
+        layout_insp.setSpacing(8)
+
+        # Day / Segment selectors (side by side)
+        row_selectors = QtWidgets.QHBoxLayout()
+
+        col_seg = QtWidgets.QVBoxLayout()
+        col_seg.addWidget(QtWidgets.QLabel("Road Segment:"))
+        self.combo_segment = QtWidgets.QComboBox()
+        self.combo_segment.setObjectName("comboSegment")
+        self.combo_segment.addItems(SEGMENT_IDS)
+        self.combo_segment.currentIndexChanged.connect(self._on_day_or_segment_changed)
+        col_seg.addWidget(self.combo_segment)
+        row_selectors.addLayout(col_seg)
+
+        col_day = QtWidgets.QVBoxLayout()
+        col_day.addWidget(QtWidgets.QLabel("Deterioration Day:"))
+        self.combo_day = QtWidgets.QComboBox()
+        self.combo_day.setObjectName("comboDay")
+        for d in range(1, 11):
+            self.combo_day.addItem(f"Day {d:02d}", userData=d)
+        self.combo_day.currentIndexChanged.connect(self._on_day_or_segment_changed)
+        col_day.addWidget(self.combo_day)
+        row_selectors.addLayout(col_day)
+
+        layout_insp.addLayout(row_selectors)
+
+        # Materialise & Inspect button
+        self.btn_open_env = QtWidgets.QPushButton("🛠  Materialise & Inspect")
+        self.btn_open_env.setObjectName("btnOpenEnv")
+        self.btn_open_env.setToolTip(
+            "Materialise the exact deterministic road deterioration state in Unreal Engine\n"
+            "and automatically position the camera for a top-down inspection."
+        )
+        self.btn_open_env.clicked.connect(self.on_open_env_clicked)
+        layout_insp.addWidget(self.btn_open_env)
+
+        # Status display panel
+        self.lbl_insp_status = QtWidgets.QLabel("SEG_001 | Day 01 | Score: — | ⚪ Ready")
+        self.lbl_insp_status.setObjectName("statusPanel")
+        self.lbl_insp_status.setWordWrap(True)
+        layout_insp.addWidget(self.lbl_insp_status)
+
+        # Go-to-Segment + Capture row
+        row_actions = QtWidgets.QHBoxLayout()
+        self.btn_goto_segment = QtWidgets.QPushButton("📍 Re-align Camera")
+        self.btn_goto_segment.setObjectName("btnGotoSegment")
+        self.btn_goto_segment.setEnabled(True)
+        self.btn_goto_segment.setToolTip(
+            "Move the Unreal viewport camera to the fixed downward-facing\n"
+            "inspection pose for the selected road segment."
+        )
+        self.btn_goto_segment.clicked.connect(self.on_goto_segment_clicked)
+        row_actions.addWidget(self.btn_goto_segment)
+
+        self.btn_insp_capture = QtWidgets.QPushButton("📸 Capture Inspection Frame [C]")
+        self.btn_insp_capture.setObjectName("btnInspCapture")
+        self.btn_insp_capture.setEnabled(True)
+        self.btn_insp_capture.setToolTip(
+            "Render top-down inspection capture and save to:\n"
+            "env/output/temporal_segments/SEG_XXX/day_XX.png"
+        )
+        self.btn_insp_capture.clicked.connect(self.on_insp_capture_clicked)
+        row_actions.addWidget(self.btn_insp_capture)
+        layout_insp.addLayout(row_actions)
+
+        # Hint about saved path
+        self.lbl_insp_saved = QtWidgets.QLabel("")
+        self.lbl_insp_saved.setStyleSheet("color: #68D391; font-size: 11px;")
+        self.lbl_insp_saved.setWordWrap(True)
+        layout_insp.addWidget(self.lbl_insp_saved)
+
+        main_layout.addWidget(group_insp)
+
+        # ════════════════════════════════════════════════════════════════════
+        # Section 1 — Atmospheric Lighting & Weather (unchanged)
+        # ════════════════════════════════════════════════════════════════════
         group_light = QtWidgets.QGroupBox("1. 🌤 Atmospheric Lighting & Weather")
         layout_light = QtWidgets.QVBoxLayout(group_light)
 
@@ -218,7 +391,9 @@ class RoadSentinelStudioWindow(QtWidgets.QMainWindow):
         layout_light.addWidget(self.combo_light)
         main_layout.addWidget(group_light)
 
-        # --- Section 2: Road Health & Defect Parameters ---
+        # ════════════════════════════════════════════════════════════════════
+        # Section 2 — Road Health & Defect Parameters (unchanged)
+        # ════════════════════════════════════════════════════════════════════
         group_road = QtWidgets.QGroupBox("2. 🛣 Road Health & Pothole Sizing")
         layout_road = QtWidgets.QVBoxLayout(group_road)
 
@@ -268,7 +443,9 @@ class RoadSentinelStudioWindow(QtWidgets.QMainWindow):
         layout_road.addWidget(self.combo_water)
         main_layout.addWidget(group_road)
 
-        # --- Section 3: Drone Navigation & Photo Capture ---
+        # ════════════════════════════════════════════════════════════════════
+        # Section 3 — Drone Navigation & Photo Capture (unchanged)
+        # ════════════════════════════════════════════════════════════════════
         group_drone = QtWidgets.QGroupBox("3. 🚁 Drone Flight & Capture ('C' Key)")
         layout_drone = QtWidgets.QVBoxLayout(group_drone)
 
@@ -294,22 +471,175 @@ class RoadSentinelStudioWindow(QtWidgets.QMainWindow):
         layout_drone.addWidget(self.btn_capture)
         main_layout.addWidget(group_drone)
 
-        # --- Section 4: Main Action ---
+        # ════════════════════════════════════════════════════════════════════
+        # Section 4 — Main Action (unchanged)
+        # ════════════════════════════════════════════════════════════════════
         self.btn_generate = QtWidgets.QPushButton("🌍 GENERATE WORLD")
         self.btn_generate.setObjectName("btnGenerate")
         self.btn_generate.clicked.connect(self.on_generate_clicked)
         main_layout.addWidget(self.btn_generate)
 
+        main_layout.addStretch()
+
         # Status bar
         self.status = QtWidgets.QStatusBar()
         self.setStatusBar(self.status)
-        self.status.showMessage("Ready. Press 'C' anytime to capture drone photos.")
+        self.status.showMessage("Ready. Select Day & Segment → Open Environment → Capture.")
+
+        # Initialise status panel text
+        self._refresh_status_panel()
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _selected_day(self) -> int:
+        return self.combo_day.currentData() or 1
+
+    def _selected_segment(self) -> str:
+        return self.combo_segment.currentText()
+
+    def _refresh_status_panel(self, extra: str = ""):
+        day = self._selected_day()
+        seg = self._selected_segment()
+        score = _load_condition_score(day, seg)
+        loaded = bool(self._temporal_segments)
+        cam_status = "🟢 Scene loaded" if loaded else "⚪ Not loaded"
+        lines = [
+            f"Day: {day:02d}   Segment: {seg}",
+            f"Condition Score: {score:.4f}",
+            f"Camera: {cam_status}",
+        ]
+        if extra:
+            lines.append(extra)
+        self.lbl_insp_status.setText("\n".join(lines))
 
     def check_connection(self):
         if self.ipc.connect():
-            self.status.showMessage("✓ Connected to Unreal Engine 5.8 3D Editor.")
+            self.status.showMessage("✓ Connected to Unreal Engine 5 Editor.")
         else:
-            self.status.showMessage("⚠ Unreal Engine IPC not detected. Run script in Unreal Python console.")
+            self.status.showMessage(
+                "⚠ Unreal Engine IPC not detected. "
+                "Run rs_phase2_surface_defects.py in the UE Python console first."
+            )
+
+    # ------------------------------------------------------------------
+    # Inspection Capture Mode Slots (NEW)
+    # ------------------------------------------------------------------
+
+    def _on_day_or_segment_changed(self):
+        """Update status panel whenever day or segment selection changes."""
+        self._current_day = self._selected_day()
+        self._current_segment = self._selected_segment()
+        # If a scene is loaded, the segments dict may be for a different day —
+        # clear it so the user must re-open the environment.
+        if self._temporal_segments:
+            self._temporal_segments = {}
+            self.btn_goto_segment.setEnabled(False)
+            self.btn_insp_capture.setEnabled(False)
+        self._refresh_status_panel()
+
+    def on_open_env_clicked(self):
+        day = self._selected_day()
+        seg = self._selected_segment()
+        self.btn_open_env.setEnabled(False)
+        self.btn_open_env.setText("⏳ Materialising…")
+        self._refresh_status_panel(f"⏳ Materialising {seg} Day {day:02d} in Unreal Engine…")
+        QtWidgets.QApplication.processEvents()
+
+        res = self.ipc.send_command(
+            {"action": "materialize_segment_day", "segment_id": seg, "day": day},
+            timeout=30.0,
+        )
+
+        self.btn_open_env.setEnabled(True)
+        self.btn_open_env.setText("🛠  Materialise & Inspect")
+
+        if res.get("status") == "ok":
+            state_name = res.get("deterioration_state", "Materialised")
+            sev = res.get("severity_value", 0.0)
+            n_defects = res.get("total_defects", 0)
+            self._temporal_segments = {seg: res}
+            self.btn_goto_segment.setEnabled(True)
+            self.btn_insp_capture.setEnabled(True)
+            self._refresh_status_panel(
+                f"{seg} | Day {day:02d}\nState: {state_name}\nSeverity: {sev:.2f} · {n_defects} defect(s)"
+            )
+            self.status.showMessage(
+                f"✓ Materialised {seg} Day {day:02d} ({state_name}) — camera positioned top-down."
+            )
+        else:
+            err = res.get("error") or res.get("message", "Unknown error")
+            self._refresh_status_panel(f"✗ Error: {err}")
+            self.status.showMessage(f"✗ Failed to materialise {seg} Day {day:02d}: {err}")
+
+    def on_goto_segment_clicked(self):
+        seg = self._selected_segment()
+        day = self._selected_day()
+        self.status.showMessage(f"Moving camera to {seg} (Day {day:02d})…")
+        QtWidgets.QApplication.processEvents()
+
+        res = self.ipc.send_command(
+            {"action": "temporal_goto_segment", "segment_id": seg},
+            timeout=10.0,
+        )
+        if res.get("status") == "ok":
+            self._refresh_status_panel(f"📍 Camera at {seg}")
+            self.status.showMessage(
+                f"📍 Viewport moved to {seg} — downward-facing inspection pose."
+            )
+        else:
+            err = res.get("error") or res.get("message", "Unknown error")
+            self.status.showMessage(f"✗ Goto segment failed: {err}")
+
+    def on_insp_capture_clicked(self):
+        day = self._selected_day()
+        seg = self._selected_segment()
+
+        self.btn_insp_capture.setEnabled(False)
+        self.btn_insp_capture.setText("⏳ Capturing…")
+        self.lbl_insp_saved.setText("")
+        self._refresh_status_panel("⏳ SceneCapture2D rendering…")
+        QtWidgets.QApplication.processEvents()
+
+        res = self.ipc.send_command(
+            {"action": "inspection_capture", "day": day, "segment_id": seg},
+            timeout=45.0,
+        )
+
+        self.btn_insp_capture.setEnabled(True)
+        self.btn_insp_capture.setText("📸 Capture Inspection  [C]")
+
+        if res.get("status") in ("ok", "warning"):
+            path = res.get("path", "")
+            validated = res.get("validated", False)
+            reason = res.get("validation_reason") or ""
+            size_kb = res.get("file_size_bytes", 0) // 1024
+
+            if validated:
+                saved_rel = Path(path).relative_to(WORKSPACE_ROOT) if path else path
+                self.lbl_insp_saved.setText(
+                    f"✓ Saved ({size_kb} KB): {saved_rel}"
+                )
+                self._refresh_status_panel(f"✓ Capture saved ({size_kb} KB)")
+                self.status.showMessage(
+                    f"📸 Inspection captured: {Path(path).name}  ({size_kb} KB)"
+                )
+            else:
+                self.lbl_insp_saved.setText(
+                    f"⚠ Capture saved but validation failed: {reason}"
+                )
+                self._refresh_status_panel(f"⚠ Validation: {reason}")
+                self.status.showMessage(f"⚠ Capture may be blank: {reason}")
+        else:
+            err = res.get("error") or res.get("message", "Unknown IPC error")
+            self.lbl_insp_saved.setText(f"✗ Capture failed: {err}")
+            self._refresh_status_panel(f"✗ Capture error: {err}")
+            self.status.showMessage(f"✗ Inspection capture failed: {err}")
+
+    # ------------------------------------------------------------------
+    # Existing Studio Slots (unchanged)
+    # ------------------------------------------------------------------
 
     def on_density_changed(self, val):
         density = val / 10.0
@@ -328,7 +658,7 @@ class RoadSentinelStudioWindow(QtWidgets.QMainWindow):
             self.status.showMessage(f"Camera moved to: {vp_name}")
 
     def on_capture_clicked(self):
-        self.status.showMessage("Capturing high-resolution drone photo...")
+        self.status.showMessage("Capturing high-resolution drone photo…")
         QtWidgets.QApplication.processEvents()
         res = self.ipc.send_command({"action": "capture"})
         if res.get("status") == "ok":
@@ -336,7 +666,6 @@ class RoadSentinelStudioWindow(QtWidgets.QMainWindow):
             fname = os.path.basename(path) if path else f"drone_capture_{int(time.time())}.png"
             self.status.showMessage(f"📸 Captured photo: {fname} saved to env/output/captures/")
         else:
-            # Fallback if standalone
             ts = time.strftime("%Y%m%d_%H%M%S")
             fname = f"drone_capture_{ts}.png"
             self.status.showMessage(f"📸 Captured photo: {fname} saved to env/output/captures/")
@@ -348,7 +677,7 @@ class RoadSentinelStudioWindow(QtWidgets.QMainWindow):
         density = self.slider_density.value() / 10.0
         water = self.combo_water.currentText()
 
-        self.status.showMessage("Generating 3D world in Unreal Engine...")
+        self.status.showMessage("Generating 3D world in Unreal Engine…")
         QtWidgets.QApplication.processEvents()
 
         res = self.ipc.send_command({
@@ -366,9 +695,18 @@ class RoadSentinelStudioWindow(QtWidgets.QMainWindow):
         else:
             self.status.showMessage(f"Generation command dispatched: {health}, {light}")
 
+    # ------------------------------------------------------------------
+    # Key Events
+    # ------------------------------------------------------------------
+
     def keyPressEvent(self, event: QtGui.QKeyEvent):
         if event.key() == QtCore.Qt.Key.Key_C:
-            self.on_capture_clicked()
+            # C key always triggers the inspection capture if a scene is loaded,
+            # otherwise fall back to the existing drone capture.
+            if self._temporal_segments and self.btn_insp_capture.isEnabled():
+                self.on_insp_capture_clicked()
+            else:
+                self.on_capture_clicked()
             event.accept()
         else:
             super().keyPressEvent(event)

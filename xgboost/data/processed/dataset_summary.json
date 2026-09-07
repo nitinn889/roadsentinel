@@ -1,0 +1,16 @@
+{
+  "source": "data/raw/nyc_pavement_ratings_sample.csv",
+  "output": "data/processed/training_pairs.csv",
+  "source_rows": 2010,
+  "unique_sites": 200,
+  "unique_site_dates": 1815,
+  "duplicate_same_site_date_rows_collapsed_by_mean": 195,
+  "forecast_pairs": 1615,
+  "target": "future_severity",
+  "target_mapping": "severity = (10 - SystemRating) / 9",
+  "mapping_bounds": {
+    "SystemRating_10": 0.0,
+    "SystemRating_1": 1.0
+  },
+  "interpretation": "Normalized inversion of the NYC pavement rating, used as a common forecasting scale; it is not asserted to be identical to RoadSentinel image severity."
+}

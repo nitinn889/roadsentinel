@@ -1,0 +1,21 @@
+{
+  "model_id": "roadsentinel_xgb_v1_nyc_rating",
+  "random_seed": 42,
+  "feature_order": [
+    "current_severity",
+    "days_ahead"
+  ],
+  "target": "future_severity",
+  "test_fraction_by_site": 0.2,
+  "xgboost_parameters": {
+    "objective": "reg:squarederror",
+    "n_estimators": 160,
+    "max_depth": 3,
+    "learning_rate": 0.05,
+    "subsample": 0.9,
+    "colsample_bytree": 1.0,
+    "reg_lambda": 1.0,
+    "n_jobs": 1,
+    "tree_method": "hist"
+  }
+}

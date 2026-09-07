@@ -530,6 +530,134 @@ class RoadDefectManager:
 
         return self.ground_truth_records
 
+    def spawn_manifest_defects(
+        self,
+        segments: List[Any],
+        manifest_path: Path,
+        output_dir: Optional[Path] = None,
+        verbose: bool = True,
+    ) -> List[Dict[str, Any]]:
+        """Materialise a deterministic temporal defect manifest in the active world.
+
+        The temporal simulator deliberately owns the *condition* of a road patch,
+        while CARLA owns the map, camera pose, lighting and image capture.  A
+        manifest therefore contains stable along/across-road coordinates rather
+        than a new random draw every day.  This is important: a worsening defect
+        must remain at the same physical position for both the perception and
+        temporal-prediction stages to be meaningful.
+
+        The renderer consumes the resulting ground-truth records to project the
+        defect geometry onto the CARLA camera frame.  We retain the normal
+        ground-truth export format so the existing evaluator can still be used,
+        but inference is never given this file.
+        """
+        manifest_path = Path(manifest_path)
+        if not manifest_path.is_file():
+            raise FileNotFoundError(f"Temporal defect manifest not found: {manifest_path}")
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest_defects = payload.get("defects", [])
+        if not isinstance(manifest_defects, list):
+            raise ValueError("Temporal defect manifest field 'defects' must be a list")
+        if not segments:
+            raise ValueError("Cannot materialise temporal defects: CARLA returned no road segments")
+
+        output_dir = Path(output_dir or (_ENV_DIR / "output"))
+        output_dir.mkdir(parents=True, exist_ok=True)
+        self.ground_truth_records.clear()
+        self.cleanup()
+
+        # The drone starts at the first straight corridor.  Use that exact
+        # waypoint as the longitudinal datum used by every day of the run.
+        start_wp = segments[0]
+        start_loc = start_wp.transform.location
+        base_yaw = math.radians(start_wp.transform.rotation.yaw)
+
+        for raw in manifest_defects:
+            along_m = float(raw.get("along_m", 0.0))
+            across_m = float(raw.get("across_m", 0.0))
+            loc_x = float(start_loc.x + math.cos(base_yaw) * along_m - math.sin(base_yaw) * across_m)
+            loc_y = float(start_loc.y + math.sin(base_yaw) * along_m + math.cos(base_yaw) * across_m)
+            loc_z = float(start_loc.z + 0.035)
+
+            if self.world is not None and hasattr(self.world, "get_map"):
+                lat, lon, alt_geo = geo_utils.carla_transform_to_geolocation(
+                    self.world.get_map(), (loc_x, loc_y, loc_z)
+                )
+            else:
+                lat, lon = geo_utils.local_xy_to_latlon(across_m, along_m)
+                alt_geo = loc_z
+
+            dimensions = dict(raw.get("dimensions", {}))
+            surface = dict(raw.get("surface_properties", {}))
+            water = dict(raw.get("water_state", {}))
+            associated = dict(raw.get("associated_defects", {}))
+            record = {
+                "defect_id": str(raw.get("defect_id", "temporal_defect")),
+                "actor_ids": [],
+                "segment_index": 0,
+                "road_segment_id": str(raw.get("road_segment_id", "SEG_001")),
+                "defect_type": str(raw.get("defect_type", "pothole")),
+                "shape_category": str(raw.get("shape_category", "irregular_natural")),
+                "carla_location": {"x": round(loc_x, 3), "y": round(loc_y, 3), "z": round(loc_z, 3)},
+                "gps_coordinates": {"latitude": round(lat, 8), "longitude": round(lon, 8), "altitude_m": round(alt_geo or 30.0, 2)},
+                "lane_position": str(raw.get("lane_position", "right_wheel_track")),
+                "dimensions": {
+                    "length_m": round(float(dimensions.get("length_m", 0.35)), 3),
+                    "width_m": round(float(dimensions.get("width_m", 0.08)), 3),
+                    "diameter_m": round(float(dimensions.get("diameter_m", 0.17)), 3),
+                    "depth_m": round(float(dimensions.get("depth_m", 0.01)), 3),
+                    "area_m2": round(float(dimensions.get("area_m2", 0.03)), 3),
+                    "aspect_ratio": round(float(dimensions.get("aspect_ratio", 1.0)), 2),
+                    "orientation_deg": round(float(dimensions.get("orientation_deg", 0.0)), 1),
+                },
+                "surface_properties": {
+                    "irregularity": round(float(surface.get("irregularity", 0.35)), 3),
+                    "edge_breakup": round(float(surface.get("edge_breakup", 0.15)), 3),
+                    "roughness": round(float(surface.get("roughness", 0.15)), 3),
+                },
+                "water_state": {
+                    "is_water_filled": bool(water.get("is_water_filled", False)),
+                    "water_level_m": round(float(water.get("water_level_m", 0.0)), 3),
+                    "water_coverage_frac": round(float(water.get("water_coverage_frac", 0.0)), 2),
+                    "turbidity": round(float(water.get("turbidity", 0.0)), 2),
+                    "wet_halo_radius_m": round(float(water.get("wet_halo_radius_m", 0.0)), 2),
+                },
+                "associated_defects": {
+                    "has_cracks": bool(associated.get("has_cracks", False)),
+                    "crack_pattern": str(associated.get("crack_pattern", "none")),
+                    "has_road_patch": bool(associated.get("has_road_patch", False)),
+                },
+                "clustering": {"is_clustered": False, "cluster_id": None, "is_overlapping": False},
+                "scenario": "temporal",
+                "severity_category": str(raw.get("severity_category", "low")),
+                "true_severity_score": round(float(raw.get("true_severity_score", 0.0)), 3),
+                "generation_seed": int(raw.get("generation_seed", 42)),
+                # These fields are retained for traceability and used by the
+                # temporal runner, not by the ML inference process.
+                "day": int(payload.get("day", 0)),
+                "along_m": along_m,
+                "across_m": across_m,
+            }
+            self.ground_truth_records.append(record)
+
+        export = {
+            "metadata": {
+                "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "source": "RoadSentinel temporal condition manifest",
+                "manifest": str(manifest_path.resolve()),
+                "day": int(payload.get("day", 0)),
+                "total_defects": len(self.ground_truth_records),
+                "total_segments_covered": len(payload.get("segments", [])),
+            },
+            "segments": payload.get("segments", []),
+            "defects": self.ground_truth_records,
+        }
+        for name in ("ground_truth.json", "road_defects_ground_truth.json"):
+            (output_dir / name).write_text(json.dumps(export, indent=2), encoding="utf-8")
+        if verbose:
+            print(f"[RoadInjector] ✓ Loaded {len(self.ground_truth_records)} persistent temporal defects from {manifest_path.name}.")
+        return self.ground_truth_records
+
     def cleanup(self):
         """Cleanly destroy all spawned defect actors."""
         count = len(self.spawned_actors)
@@ -838,6 +966,24 @@ def project_defects_onto_frame(
         py = int(image_h / 2.0 - fwd_m * px_per_m)
 
         dim = d.get("dimensions", {})
+        defect_type = str(d.get("defect_type", "pothole")).lower()
+
+        # A crack is a thin connected surface fracture, not a shallow pothole.
+        # Rendering it separately avoids training/evaluating the perception
+        # stack on an unrealistic assumption that every anomaly is a cavity.
+        if defect_type in {"crack", "crack_or_damage", "surface_wear"}:
+            if 0 <= px < image_w and 0 <= py < image_h:
+                orientation = math.radians(float(dim.get("orientation_deg", 0.0)))
+                length_px = max(14.0, float(dim.get("length_m", 0.6)) * px_per_m)
+                draw_meandering_crack(
+                    frame,
+                    (px, py),
+                    orientation,
+                    length_px,
+                    seed=int(d.get("generation_seed", 42)),
+                )
+            continue
+
         rx = max(3, int(dim.get("width_m", 0.8) * px_per_m / 2.0))
         ry = max(3, int(dim.get("length_m", 0.8) * px_per_m / 2.0))
 
@@ -879,6 +1025,7 @@ def inject_road_defects(
     defects_per_segment: Optional[int] = None,
     water_ratio: Optional[float] = None,
     output_dir: Optional[Path] = None,
+    defect_manifest: Optional[Path] = None,
     verbose: bool = True,
 ) -> RoadDefectManager:
     """Entrypoint function to procedurally generate defects into CARLA world."""
@@ -891,15 +1038,23 @@ def inject_road_defects(
         segments = road_utils.find_straight_segments(carla_map)
 
     _GLOBAL_MANAGER = RoadDefectManager(world)
-    _GLOBAL_MANAGER.spawn_procedural_defects(
-        segments=segments or [],
-        scenario=scenario,
-        seed=seed,
-        defects_per_segment=defects_per_segment,
-        water_ratio=water_ratio,
-        output_dir=output_dir,
-        verbose=verbose,
-    )
+    if defect_manifest:
+        _GLOBAL_MANAGER.spawn_manifest_defects(
+            segments=segments or [],
+            manifest_path=Path(defect_manifest),
+            output_dir=output_dir,
+            verbose=verbose,
+        )
+    else:
+        _GLOBAL_MANAGER.spawn_procedural_defects(
+            segments=segments or [],
+            scenario=scenario,
+            seed=seed,
+            defects_per_segment=defects_per_segment,
+            water_ratio=water_ratio,
+            output_dir=output_dir,
+            verbose=verbose,
+        )
     return _GLOBAL_MANAGER
 
 

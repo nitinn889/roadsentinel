@@ -60,6 +60,21 @@ WORKSPACE_ROOT = "/home/nitin-nandakumar/Downloads/roadsentinel"
 CAPTURES_DIR = os.path.join(WORKSPACE_ROOT, "env", "output", "captures")
 MANIFEST_DIR = os.path.join(WORKSPACE_ROOT, "env", "output", "logs")
 TEXTURES_DIR = os.path.join(WORKSPACE_ROOT, "RoadSentinelSim", "Content", "RS_Roads", "Textures")
+TEMPORAL_OUTPUT_ROOT = Path(WORKSPACE_ROOT) / "env" / "output" / "temporal_20_day"
+TEMPORAL_MANIFEST_ROOT = TEMPORAL_OUTPUT_ROOT / "manifests"
+TEMPORAL_CAPTURE_ROOT = TEMPORAL_OUTPUT_ROOT / "captures"
+
+# The UE temporal runner owns this state while the editor is running.  It is
+# deliberately separate from the random interactive scatter state: temporal
+# defect IDs, road coordinates, camera poses and ground-truth records must be
+# stable across all inspection days.
+_TEMPORAL_STATE: Dict[str, Any] = {
+    "day": None,
+    "manifest_path": None,
+    "segments": {},
+    "ground_truth": [],
+    "camera_config": {},
+}
 
 os.makedirs(CAPTURES_DIR, exist_ok=True)
 os.makedirs(MANIFEST_DIR, exist_ok=True)
@@ -571,7 +586,8 @@ def spawn_full_world(
                           actor.actor_has_tag(unreal.Name("RS_Guardrail")) or
                           actor.actor_has_tag(unreal.Name("RS_Streetlamp")) or
                           actor.actor_has_tag(unreal.Name("RS_Terrain")) or
-                          actor.actor_has_tag(unreal.Name("RS_Defect"))):
+                          actor.actor_has_tag(unreal.Name("RS_Defect")) or
+                          actor.get_name() == "Floor"):
                 unreal.EditorLevelLibrary.destroy_actor(actor)
 
         cube_mesh = unreal.EditorAssetLibrary.load_asset("/Engine/BasicShapes/Cube.Cube")
@@ -613,7 +629,7 @@ def spawn_full_world(
         # 3. Straight Highway Slab (250m continuous)
         road_width_cm = 1600.0
         slab_thick_cm = 20.0
-        marking_thick_cm = 0.8
+        marking_thick_cm = 4.0
 
         straight_road = unreal.EditorLevelLibrary.spawn_actor_from_class(
             unreal.StaticMeshActor,
@@ -630,10 +646,10 @@ def spawn_full_world(
                     sc.set_material(0, mat_asphalt)
 
         # Double yellow center lines
-        for offset_cm in [-12.0, 12.0]:
+        for offset_cm in [-14.0, 14.0]:
             ylw = unreal.EditorLevelLibrary.spawn_actor_from_class(
                 unreal.StaticMeshActor,
-                unreal.Vector(12500.0, offset_cm, 0.4),
+                unreal.Vector(12500.0, offset_cm, 2.0),
                 unreal.Rotator(roll=0.0, pitch=0.0, yaw=0.0)
             )
             if ylw and cube_mesh:
@@ -641,7 +657,7 @@ def spawn_full_world(
                 yc = ylw.static_mesh_component
                 if yc:
                     yc.set_static_mesh(cube_mesh)
-                    yc.set_world_scale3d(unreal.Vector(250.0, 0.12, marking_thick_cm / 100.0))
+                    yc.set_world_scale3d(unreal.Vector(250.0, 0.22, marking_thick_cm / 100.0))
                     if mat_yellow:
                         yc.set_material(0, mat_yellow)
 
@@ -649,7 +665,7 @@ def spawn_full_world(
         for fog_offset_cm in [-750.0, 750.0]:
             fog = unreal.EditorLevelLibrary.spawn_actor_from_class(
                 unreal.StaticMeshActor,
-                unreal.Vector(12500.0, fog_offset_cm, 0.4),
+                unreal.Vector(12500.0, fog_offset_cm, 2.0),
                 unreal.Rotator(roll=0.0, pitch=0.0, yaw=0.0)
             )
             if fog and cube_mesh:
@@ -657,7 +673,7 @@ def spawn_full_world(
                 fc = fog.static_mesh_component
                 if fc:
                     fc.set_static_mesh(cube_mesh)
-                    fc.set_world_scale3d(unreal.Vector(250.0, 0.15, marking_thick_cm / 100.0))
+                    fc.set_world_scale3d(unreal.Vector(250.0, 0.20, marking_thick_cm / 100.0))
                     if mat_white:
                         fc.set_material(0, mat_white)
 
@@ -666,7 +682,7 @@ def spawn_full_world(
             for lane_offset_cm in [-375.0, 375.0]:
                 dash = unreal.EditorLevelLibrary.spawn_actor_from_class(
                     unreal.StaticMeshActor,
-                    unreal.Vector(x_m * 100.0, lane_offset_cm, 0.4),
+                    unreal.Vector(x_m * 100.0, lane_offset_cm, 2.0),
                     unreal.Rotator(roll=0.0, pitch=0.0, yaw=0.0)
                 )
                 if dash and cube_mesh:
@@ -674,7 +690,7 @@ def spawn_full_world(
                     dc = dash.static_mesh_component
                     if dc:
                         dc.set_static_mesh(cube_mesh)
-                        dc.set_world_scale3d(unreal.Vector(3.0, 0.15, marking_thick_cm / 100.0))
+                        dc.set_world_scale3d(unreal.Vector(3.0, 0.20, marking_thick_cm / 100.0))
                         if mat_white:
                             dc.set_material(0, mat_white)
 
@@ -772,7 +788,7 @@ def spawn_full_world(
 
             c_ylw = unreal.EditorLevelLibrary.spawn_actor_from_class(
                 unreal.StaticMeshActor,
-                unreal.Vector(cx_cm, cy_cm, 0.4),
+                unreal.Vector(cx_cm, cy_cm, 2.0),
                 unreal.Rotator(roll=0.0, pitch=0.0, yaw=yaw_deg)
             )
             if c_ylw and cube_mesh:
@@ -780,7 +796,7 @@ def spawn_full_world(
                 cyc = c_ylw.static_mesh_component
                 if cyc:
                     cyc.set_static_mesh(cube_mesh)
-                    cyc.set_world_scale3d(unreal.Vector(5.5, 0.20, marking_thick_cm / 100.0))
+                    cyc.set_world_scale3d(unreal.Vector(5.5, 0.25, marking_thick_cm / 100.0))
                     if mat_yellow:
                         cyc.set_material(0, mat_yellow)
 
@@ -908,7 +924,680 @@ def spawn_full_world(
 
 
 # ==============================================================================
-# 6. Drone Camera Navigation & Photo Capture ('C')
+# 6. Deterministic 20-Day Temporal Scene Materialisation
+# ==============================================================================
+
+def _resolve_temporal_path(raw_path: str, purpose: str) -> Path:
+    """Resolve a temporal artifact while keeping it under ``env/output``."""
+    if not raw_path:
+        raise ValueError(f"Missing {purpose} path")
+    path = Path(str(raw_path)).expanduser().resolve()
+    allowed_root = (Path(WORKSPACE_ROOT) / "env" / "output").resolve()
+    try:
+        path.relative_to(allowed_root)
+    except ValueError as exc:
+        raise ValueError(f"{purpose} must be inside {allowed_root}") from exc
+    return path
+
+
+def _finite_number(value: Any, name: str, low: float, high: float) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be numeric") from exc
+    if not math.isfinite(number) or not low <= number <= high:
+        raise ValueError(f"{name} must be between {low} and {high}")
+    return number
+
+
+def _temporal_route_pose(along_m: float, across_m: float) -> Tuple[float, float, float, float]:
+    """Map a cumulative road distance to the fixed UE highway geometry.
+
+    The first 250 m is the straight, followed by the persistent curved road
+    section.  This is the one mapping used for both the actual defect meshes
+    and the camera poses, so a SEG id cannot drift between days.
+    """
+    remaining = along_m
+    road_segments = get_road_network()
+    total_length = sum(segment.length_m for segment in road_segments)
+    if not 0.0 <= along_m <= total_length:
+        raise ValueError(f"along_m={along_m} falls outside the Unreal road route (0..{total_length:.1f} m)")
+    for segment in road_segments:
+        if remaining <= segment.length_m + 1e-6:
+            return segment.get_interpolated_point(max(0.0, remaining), across_m)
+        remaining -= segment.length_m
+    return road_segments[-1].get_interpolated_point(road_segments[-1].length_m, across_m)
+
+
+def _temporal_capture_config(manifest: Dict[str, Any]) -> Dict[str, float]:
+    """Return a bounded, fixed camera configuration for the whole experiment."""
+    raw = manifest.get("unreal_capture", {})
+    if not isinstance(raw, dict):
+        raw = {}
+    # Do not inherit CARLA's historical 100 m default from fixed_flight.  The
+    # native UE road is much smaller and 25 m provides defect-visible imagery.
+    return {
+        "altitude_m": _finite_number(raw.get("altitude_m", 25.0), "unreal_capture.altitude_m", 8.0, 80.0),
+        "pitch_deg": _finite_number(raw.get("pitch_deg", -89.0), "unreal_capture.pitch_deg", -90.0, -45.0),
+        "fov_deg": _finite_number(raw.get("fov_deg", 70.0), "unreal_capture.fov_deg", 35.0, 110.0),
+        "width": int(_finite_number(raw.get("width", 1920), "unreal_capture.width", 320, 4096)),
+        "height": int(_finite_number(raw.get("height", 1080), "unreal_capture.height", 240, 4096)),
+    }
+
+
+def _temporal_materials() -> Dict[str, Any]:
+    """Load the same native PBR assets used by the interactive UE world."""
+    if not HAS_UNREAL:
+        raise RuntimeError("The temporal scene must run inside Unreal Engine")
+    return {
+        "cube": unreal.EditorAssetLibrary.load_asset("/Engine/BasicShapes/Cube.Cube"),
+        "cylinder": unreal.EditorAssetLibrary.load_asset("/Engine/BasicShapes/Cylinder.Cylinder"),
+        "dry": get_or_create_textured_material(
+            "M_RS_Pothole_Cavity", os.path.join(TEXTURES_DIR, "T_RS_Pothole_Dry_D.jpg"), roughness=0.98
+        ),
+        "wet": get_or_create_textured_material(
+            "M_RS_Pothole_Wet_PBR", os.path.join(TEXTURES_DIR, "T_RS_Pothole_Wet_D.jpg"), roughness=0.15
+        ),
+        "crack": get_or_create_textured_material(
+            "M_RS_Crack_Distress", os.path.join(TEXTURES_DIR, "T_RS_Crack_Alligator_D.jpg"), roughness=0.94
+        ),
+        "water": ensure_water_material_exists(),
+    }
+
+
+def _tag_temporal_actor(actor: Any, segment_id: str, defect_id: str) -> None:
+    if not actor:
+        return
+    for tag in ("RS_Defect", "RS_TemporalDefect", f"RS_Segment_{segment_id}", f"RS_Defect_{defect_id}"):
+        actor.tags.append(unreal.Name(tag))
+
+
+def _spawn_temporal_defect(raw: Dict[str, Any], materials: Dict[str, Any], day: int) -> Dict[str, Any]:
+    """Instantiate one manifest defect at its persistent UE road coordinate."""
+    segment_id = str(raw.get("road_segment_id", "")).strip()
+    defect_id = str(raw.get("defect_id", "")).strip()
+    if not segment_id or not defect_id:
+        raise ValueError("Every temporal defect needs road_segment_id and defect_id")
+
+    along_m = _finite_number(raw.get("along_m"), f"{defect_id}.along_m", 0.0, 420.0)
+    across_m = _finite_number(raw.get("across_m"), f"{defect_id}.across_m", -7.5, 7.5)
+    dims = raw.get("dimensions", {})
+    if not isinstance(dims, dict):
+        raise ValueError(f"{defect_id}.dimensions must be an object")
+    length_m = _finite_number(dims.get("length_m", dims.get("diameter_m", 0.4)), f"{defect_id}.length_m", 0.03, 4.0)
+    width_m = _finite_number(dims.get("width_m", dims.get("diameter_m", 0.4)), f"{defect_id}.width_m", 0.02, 4.0)
+    depth_m = _finite_number(dims.get("depth_m", 0.01), f"{defect_id}.depth_m", 0.001, 0.5)
+    local_orientation = _finite_number(dims.get("orientation_deg", 0.0), f"{defect_id}.orientation_deg", -360.0, 360.0)
+    defect_type = str(raw.get("defect_type", "pothole")).strip().lower()
+    water_state = raw.get("water_state", {})
+    if not isinstance(water_state, dict):
+        water_state = {}
+    is_water = bool(water_state.get("is_water_filled", False)) or defect_type == "water_filled_pothole"
+
+    x_m, y_m, z_m, road_yaw_deg = _temporal_route_pose(along_m, across_m)
+    world_yaw_deg = road_yaw_deg + local_orientation
+    loc = unreal.Vector(x_m * 100.0, y_m * 100.0, z_m * 100.0 + 0.55)
+    rot = unreal.Rotator(roll=0.0, pitch=0.0, yaw=world_yaw_deg)
+    actor_label = f"RS_Temporal_{segment_id}_{defect_id}"
+    actor_ids: List[str] = []
+
+    if defect_type == "crack":
+        actor = unreal.EditorLevelLibrary.spawn_actor_from_class(unreal.StaticMeshActor, loc, rot)
+        if actor and materials["cube"]:
+            actor.set_actor_label(actor_label)
+            _tag_temporal_actor(actor, segment_id, defect_id)
+            comp = actor.static_mesh_component
+            comp.set_static_mesh(materials["cube"])
+            comp.set_world_scale3d(unreal.Vector(length_m, max(0.025, width_m), 0.004))
+            if materials["crack"]:
+                comp.set_material(0, materials["crack"])
+            actor_ids.append(actor.get_name())
+    else:
+        actor = unreal.EditorLevelLibrary.spawn_actor_from_class(unreal.StaticMeshActor, loc, rot)
+        if actor and materials["cylinder"]:
+            actor.set_actor_label(actor_label)
+            _tag_temporal_actor(actor, segment_id, defect_id)
+            comp = actor.static_mesh_component
+            comp.set_static_mesh(materials["cylinder"])
+            comp.set_world_scale3d(unreal.Vector(length_m, width_m, max(0.006, depth_m * 0.06)))
+            if is_water and materials["wet"]:
+                comp.set_material(0, materials["wet"])
+            elif materials["dry"]:
+                comp.set_material(0, materials["dry"])
+            actor_ids.append(actor.get_name())
+
+        if is_water and materials["water"] and materials["cylinder"]:
+            water = unreal.EditorLevelLibrary.spawn_actor_from_class(
+                unreal.StaticMeshActor,
+                unreal.Vector(loc.x, loc.y, loc.z + 0.35),
+                rot,
+            )
+            if water:
+                water.set_actor_label(f"{actor_label}_Water")
+                _tag_temporal_actor(water, segment_id, defect_id)
+                water_comp = water.static_mesh_component
+                water_comp.set_static_mesh(materials["cylinder"])
+                coverage = _finite_number(
+                    water_state.get("water_coverage_frac", 0.75),
+                    f"{defect_id}.water_coverage_frac",
+                    0.05,
+                    1.0,
+                )
+                water_comp.set_world_scale3d(unreal.Vector(length_m * coverage, width_m * coverage, 0.003))
+                water_comp.set_material(0, materials["water"])
+                actor_ids.append(water.get_name())
+
+    half_extents = (length_m * 50.0, width_m * 50.0, max(1.0, depth_m * 50.0))
+    ground_truth = {
+        "actor_id": actor_label,
+        "actor_names": actor_ids,
+        "defect_id": defect_id,
+        "road_segment_id": segment_id,
+        "day": day,
+        "defect_type": "water_filled_pothole" if is_water else defect_type,
+        "location": {"x_cm": round(loc.x, 2), "y_cm": round(loc.y, 2), "z_cm": round(loc.z, 2)},
+        "route_location": {"along_m": round(along_m, 3), "across_m": round(across_m, 3), "road_yaw_deg": round(road_yaw_deg, 3)},
+        "dimensions": {"length_m": length_m, "width_m": width_m, "depth_m": depth_m},
+        "water_state": {"is_water_filled": is_water, **water_state},
+        "bounding_box_world": compute_8_corner_bbox_world((loc.x, loc.y, loc.z), world_yaw_deg, half_extents),
+        "renderer_condition_score": raw.get("true_severity_score"),
+    }
+    return ground_truth
+
+
+_CURRENT_SELECTED_STATE: Dict[str, Any] = {
+    "segment_id": "SEG_001",
+    "day": 1
+}
+
+DETERMINISTIC_SEGMENT_LOCATIONS = {
+    "SEG_001": {"along_m": 40.0, "across_m": 0.0, "desc": "Paved Highway Wheeltrack - Progressive Fatigue"},
+    "SEG_002": {"along_m": 90.0, "across_m": 0.0, "desc": "Rapid Pothole & Waterlogging"},
+    "SEG_003": {"along_m": 140.0, "across_m": 0.0, "desc": "Thermal Transverse & Block Cracking"},
+    "SEG_004": {"along_m": 190.0, "across_m": 0.0, "desc": "Cluster Pothole Damage"},
+    "SEG_005": {"along_m": 240.0, "across_m": 0.0, "desc": "High-Resilience Control Segment"},
+    "SEG_006": {"along_m": 300.0, "across_m": 0.0, "desc": "Curved Highway Edge Shear Damage"},
+}
+
+
+def get_deterministic_segment_defects(segment_id: str, day: int) -> Tuple[List[Dict[str, Any]], str, float]:
+    """Return deterministic defect specifications, state name, and severity for (segment_id, day)."""
+    segment_id = segment_id.strip().upper()
+    day = int(day)
+    along_base = DETERMINISTIC_SEGMENT_LOCATIONS.get(segment_id, {}).get("along_m", 40.0)
+
+    # -------------------------------------------------------------------------
+    # SEG_001: Progressive Fatigue (Wheeltrack Cracking -> Severe Waterlogged Crater)
+    # -------------------------------------------------------------------------
+    if segment_id == "SEG_001":
+        if day == 1:
+            return [], "Pristine Asphalt", 0.02
+        elif day == 2:
+            return [
+                {"defect_id": "SEG_001_C1", "defect_type": "crack", "along_m": along_base, "across_m": -1.8, "dimensions": {"length_m": 0.35, "width_m": 0.03, "depth_m": 0.004}, "true_severity_score": 0.08}
+            ], "Subtle Surface Wear", 0.08
+        elif day == 3:
+            return [
+                {"defect_id": "SEG_001_C1", "defect_type": "crack", "along_m": along_base, "across_m": -1.8, "dimensions": {"length_m": 0.65, "width_m": 0.04, "depth_m": 0.004}, "true_severity_score": 0.16}
+            ], "Hairline Crack Extension", 0.16
+        elif day == 4:
+            return [
+                {"defect_id": "SEG_001_C1", "defect_type": "crack", "along_m": along_base, "across_m": -1.8, "dimensions": {"length_m": 0.95, "width_m": 0.06, "depth_m": 0.004}, "true_severity_score": 0.28},
+                {"defect_id": "SEG_001_C2", "defect_type": "crack", "along_m": along_base - 0.2, "across_m": -1.75, "dimensions": {"length_m": 0.55, "width_m": 0.04, "orientation_deg": 65.0}, "true_severity_score": 0.28}
+            ], "Longitudinal & Branch Crack", 0.28
+        elif day == 5:
+            return [
+                {"defect_id": "SEG_001_C1", "defect_type": "crack", "along_m": along_base, "across_m": -1.8, "dimensions": {"length_m": 1.30, "width_m": 0.08, "depth_m": 0.004}, "true_severity_score": 0.44},
+                {"defect_id": "SEG_001_C2", "defect_type": "crack", "along_m": along_base - 0.2, "across_m": -1.75, "dimensions": {"length_m": 0.85, "width_m": 0.06, "orientation_deg": 65.0}, "true_severity_score": 0.44},
+                {"defect_id": "SEG_001_S1", "defect_type": "pothole", "along_m": along_base + 0.2, "across_m": -1.8, "dimensions": {"length_m": 0.38, "width_m": 0.35, "depth_m": 0.006}, "true_severity_score": 0.44}
+            ], "Visible Fatigue & Alligator Cracking", 0.44
+        elif day == 6:
+            return [
+                {"defect_id": "SEG_001_C1", "defect_type": "crack", "along_m": along_base, "across_m": -1.8, "dimensions": {"length_m": 1.45, "width_m": 0.09, "depth_m": 0.004}, "true_severity_score": 0.58},
+                {"defect_id": "SEG_001_P1", "defect_type": "pothole", "along_m": along_base, "across_m": -1.8, "dimensions": {"length_m": 0.55, "width_m": 0.50, "depth_m": 0.04}, "true_severity_score": 0.58}
+            ], "Crack Enlargement & Incipient Pothole", 0.58
+        elif day == 7:
+            return [
+                {"defect_id": "SEG_001_C1", "defect_type": "crack", "along_m": along_base, "across_m": -1.8, "dimensions": {"length_m": 1.55, "width_m": 0.09, "depth_m": 0.004}, "true_severity_score": 0.68},
+                {"defect_id": "SEG_001_P1", "defect_type": "pothole", "along_m": along_base, "across_m": -1.8, "dimensions": {"length_m": 0.75, "width_m": 0.68, "depth_m": 0.06}, "true_severity_score": 0.68}
+            ], "Small Dry Pothole Cavity", 0.68
+        elif day == 8:
+            return [
+                {"defect_id": "SEG_001_C1", "defect_type": "crack", "along_m": along_base, "across_m": -1.8, "dimensions": {"length_m": 1.65, "width_m": 0.09, "depth_m": 0.004}, "true_severity_score": 0.78},
+                {"defect_id": "SEG_001_P1", "defect_type": "pothole", "along_m": along_base, "across_m": -1.8, "dimensions": {"length_m": 0.95, "width_m": 0.85, "depth_m": 0.08}, "true_severity_score": 0.78},
+                {"defect_id": "SEG_001_P2", "defect_type": "pothole", "along_m": along_base - 0.8, "across_m": -1.85, "dimensions": {"length_m": 0.40, "width_m": 0.35, "depth_m": 0.03}, "true_severity_score": 0.78}
+            ], "Larger Dry Pothole Cavity", 0.78
+        elif day == 9:
+            return [
+                {"defect_id": "SEG_001_C1", "defect_type": "crack", "along_m": along_base + 0.8, "across_m": -1.75, "dimensions": {"length_m": 1.10, "width_m": 0.09, "orientation_deg": -20.0}, "true_severity_score": 0.86},
+                {"defect_id": "SEG_001_P1", "defect_type": "pothole", "along_m": along_base, "across_m": -1.8, "dimensions": {"length_m": 1.15, "width_m": 1.05, "depth_m": 0.09}, "true_severity_score": 0.86},
+                {"defect_id": "SEG_001_P2", "defect_type": "pothole", "along_m": along_base - 0.8, "across_m": -1.85, "dimensions": {"length_m": 0.45, "width_m": 0.40, "depth_m": 0.04}, "true_severity_score": 0.86}
+            ], "Severe Pothole", 0.86
+        else: # Day 10
+            return [
+                {"defect_id": "SEG_001_W1", "defect_type": "water_filled_pothole", "along_m": along_base, "across_m": -1.8, "dimensions": {"length_m": 1.40, "width_m": 1.20, "depth_m": 0.10}, "water_state": {"is_water_filled": True, "water_coverage_frac": 0.90}, "true_severity_score": 0.95},
+                {"defect_id": "SEG_001_C1", "defect_type": "crack", "along_m": along_base + 0.8, "across_m": -1.75, "dimensions": {"length_m": 1.10, "width_m": 0.09, "orientation_deg": -20.0}, "true_severity_score": 0.95},
+                {"defect_id": "SEG_001_W2", "defect_type": "water_filled_pothole", "along_m": along_base - 0.8, "across_m": -1.85, "dimensions": {"length_m": 0.50, "width_m": 0.45, "depth_m": 0.04}, "water_state": {"is_water_filled": True, "water_coverage_frac": 0.50}, "true_severity_score": 0.95}
+            ], "Critical Hazard: Severe Waterlogged Crater", 0.95
+
+    # -------------------------------------------------------------------------
+    # SEG_002: Rapid Pothole Formation (Stripping -> Raveling -> Large Wet Pothole)
+    # -------------------------------------------------------------------------
+    elif segment_id == "SEG_002":
+        if day <= 1:
+            return [], "Pristine Asphalt", 0.02
+        elif day == 2:
+            return [
+                {"defect_id": "SEG_002_S1", "defect_type": "pothole", "along_m": along_base, "across_m": 1.8, "dimensions": {"length_m": 0.28, "width_m": 0.25, "depth_m": 0.008}, "true_severity_score": 0.10}
+            ], "Aggregate Stripping", 0.10
+        elif day == 3:
+            return [
+                {"defect_id": "SEG_002_S1", "defect_type": "pothole", "along_m": along_base, "across_m": 1.8, "dimensions": {"length_m": 0.45, "width_m": 0.40, "depth_m": 0.02}, "true_severity_score": 0.22}
+            ], "Surface Raveling & Depression", 0.22
+        elif day == 4:
+            return [
+                {"defect_id": "SEG_002_P1", "defect_type": "pothole", "along_m": along_base, "across_m": 1.8, "dimensions": {"length_m": 0.60, "width_m": 0.55, "depth_m": 0.04}, "true_severity_score": 0.40}
+            ], "Incipient Pothole", 0.40
+        elif day == 5:
+            return [
+                {"defect_id": "SEG_002_P1", "defect_type": "pothole", "along_m": along_base, "across_m": 1.8, "dimensions": {"length_m": 0.80, "width_m": 0.72, "depth_m": 0.06}, "true_severity_score": 0.58}
+            ], "Distinct Dry Pothole", 0.58
+        elif day == 6:
+            return [
+                {"defect_id": "SEG_002_W1", "defect_type": "water_filled_pothole", "along_m": along_base, "across_m": 1.8, "dimensions": {"length_m": 0.95, "width_m": 0.85, "depth_m": 0.07}, "water_state": {"is_water_filled": True, "water_coverage_frac": 0.50}, "true_severity_score": 0.72}
+            ], "Early Water Accumulation Pothole", 0.72
+        elif day == 7:
+            return [
+                {"defect_id": "SEG_002_W1", "defect_type": "water_filled_pothole", "along_m": along_base, "across_m": 1.8, "dimensions": {"length_m": 1.10, "width_m": 0.98, "depth_m": 0.08}, "water_state": {"is_water_filled": True, "water_coverage_frac": 0.70}, "true_severity_score": 0.80}
+            ], "Expanding Wet Pothole", 0.80
+        elif day == 8:
+            return [
+                {"defect_id": "SEG_002_W1", "defect_type": "water_filled_pothole", "along_m": along_base, "across_m": 1.8, "dimensions": {"length_m": 1.25, "width_m": 1.10, "depth_m": 0.09}, "water_state": {"is_water_filled": True, "water_coverage_frac": 0.80}, "true_severity_score": 0.86}
+            ], "Large Waterlogged Pothole", 0.86
+        elif day == 9:
+            return [
+                {"defect_id": "SEG_002_W1", "defect_type": "water_filled_pothole", "along_m": along_base, "across_m": 1.8, "dimensions": {"length_m": 1.40, "width_m": 1.25, "depth_m": 0.10}, "water_state": {"is_water_filled": True, "water_coverage_frac": 0.90}, "true_severity_score": 0.91}
+            ], "Deep Waterlogged Crater", 0.91
+        else: # Day 10
+            return [
+                {"defect_id": "SEG_002_W1", "defect_type": "water_filled_pothole", "along_m": along_base, "across_m": 1.8, "dimensions": {"length_m": 1.55, "width_m": 1.40, "depth_m": 0.12}, "water_state": {"is_water_filled": True, "water_coverage_frac": 0.95}, "true_severity_score": 0.96}
+            ], "Severe Waterlogged Puddle Hazard", 0.96
+
+    # -------------------------------------------------------------------------
+    # SEG_003: Crack-Dominated Deterioration (Transverse -> Block Cracking -> Edge Spalling)
+    # -------------------------------------------------------------------------
+    elif segment_id == "SEG_003":
+        if day <= 1:
+            return [], "Pristine Asphalt", 0.02
+        elif day == 2:
+            return [
+                {"defect_id": "SEG_003_C1", "defect_type": "crack", "along_m": along_base, "across_m": 0.0, "dimensions": {"length_m": 1.50, "width_m": 0.03, "orientation_deg": 90.0}, "true_severity_score": 0.10}
+            ], "Transverse Crack Onset", 0.10
+        elif day == 3:
+            return [
+                {"defect_id": "SEG_003_C1", "defect_type": "crack", "along_m": along_base, "across_m": 0.0, "dimensions": {"length_m": 2.80, "width_m": 0.04, "orientation_deg": 90.0}, "true_severity_score": 0.20}
+            ], "Transverse Crack Extension", 0.20
+        elif day == 4:
+            return [
+                {"defect_id": "SEG_003_C1", "defect_type": "crack", "along_m": along_base, "across_m": 0.0, "dimensions": {"length_m": 3.20, "width_m": 0.05, "orientation_deg": 90.0}, "true_severity_score": 0.32},
+                {"defect_id": "SEG_003_C2", "defect_type": "crack", "along_m": along_base + 0.8, "across_m": 0.0, "dimensions": {"length_m": 2.20, "width_m": 0.04, "orientation_deg": 90.0}, "true_severity_score": 0.32}
+            ], "Parallel Transverse Cracks", 0.32
+        elif day == 5:
+            return [
+                {"defect_id": "SEG_003_C1", "defect_type": "crack", "along_m": along_base, "across_m": 0.0, "dimensions": {"length_m": 3.50, "width_m": 0.06, "orientation_deg": 90.0}, "true_severity_score": 0.45},
+                {"defect_id": "SEG_003_C2", "defect_type": "crack", "along_m": along_base + 0.8, "across_m": 0.0, "dimensions": {"length_m": 3.00, "width_m": 0.05, "orientation_deg": 90.0}, "true_severity_score": 0.45},
+                {"defect_id": "SEG_003_C3", "defect_type": "crack", "along_m": along_base + 0.4, "across_m": -1.0, "dimensions": {"length_m": 0.80, "width_m": 0.04, "orientation_deg": 0.0}, "true_severity_score": 0.45}
+            ], "Transverse & Longitudinal Crack Network", 0.45
+        elif day == 6:
+            return [
+                {"defect_id": "SEG_003_C1", "defect_type": "crack", "along_m": along_base, "across_m": 0.0, "dimensions": {"length_m": 3.80, "width_m": 0.07, "orientation_deg": 90.0}, "true_severity_score": 0.55},
+                {"defect_id": "SEG_003_C2", "defect_type": "crack", "along_m": along_base + 0.8, "across_m": 0.0, "dimensions": {"length_m": 3.20, "width_m": 0.06, "orientation_deg": 90.0}, "true_severity_score": 0.55},
+                {"defect_id": "SEG_003_C3", "defect_type": "crack", "along_m": along_base + 0.4, "across_m": -1.0, "dimensions": {"length_m": 0.80, "width_m": 0.05, "orientation_deg": 0.0}, "true_severity_score": 0.55},
+                {"defect_id": "SEG_003_C4", "defect_type": "crack", "along_m": along_base + 0.4, "across_m": 1.0, "dimensions": {"length_m": 0.80, "width_m": 0.05, "orientation_deg": 0.0}, "true_severity_score": 0.55}
+            ], "Block Cracking Onset", 0.55
+        elif day == 7:
+            return [
+                {"defect_id": "SEG_003_C1", "defect_type": "crack", "along_m": along_base, "across_m": 0.0, "dimensions": {"length_m": 4.00, "width_m": 0.08, "orientation_deg": 90.0}, "true_severity_score": 0.65},
+                {"defect_id": "SEG_003_C2", "defect_type": "crack", "along_m": along_base + 0.8, "across_m": 0.0, "dimensions": {"length_m": 3.50, "width_m": 0.07, "orientation_deg": 90.0}, "true_severity_score": 0.65},
+                {"defect_id": "SEG_003_C3", "defect_type": "crack", "along_m": along_base + 0.4, "across_m": -1.2, "dimensions": {"length_m": 0.80, "width_m": 0.06, "orientation_deg": 0.0}, "true_severity_score": 0.65},
+                {"defect_id": "SEG_003_C4", "defect_type": "crack", "along_m": along_base + 0.4, "across_m": 1.2, "dimensions": {"length_m": 0.80, "width_m": 0.06, "orientation_deg": 0.0}, "true_severity_score": 0.65}
+            ], "Extensive Block Cracking", 0.65
+        elif day == 8:
+            return [
+                {"defect_id": "SEG_003_C1", "defect_type": "crack", "along_m": along_base, "across_m": 0.0, "dimensions": {"length_m": 4.20, "width_m": 0.09, "orientation_deg": 90.0}, "true_severity_score": 0.72},
+                {"defect_id": "SEG_003_C2", "defect_type": "crack", "along_m": along_base + 0.8, "across_m": 0.0, "dimensions": {"length_m": 3.80, "width_m": 0.08, "orientation_deg": 90.0}, "true_severity_score": 0.72},
+                {"defect_id": "SEG_003_S1", "defect_type": "pothole", "along_m": along_base + 0.4, "across_m": -1.2, "dimensions": {"length_m": 0.35, "width_m": 0.30, "depth_m": 0.02}, "true_severity_score": 0.72}
+            ], "Widened Block Cracking & Edge Spall", 0.72
+        elif day == 9:
+            return [
+                {"defect_id": "SEG_003_C1", "defect_type": "crack", "along_m": along_base, "across_m": 0.0, "dimensions": {"length_m": 4.50, "width_m": 0.10, "orientation_deg": 90.0}, "true_severity_score": 0.78},
+                {"defect_id": "SEG_003_C2", "defect_type": "crack", "along_m": along_base + 0.8, "across_m": 0.0, "dimensions": {"length_m": 4.00, "width_m": 0.09, "orientation_deg": 90.0}, "true_severity_score": 0.78},
+                {"defect_id": "SEG_003_S1", "defect_type": "pothole", "along_m": along_base + 0.4, "across_m": -1.2, "dimensions": {"length_m": 0.45, "width_m": 0.40, "depth_m": 0.03}, "true_severity_score": 0.78}
+            ], "Heavy Block Cracking & Edge Spalling", 0.78
+        else: # Day 10
+            return [
+                {"defect_id": "SEG_003_C1", "defect_type": "crack", "along_m": along_base, "across_m": 0.0, "dimensions": {"length_m": 4.80, "width_m": 0.12, "orientation_deg": 90.0}, "true_severity_score": 0.83},
+                {"defect_id": "SEG_003_C2", "defect_type": "crack", "along_m": along_base + 0.8, "across_m": 0.0, "dimensions": {"length_m": 4.20, "width_m": 0.10, "orientation_deg": 90.0}, "true_severity_score": 0.83},
+                {"defect_id": "SEG_003_S1", "defect_type": "pothole", "along_m": along_base + 0.4, "across_m": -1.2, "dimensions": {"length_m": 0.55, "width_m": 0.48, "depth_m": 0.04}, "true_severity_score": 0.83},
+                {"defect_id": "SEG_003_S2", "defect_type": "pothole", "along_m": along_base + 0.4, "across_m": 1.2, "dimensions": {"length_m": 0.45, "width_m": 0.40, "depth_m": 0.03}, "true_severity_score": 0.83}
+            ], "Severe Block Cracking & Edge Dislodgement", 0.83
+
+    # -------------------------------------------------------------------------
+    # SEG_004: Cluster Potholes (Multi-Epicenter Potholes in Proximity)
+    # -------------------------------------------------------------------------
+    elif segment_id == "SEG_004":
+        if day <= 1:
+            return [], "Pristine Asphalt", 0.02
+        elif day == 2:
+            return [
+                {"defect_id": "SEG_004_P1", "defect_type": "pothole", "along_m": along_base - 0.5, "across_m": -1.5, "dimensions": {"length_m": 0.30, "width_m": 0.28, "depth_m": 0.01}, "true_severity_score": 0.12}
+            ], "Micro Spall 1", 0.12
+        elif day == 3:
+            return [
+                {"defect_id": "SEG_004_P1", "defect_type": "pothole", "along_m": along_base - 0.5, "across_m": -1.5, "dimensions": {"length_m": 0.40, "width_m": 0.35, "depth_m": 0.02}, "true_severity_score": 0.25},
+                {"defect_id": "SEG_004_P2", "defect_type": "pothole", "along_m": along_base + 0.6, "across_m": -1.2, "dimensions": {"length_m": 0.32, "width_m": 0.28, "depth_m": 0.01}, "true_severity_score": 0.25}
+            ], "Micro Spall 1 & 2", 0.25
+        elif day == 4:
+            return [
+                {"defect_id": "SEG_004_P1", "defect_type": "pothole", "along_m": along_base - 0.5, "across_m": -1.5, "dimensions": {"length_m": 0.55, "width_m": 0.48, "depth_m": 0.04}, "true_severity_score": 0.38},
+                {"defect_id": "SEG_004_P2", "defect_type": "pothole", "along_m": along_base + 0.6, "across_m": -1.2, "dimensions": {"length_m": 0.45, "width_m": 0.40, "depth_m": 0.03}, "true_severity_score": 0.38}
+            ], "Dual Incipient Potholes", 0.38
+        elif day == 5:
+            return [
+                {"defect_id": "SEG_004_P1", "defect_type": "pothole", "along_m": along_base - 0.5, "across_m": -1.5, "dimensions": {"length_m": 0.70, "width_m": 0.60, "depth_m": 0.05}, "true_severity_score": 0.52},
+                {"defect_id": "SEG_004_P2", "defect_type": "pothole", "along_m": along_base + 0.6, "across_m": -1.2, "dimensions": {"length_m": 0.58, "width_m": 0.50, "depth_m": 0.04}, "true_severity_score": 0.52},
+                {"defect_id": "SEG_004_P3", "defect_type": "pothole", "along_m": along_base, "across_m": -1.8, "dimensions": {"length_m": 0.35, "width_m": 0.30, "depth_m": 0.02}, "true_severity_score": 0.52}
+            ], "Multiple Small Potholes", 0.52
+        elif day == 6:
+            return [
+                {"defect_id": "SEG_004_P1", "defect_type": "pothole", "along_m": along_base - 0.5, "across_m": -1.5, "dimensions": {"length_m": 0.85, "width_m": 0.75, "depth_m": 0.07}, "true_severity_score": 0.66},
+                {"defect_id": "SEG_004_P2", "defect_type": "pothole", "along_m": along_base + 0.6, "across_m": -1.2, "dimensions": {"length_m": 0.72, "width_m": 0.65, "depth_m": 0.05}, "true_severity_score": 0.66},
+                {"defect_id": "SEG_004_P3", "defect_type": "pothole", "along_m": along_base, "across_m": -1.8, "dimensions": {"length_m": 0.48, "width_m": 0.42, "depth_m": 0.03}, "true_severity_score": 0.66}
+            ], "Triple Pothole Cluster", 0.66
+        elif day == 7:
+            return [
+                {"defect_id": "SEG_004_P1", "defect_type": "pothole", "along_m": along_base - 0.5, "across_m": -1.5, "dimensions": {"length_m": 1.00, "width_m": 0.88, "depth_m": 0.08}, "true_severity_score": 0.76},
+                {"defect_id": "SEG_004_P2", "defect_type": "pothole", "along_m": along_base + 0.6, "across_m": -1.2, "dimensions": {"length_m": 0.85, "width_m": 0.75, "depth_m": 0.06}, "true_severity_score": 0.76},
+                {"defect_id": "SEG_004_P3", "defect_type": "pothole", "along_m": along_base, "across_m": -1.8, "dimensions": {"length_m": 0.60, "width_m": 0.52, "depth_m": 0.04}, "true_severity_score": 0.76}
+            ], "Expanding Pothole Cluster", 0.76
+        elif day == 8:
+            return [
+                {"defect_id": "SEG_004_P1", "defect_type": "pothole", "along_m": along_base - 0.5, "across_m": -1.5, "dimensions": {"length_m": 1.15, "width_m": 1.00, "depth_m": 0.09}, "true_severity_score": 0.84},
+                {"defect_id": "SEG_004_P2", "defect_type": "pothole", "along_m": along_base + 0.6, "across_m": -1.2, "dimensions": {"length_m": 0.98, "width_m": 0.85, "depth_m": 0.07}, "true_severity_score": 0.84},
+                {"defect_id": "SEG_004_P3", "defect_type": "water_filled_pothole", "along_m": along_base, "across_m": -1.8, "dimensions": {"length_m": 0.72, "width_m": 0.62, "depth_m": 0.05}, "water_state": {"is_water_filled": True, "water_coverage_frac": 0.60}, "true_severity_score": 0.84}
+            ], "Clustered Deep Potholes", 0.84
+        elif day == 9:
+            return [
+                {"defect_id": "SEG_004_P1", "defect_type": "pothole", "along_m": along_base - 0.5, "across_m": -1.5, "dimensions": {"length_m": 1.30, "width_m": 1.12, "depth_m": 0.10}, "true_severity_score": 0.90},
+                {"defect_id": "SEG_004_P2", "defect_type": "water_filled_pothole", "along_m": along_base + 0.6, "across_m": -1.2, "dimensions": {"length_m": 1.10, "width_m": 0.95, "depth_m": 0.08}, "water_state": {"is_water_filled": True, "water_coverage_frac": 0.70}, "true_severity_score": 0.90},
+                {"defect_id": "SEG_004_P3", "defect_type": "water_filled_pothole", "along_m": along_base, "across_m": -1.8, "dimensions": {"length_m": 0.85, "width_m": 0.75, "depth_m": 0.06}, "water_state": {"is_water_filled": True, "water_coverage_frac": 0.80}, "true_severity_score": 0.90}
+            ], "Severe Clustered Potholes", 0.90
+        else: # Day 10
+            return [
+                {"defect_id": "SEG_004_W1", "defect_type": "water_filled_pothole", "along_m": along_base - 0.5, "across_m": -1.5, "dimensions": {"length_m": 1.45, "width_m": 1.25, "depth_m": 0.11}, "water_state": {"is_water_filled": True, "water_coverage_frac": 0.85}, "true_severity_score": 0.95},
+                {"defect_id": "SEG_004_W2", "defect_type": "water_filled_pothole", "along_m": along_base + 0.6, "across_m": -1.2, "dimensions": {"length_m": 1.22, "width_m": 1.08, "depth_m": 0.09}, "water_state": {"is_water_filled": True, "water_coverage_frac": 0.80}, "true_severity_score": 0.95},
+                {"defect_id": "SEG_004_W3", "defect_type": "water_filled_pothole", "along_m": along_base, "across_m": -1.8, "dimensions": {"length_m": 0.95, "width_m": 0.82, "depth_m": 0.07}, "water_state": {"is_water_filled": True, "water_coverage_frac": 0.90}, "true_severity_score": 0.95}
+            ], "Critical Hazard: Multi-Pothole Cluster", 0.95
+
+    # -------------------------------------------------------------------------
+    # SEG_005: High-Resilience Control Segment (Max Severity <= 0.35)
+    # -------------------------------------------------------------------------
+    elif segment_id == "SEG_005":
+        if day <= 4:
+            return [], "Pristine Asphalt", round(0.01 + day * 0.01, 2)
+        elif day <= 7:
+            return [
+                {"defect_id": "SEG_005_C1", "defect_type": "crack", "along_m": along_base, "across_m": -1.35, "dimensions": {"length_m": 0.30 + (day - 5) * 0.1, "width_m": 0.02, "depth_m": 0.003}, "true_severity_score": round(0.08 + (day - 5) * 0.04, 2)}
+            ], "Faint Surface Wear", round(0.08 + (day - 5) * 0.04, 2)
+        else: # Day 8-10
+            return [
+                {"defect_id": "SEG_005_C1", "defect_type": "crack", "along_m": along_base, "across_m": -1.35, "dimensions": {"length_m": 0.55 + (day - 8) * 0.1, "width_m": 0.03, "depth_m": 0.004}, "true_severity_score": round(0.22 + (day - 8) * 0.04, 2)}
+            ], "Minor Hairline Crack", round(0.22 + (day - 8) * 0.04, 2)
+
+    # -------------------------------------------------------------------------
+    # SEG_006: Curved Highway Edge Shear Damage
+    # -------------------------------------------------------------------------
+    elif segment_id == "SEG_006":
+        if day <= 1:
+            return [], "Pristine Asphalt", 0.02
+        elif day == 2:
+            return [
+                {"defect_id": "SEG_006_C1", "defect_type": "crack", "along_m": along_base, "across_m": 6.2, "dimensions": {"length_m": 1.20, "width_m": 0.05, "orientation_deg": 15.0}, "true_severity_score": 0.12}
+            ], "Outer Lane Edge Wear", 0.12
+        elif day == 3:
+            return [
+                {"defect_id": "SEG_006_C1", "defect_type": "crack", "along_m": along_base, "across_m": 6.2, "dimensions": {"length_m": 1.80, "width_m": 0.06, "orientation_deg": 15.0}, "true_severity_score": 0.22}
+            ], "Edge Shear Crack", 0.22
+        elif day == 4:
+            return [
+                {"defect_id": "SEG_006_P1", "defect_type": "pothole", "along_m": along_base, "across_m": 6.0, "dimensions": {"length_m": 2.00, "width_m": 0.25, "depth_m": 0.03}, "true_severity_score": 0.34}
+            ], "Outer Curve Shear Gouge Onset", 0.34
+        elif day == 5:
+            return [
+                {"defect_id": "SEG_006_P1", "defect_type": "pothole", "along_m": along_base, "across_m": 6.0, "dimensions": {"length_m": 2.30, "width_m": 0.40, "depth_m": 0.05}, "true_severity_score": 0.48}
+            ], "Shear Deformation & Edge Breakup", 0.48
+        elif day == 6:
+            return [
+                {"defect_id": "SEG_006_P1", "defect_type": "pothole", "along_m": along_base, "across_m": 6.0, "dimensions": {"length_m": 2.50, "width_m": 0.55, "depth_m": 0.07}, "true_severity_score": 0.62}
+            ], "Deep Edge Gouge", 0.62
+        elif day == 7:
+            return [
+                {"defect_id": "SEG_006_P1", "defect_type": "pothole", "along_m": along_base, "across_m": 6.0, "dimensions": {"length_m": 2.70, "width_m": 0.70, "depth_m": 0.08}, "true_severity_score": 0.72}
+            ], "Expanding Edge Crater", 0.72
+        elif day == 8:
+            return [
+                {"defect_id": "SEG_006_P1", "defect_type": "pothole", "along_m": along_base, "across_m": 6.0, "dimensions": {"length_m": 2.90, "width_m": 0.85, "depth_m": 0.09}, "true_severity_score": 0.80}
+            ], "Deep Edge Crater Basin", 0.80
+        elif day == 9:
+            return [
+                {"defect_id": "SEG_006_W1", "defect_type": "water_filled_pothole", "along_m": along_base, "across_m": 6.0, "dimensions": {"length_m": 3.10, "width_m": 0.95, "depth_m": 0.10}, "water_state": {"is_water_filled": True, "water_coverage_frac": 0.75}, "true_severity_score": 0.88}
+            ], "Severe Edge Crater Hazard", 0.88
+        else: # Day 10
+            return [
+                {"defect_id": "SEG_006_W1", "defect_type": "water_filled_pothole", "along_m": along_base, "across_m": 6.0, "dimensions": {"length_m": 3.30, "width_m": 1.10, "depth_m": 0.12}, "water_state": {"is_water_filled": True, "water_coverage_frac": 0.90}, "true_severity_score": 0.94}
+            ], "Critical Hazard: Severe Curve Edge Crater", 0.94
+
+    return [], "Unknown State", 0.0
+
+
+def materialize_segment_day(segment_id: str, day: int) -> Dict[str, Any]:
+    """Materialise a specific (segment_id, day) deterministic road deterioration state.
+
+    1. Removes previous temporal defect actors.
+    2. Spawns the exact deterministic defect meshes and water overlays for (segment_id, day).
+    3. Moves the Unreal Editor viewport camera to the segment's fixed downward top-down pose.
+    4. Sets camera height Z = 12m, pitch = -89°, FOV = 70° so road fills ~95% of image width.
+    """
+    if not HAS_UNREAL:
+        raise RuntimeError("materialize_segment_day must run inside Unreal Engine Python")
+
+    segment_id = str(segment_id).strip().upper()
+    if segment_id not in DETERMINISTIC_SEGMENT_LOCATIONS:
+        raise ValueError(f"Unknown segment_id {segment_id!r}")
+    day = int(day)
+    if not 1 <= day <= 10:
+        raise ValueError(f"day must be between 1 and 10, got {day!r}")
+
+    _CURRENT_SELECTED_STATE["segment_id"] = segment_id
+    _CURRENT_SELECTED_STATE["day"] = day
+
+    loc_info = DETERMINISTIC_SEGMENT_LOCATIONS[segment_id]
+    along_m = loc_info["along_m"]
+    across_m = loc_info["across_m"]
+
+    x_m, y_m, z_m, yaw_deg = _temporal_route_pose(along_m, across_m)
+
+    cam_pose = {
+        "x_cm": round(x_m * 100.0, 2),
+        "y_cm": round(y_m * 100.0, 2),
+        "z_cm": round((z_m + 12.0) * 100.0, 2),
+        "pitch_deg": -89.0,
+        "yaw_deg": round(yaw_deg, 3),
+        "roll_deg": 0.0,
+        "fov_deg": 70.0
+    }
+
+    # Move viewport camera
+    try:
+        cam_loc = unreal.Vector(cam_pose["x_cm"], cam_pose["y_cm"], cam_pose["z_cm"])
+        cam_rot = unreal.Rotator(roll=0.0, pitch=cam_pose["pitch_deg"], yaw=cam_pose["yaw_deg"])
+        unreal.EditorLevelLibrary.set_level_viewport_camera_info(cam_loc, cam_rot)
+    except Exception as exc:
+        print(f"Error setting viewport camera: {exc}")
+
+    # Clear previous defect actors
+    all_actors = unreal.EditorLevelLibrary.get_all_level_actors()
+    for a in all_actors:
+        if a and (a.actor_has_tag(unreal.Name("RS_Defect")) or a.actor_has_tag(unreal.Name("RS_TemporalDefect"))):
+            unreal.EditorLevelLibrary.destroy_actor(a)
+
+    # Check if road baseline exists; if not, spawn it
+    has_road = any(a and a.actor_has_tag(unreal.Name("RS_Road")) for a in all_actors)
+    if not has_road:
+        spawn_full_world(
+            road_health="Pristine (Grade A)",
+            lighting_preset="Clear Noon (70° Sun)",
+            density_per_100m2=0.0,
+            random_seed=2026
+        )
+        all_actors = unreal.EditorLevelLibrary.get_all_level_actors()
+        for a in all_actors:
+            if a and a.get_name() == "Floor":
+                unreal.EditorLevelLibrary.destroy_actor(a)
+            elif a and a.actor_has_tag(unreal.Name("RS_Marking")):
+                l_m = a.get_actor_location()
+                s_m = a.get_actor_scale3d()
+                a.set_actor_location(unreal.Vector(l_m.x, l_m.y, 2.0), False, False)
+                a.set_actor_scale3d(unreal.Vector(s_m.x, s_m.y, 0.04))
+
+    defects_spec, state_name, severity_val = get_deterministic_segment_defects(segment_id, day)
+    materials = _temporal_materials()
+
+    spawned_defects = []
+    for raw in defects_spec:
+        raw["road_segment_id"] = segment_id
+        gt = _spawn_temporal_defect(raw, materials, day)
+        spawned_defects.append(gt)
+
+    segment_state = {
+        "road_segment_id": segment_id,
+        "day": day,
+        "deterioration_state": state_name,
+        "renderer_condition_score": severity_val,
+        "persistent_location": {"along_m": along_m, "across_m": across_m},
+        "world_location_cm": {"x": round(x_m * 100.0, 2), "y": round(y_m * 100.0, 2), "z": round(z_m * 100.0, 2)},
+        "camera_pose": cam_pose,
+        "defects": spawned_defects
+    }
+
+    _TEMPORAL_STATE["segments"][segment_id] = segment_state
+    _TEMPORAL_STATE["day"] = day
+    _TEMPORAL_STATE["ground_truth"] = spawned_defects
+    _TEMPORAL_STATE["camera_config"] = {"altitude_m": 12.0, "pitch_deg": -89.0, "fov_deg": 70.0, "width": 1920, "height": 1080}
+
+    try:
+        unreal.log(f"[RoadSentinel] Materialised {segment_id} Day {day:02d} ({state_name}): {len(spawned_defects)} defects, severity {severity_val:.2f}")
+    except Exception:
+        print(f"[RoadSentinel] Materialised {segment_id} Day {day:02d} ({state_name}): {len(spawned_defects)} defects, severity {severity_val:.2f}")
+
+    return segment_state
+
+
+
+def materialize_temporal_manifest(manifest_path: str, ground_truth_path: Optional[str] = None) -> Dict[str, Any]:
+    """Apply one deterministic temporal day to the native UE road scene.
+
+    This function consumes the condition manifest directly.  It never invokes
+    the interactive random scatter generator for temporal defects, ensuring
+    that SEG_001, etc. retain both their ID and physical coordinates through
+    all 20 days.
+    """
+    if not HAS_UNREAL:
+        raise RuntimeError("materialize_temporal_manifest must be run by Unreal Engine Python")
+    resolved_manifest = _resolve_temporal_path(manifest_path, "temporal manifest")
+    if not resolved_manifest.is_file():
+        raise FileNotFoundError(f"Temporal manifest does not exist: {resolved_manifest}")
+    payload = json.loads(resolved_manifest.read_text(encoding="utf-8"))
+    if payload.get("schema_version") != "RoadSentinelTemporalManifest/v1":
+        raise ValueError("Unsupported temporal manifest schema")
+    day = int(_finite_number(payload.get("day"), "day", 1.0, 20.0))
+    raw_segments = payload.get("segments", [])
+    raw_defects = payload.get("defects", [])
+    if not isinstance(raw_segments, list) or not isinstance(raw_defects, list):
+        raise ValueError("Temporal manifest segments and defects must be arrays")
+
+    camera_config = _temporal_capture_config(payload)
+    segment_state: Dict[str, Dict[str, Any]] = {}
+    for raw in raw_segments:
+        if not isinstance(raw, dict):
+            raise ValueError("Each temporal segment must be an object")
+        segment_id = str(raw.get("road_segment_id", "")).strip()
+        if not segment_id or segment_id in segment_state:
+            raise ValueError("Temporal segment ids must be non-empty and unique")
+        along_m = _finite_number(raw.get("along_m"), f"{segment_id}.along_m", 0.0, 420.0)
+        across_m = _finite_number(raw.get("across_m"), f"{segment_id}.across_m", -7.5, 7.5)
+        x_m, y_m, z_m, yaw_deg = _temporal_route_pose(along_m, across_m)
+        segment_state[segment_id] = {
+            "road_segment_id": segment_id,
+            "persistent_location": {"along_m": along_m, "across_m": across_m},
+            "world_location_cm": {"x": round(x_m * 100.0, 2), "y": round(y_m * 100.0, 2), "z": round(z_m * 100.0, 2)},
+            "camera_pose": {
+                "x_cm": round(x_m * 100.0, 2),
+                "y_cm": round(y_m * 100.0, 2),
+                "z_cm": round((z_m + camera_config["altitude_m"]) * 100.0, 2),
+                "pitch_deg": camera_config["pitch_deg"],
+                "yaw_deg": round(yaw_deg, 3),
+                "roll_deg": 0.0,
+            },
+            "renderer_condition_score": raw.get("renderer_condition_score"),
+        }
+
+    # Rebuild exactly the same UE road and lighting each day with *zero*
+    # random defects.  Only the following manifest-driven meshes differ.
+    spawn_full_world(
+        road_health="Pristine (Grade A)",
+        lighting_preset="Clear Noon (70° Sun)",
+        size_profile="Multi-Scale Organic (Mixed)",
+        density_per_100m2=0.0,
+        water_ratio="Mixed Wet/Dry",
+        random_seed=2026,
+    )
+    materials = _temporal_materials()
+    ground_truth: List[Dict[str, Any]] = []
+    for raw in raw_defects:
+        if not isinstance(raw, dict):
+            raise ValueError("Each temporal defect must be an object")
+        if str(raw.get("road_segment_id", "")) not in segment_state:
+            raise ValueError("Every temporal defect must refer to a declared segment")
+        ground_truth.append(_spawn_temporal_defect(raw, materials, day))
+
+    _TEMPORAL_STATE.update({
+        "day": day,
+        "manifest_path": str(resolved_manifest),
+        "segments": segment_state,
+        "ground_truth": ground_truth,
+        "camera_config": camera_config,
+    })
+    result = {
+        "schema_version": "RoadSentinelUnrealTemporalGroundTruth/v1",
+        "engine": "Unreal Engine native scene",
+        "day": day,
+        "manifest_path": str(resolved_manifest),
+        "segments": list(segment_state.values()),
+        "defects": ground_truth,
+        "camera_config": camera_config,
+    }
+    if ground_truth_path:
+        resolved_ground_truth = _resolve_temporal_path(ground_truth_path, "ground-truth")
+        resolved_ground_truth.parent.mkdir(parents=True, exist_ok=True)
+        resolved_ground_truth.write_text(json.dumps(result, indent=2), encoding="utf-8")
+        result["ground_truth_path"] = str(resolved_ground_truth)
+    unreal.log(f"[RoadSentinel] Materialised temporal day {day:02d}: {len(ground_truth)} manifest defects.")
+    return result
+
+
+# ==============================================================================
+# 7. Drone Camera Navigation & Photo Capture ('C')
 # ==============================================================================
 
 DRONE_VIEWPOINTS = {
@@ -956,8 +1645,19 @@ def teleport_drone_camera(preset_name: str):
 
 
 def capture_drone_photo() -> str:
-    """Captures a photo from the current drone viewport camera and logs telemetry."""
+    """Captures a photo from the current drone/inspection camera ('C' key)."""
     timestamp = time.strftime("%Y%m%d_%H%M%S")
+
+    if HAS_UNREAL and _CURRENT_SELECTED_STATE.get("segment_id"):
+        seg_id = _CURRENT_SELECTED_STATE["segment_id"]
+        day_num = _CURRENT_SELECTED_STATE["day"]
+        try:
+            res = _ipc_inspection_capture(day_num, seg_id)
+            print(f"📸 RoadSentinel Inspection Photo Captured: {res.get('path')}")
+            return res.get("path", "")
+        except Exception as e:
+            print(f"Error capturing inspection photo on 'C': {e}")
+
     capture_filename = f"drone_capture_{timestamp}.png"
     target_path = os.path.join(CAPTURES_DIR, capture_filename)
 
@@ -972,21 +1672,10 @@ def capture_drone_photo() -> str:
         except Exception:
             pass
 
-        # Execute high resolution screenshot
         cmd = f"HighResShot 1920x1080 filename=\"{target_path}\""
         unreal.SystemLibrary.execute_console_command(None, cmd)
         unreal.SystemLibrary.execute_console_command(None, "Shot")
 
-        # Copy newest screenshot if saved to standard Linux Screenshots folder
-        ue_saved_dir = os.path.join(WORKSPACE_ROOT, "RoadSentinelSim", "Saved", "Screenshots", "Linux")
-        if os.path.exists(ue_saved_dir):
-            files = [os.path.join(ue_saved_dir, f) for f in os.listdir(ue_saved_dir) if f.endswith(".png")]
-            if files:
-                newest = max(files, key=os.path.getmtime)
-                if time.time() - os.path.getmtime(newest) < 4.0:
-                    shutil.copy2(newest, target_path)
-
-    # Append to capture log
     log_file = os.path.join(CAPTURES_DIR, "drone_captures_log.jsonl")
     with open(log_file, "a", encoding="utf-8") as f:
         f.write(json.dumps({
@@ -1001,10 +1690,200 @@ def capture_drone_photo() -> str:
 
 
 # ==============================================================================
+# 7a. Inspection Capture Helper (SceneCapture2D, validate, metadata)
+# ==============================================================================
+
+def _ipc_inspection_capture(day: int, segment_id: str) -> dict:
+    """Perform a full SceneCapture2D render for the given day+segment.
+
+    Saves:
+      env/output/temporal_segments/SEG_XXX/day_XX.png
+      env/output/temporal_segments/SEG_XXX/segment_history.json
+    """
+    if not HAS_UNREAL:
+        raise RuntimeError("_ipc_inspection_capture must run inside Unreal Engine Python")
+
+    _helper_dir = os.path.join(WORKSPACE_ROOT, "env", "scripts")
+    if _helper_dir not in sys.path:
+        sys.path.insert(0, _helper_dir)
+    import rs_inspection_capture as _ic
+
+    segments = _TEMPORAL_STATE.get("segments", {})
+    if not segments or segment_id not in segments:
+        materialize_segment_day(segment_id, day)
+        segments = _TEMPORAL_STATE.get("segments", {})
+
+    seg_state = segments[segment_id]
+    camera_pose = seg_state["camera_pose"]
+    world_location_cm = seg_state["world_location_cm"]
+    persistent_location = seg_state["persistent_location"]
+    condition_score = seg_state.get("renderer_condition_score") or 0.0
+    camera_config = _TEMPORAL_STATE.get("camera_config", {
+        "altitude_m": 12.0, "pitch_deg": -89.0, "fov_deg": 70.0,
+        "width": 1920, "height": 1080,
+    })
+
+    out_dir = _ic.build_output_dir(day, segment_id)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    raw_path = _ic.build_image_path(day, segment_id)
+
+    # ------- SceneCapture2D render -------
+    try:
+        world = unreal.EditorLevelLibrary.get_editor_world()
+    except Exception:
+        subsystem = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
+        world = subsystem.get_editor_world()
+    if not world:
+        raise RuntimeError("Unreal Editor world is not available for SceneCapture2D")
+
+    # Create render target
+    render_format = getattr(
+        unreal.TextureRenderTargetFormat,
+        "RTF_RGBA8_SRGB",
+        unreal.TextureRenderTargetFormat.RTF_RGBA8,
+    )
+    clear = unreal.LinearColor(0.0, 0.0, 0.0, 1.0)
+    try:
+        target = unreal.RenderingLibrary.create_render_target2d(
+            world, int(camera_config["width"]), int(camera_config["height"]),
+            render_format, clear_color=clear, auto_generate_mips=False,
+        )
+    except TypeError:
+        target = unreal.RenderingLibrary.create_render_target2d(
+            world, int(camera_config["width"]), int(camera_config["height"]), render_format,
+        )
+    if not target:
+        raise RuntimeError("Could not create SceneCapture2D render target for inspection")
+
+    # Spawn SceneCapture2D at the segment's fixed camera pose
+    loc = unreal.Vector(
+        float(camera_pose["x_cm"]),
+        float(camera_pose["y_cm"]),
+        float(camera_pose["z_cm"]),
+    )
+    rot = unreal.Rotator(
+        roll=float(camera_pose.get("roll_deg", 0.0)),
+        pitch=float(camera_pose["pitch_deg"]),
+        yaw=float(camera_pose["yaw_deg"]),
+    )
+    cam = unreal.EditorLevelLibrary.spawn_actor_from_class(unreal.SceneCapture2D, loc, rot)
+    if not cam:
+        raise RuntimeError("Could not spawn SceneCapture2D actor for inspection capture")
+
+    try:
+        comp = None
+        try:
+            comp = cam.get_capture_component2d()
+        except Exception:
+            pass
+        if not comp:
+            comp = cam.get_component_by_class(unreal.SceneCaptureComponent2D)
+        if not comp:
+            raise RuntimeError("SceneCapture2D actor has no capture component")
+
+        comp.set_editor_property("texture_target", target)
+        comp.set_editor_property("fov_angle", float(camera_config["fov_deg"]))
+        comp.set_editor_property("capture_every_frame", False)
+        comp.set_editor_property("capture_on_movement", False)
+        comp.set_editor_property("always_persist_rendering_state", True)
+        comp.set_editor_property("inherit_main_view_camera_post_process_settings", True)
+        try:
+            comp.set_editor_property(
+                "capture_source", unreal.SceneCaptureSource.SCS_FINAL_COLOR_LDR
+            )
+        except (AttributeError, TypeError):
+            pass
+
+        try:
+            pps = comp.get_editor_property("post_process_settings")
+            pps.set_editor_property("override_auto_exposure_bias", True)
+            pps.set_editor_property("auto_exposure_bias", 2.6)
+            comp.set_editor_property("post_process_settings", pps)
+            comp.set_editor_property("post_process_blend_weight", 1.0)
+        except Exception:
+            pass
+
+        comp.capture_scene()
+        time.sleep(0.25)
+        comp.capture_scene()
+
+        unreal.RenderingLibrary.export_render_target(
+            world, target, str(out_dir), raw_path.name,
+        )
+
+        deadline = time.time() + 20.0
+        actual_path = raw_path
+        alt_path = raw_path.with_name(raw_path.name + ".png")
+        while time.time() < deadline:
+            if raw_path.is_file() and raw_path.stat().st_size > 0:
+                actual_path = raw_path
+                break
+            if alt_path.is_file() and alt_path.stat().st_size > 0:
+                alt_path.replace(raw_path)
+                actual_path = raw_path
+                break
+            time.sleep(0.10)
+        else:
+            raise RuntimeError(
+                f"UE did not export inspection PNG within 20s: {raw_path}"
+            )
+
+    finally:
+        try:
+            unreal.EditorLevelLibrary.destroy_actor(cam)
+        except Exception:
+            pass
+
+    val = _ic.validate_png(
+        actual_path,
+        expected_width=int(camera_config["width"]),
+        expected_height=int(camera_config["height"]),
+    )
+
+    meta_path = _ic.write_metadata(
+        output_dir=out_dir,
+        day=day,
+        segment_id=segment_id,
+        camera_pose=camera_pose,
+        world_coordinates={
+            "x_cm": world_location_cm.get("x", 0.0),
+            "y_cm": world_location_cm.get("y", 0.0),
+            "z_cm": world_location_cm.get("z", 0.0),
+            "along_m": persistent_location.get("along_m", 0.0),
+            "across_m": persistent_location.get("across_m", 0.0),
+        },
+        condition_score=condition_score,
+        image_filename=raw_path.name,
+        extra={
+            "capture_day": day,
+            "deterioration_state": seg_state.get("deterioration_state", "observed_deterioration"),
+            "defect_types": [d.get("defect_type") for d in seg_state.get("defects", [])],
+            "total_defects_day": len(seg_state.get("defects", [])),
+        },
+    )
+
+    unreal.log(
+        f"[RoadSentinel] Inspection capture day {day:02d} {segment_id}: "
+        f"{'VALID' if val['valid'] else 'INVALID – ' + str(val.get('reason'))}"
+    )
+
+    return {
+        "status": "ok" if val["valid"] else "warning",
+        "path": str(actual_path),
+        "metadata_path": str(meta_path),
+        "validated": val["valid"],
+        "validation_reason": val.get("reason"),
+        "file_size_bytes": val.get("file_size_bytes", 0),
+    }
+
+
+# ==============================================================================
 # 7. Unreal Engine IPC Server (Receives commands from Studio GUI)
 # ==============================================================================
 
 import socket
+import struct
+import zlib
 import select
 import subprocess
 
@@ -1066,7 +1945,24 @@ def process_ipc_commands(delta_time=0.0):
                         action = msg.get("action")
                         response = {"status": "ok", "action": action}
 
-                        if action == "generate":
+                        if action == "materialize_segment_day":
+                            segment_id = str(msg.get("segment_id", "SEG_001")).strip().upper()
+                            day = int(msg.get("day", 1))
+                            try:
+                                state = materialize_segment_day(segment_id, day)
+                                response.update({
+                                    "segment_id": segment_id,
+                                    "day": day,
+                                    "deterioration_state": state["deterioration_state"],
+                                    "severity_value": state["renderer_condition_score"],
+                                    "camera_pose": state["camera_pose"],
+                                    "total_defects": len(state["defects"])
+                                })
+                            except Exception as exc:
+                                response["status"] = "error"
+                                response["error"] = str(exc)
+
+                        elif action == "generate":
                             defects = spawn_full_world(
                                 road_health=msg.get("road_health", "Moderate Deterioration (Grade C)"),
                                 lighting_preset=msg.get("lighting", "Clear Noon (70° Sun)"),
@@ -1077,15 +1973,69 @@ def process_ipc_commands(delta_time=0.0):
                             )
                             response["total_defects"] = len(defects)
 
-                        elif action == "capture":
-                            out_path = capture_drone_photo()
-                            response["path"] = out_path
+                        elif action in {"capture", "inspection_capture"}:
+                            segment_id = str(msg.get("segment_id", _CURRENT_SELECTED_STATE.get("segment_id", "SEG_001"))).strip().upper()
+                            day = int(msg.get("day", _CURRENT_SELECTED_STATE.get("day", 1)))
+                            try:
+                                response.update(_ipc_inspection_capture(day, segment_id))
+                            except Exception as exc:
+                                response["status"] = "error"
+                                response["error"] = str(exc)
 
                         elif action == "teleport":
                             teleport_drone_camera(msg.get("viewpoint", ""))
 
                         elif action == "lighting":
                             apply_environment_lighting(msg.get("preset", "Clear Noon (70° Sun)"))
+
+                        elif action == "temporal_open":
+                            day = int(msg.get("day", 1))
+                            manifest_path = str(
+                                Path(TEMPORAL_MANIFEST_ROOT) / f"day_{day:02d}.json"
+                            )
+                            try:
+                                scene = materialize_temporal_manifest(manifest_path)
+                                response["day"] = scene["day"]
+                                response["segments"] = [
+                                    {
+                                        "segment_id": s["road_segment_id"],
+                                        "condition_score": s.get("renderer_condition_score"),
+                                        "camera_pose": s["camera_pose"],
+                                        "world_location_cm": s["world_location_cm"],
+                                        "persistent_location": s["persistent_location"],
+                                    }
+                                    for s in scene["segments"]
+                                ]
+                                response["camera_config"] = scene["camera_config"]
+                                response["total_defects"] = len(scene["defects"])
+                            except Exception as exc:
+                                response["status"] = "error"
+                                response["error"] = str(exc)
+
+                        elif action == "temporal_goto_segment":
+                            segment_id = str(msg.get("segment_id", "")).strip()
+                            try:
+                                segments = _TEMPORAL_STATE.get("segments", {})
+                                if not segments or segment_id not in segments:
+                                    materialize_segment_day(segment_id, _CURRENT_SELECTED_STATE.get("day", 1))
+                                    segments = _TEMPORAL_STATE.get("segments", {})
+                                pose = segments[segment_id]["camera_pose"]
+                                loc = unreal.Vector(
+                                    float(pose["x_cm"]),
+                                    float(pose["y_cm"]),
+                                    float(pose["z_cm"]),
+                                )
+                                rot = unreal.Rotator(
+                                    roll=float(pose.get("roll_deg", 0.0)),
+                                    pitch=float(pose["pitch_deg"]),
+                                    yaw=float(pose["yaw_deg"]),
+                                )
+                                unreal.EditorLevelLibrary.set_level_viewport_camera_info(loc, rot)
+                                response["segment_id"] = segment_id
+                                response["camera_pose"] = pose
+                            except Exception as exc:
+                                response["status"] = "error"
+                                response["error"] = str(exc)
 
                         resp_bytes = (json.dumps(response) + "\n").encode("utf-8")
                         sock.sendall(resp_bytes)
@@ -1148,4 +2098,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

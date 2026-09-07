@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://roadsentinel.local/schemas/forecast-scenario-1.0.0.json",
+  "title": "RoadSentinel XGBoost scenario inputs",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "scenario_status",
+    "rainfall_level",
+    "traffic_level",
+    "temperature",
+    "water_exposure",
+    "days_ahead"
+  ],
+  "properties": {
+    "scenario_status": {"enum": ["USER_SUPPLIED", "MOCK_INTERFACE_ONLY"]},
+    "rainfall_level": {"type": "number", "minimum": 0, "description": "Scenario mean rainfall in millimetres per day."},
+    "traffic_level": {"type": "number", "minimum": 0, "description": "Scenario mean traffic volume in vehicles per day."},
+    "temperature": {"type": "number", "description": "Scenario mean ambient temperature in degrees Celsius."},
+    "water_exposure": {"type": "number", "minimum": 0, "maximum": 1, "description": "Fraction of forecast days with standing-water exposure."},
+    "days_ahead": {"type": "integer", "minimum": 1}
+  }
+}

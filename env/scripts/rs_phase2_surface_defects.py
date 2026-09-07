@@ -60,6 +60,21 @@ WORKSPACE_ROOT = "/home/nitin-nandakumar/Downloads/roadsentinel"
 CAPTURES_DIR = os.path.join(WORKSPACE_ROOT, "env", "output", "captures")
 MANIFEST_DIR = os.path.join(WORKSPACE_ROOT, "env", "output", "logs")
 TEXTURES_DIR = os.path.join(WORKSPACE_ROOT, "RoadSentinelSim", "Content", "RS_Roads", "Textures")
+TEMPORAL_OUTPUT_ROOT = Path(WORKSPACE_ROOT) / "env" / "output" / "temporal_20_day"
+TEMPORAL_MANIFEST_ROOT = TEMPORAL_OUTPUT_ROOT / "manifests"
+TEMPORAL_CAPTURE_ROOT = TEMPORAL_OUTPUT_ROOT / "captures"
+
+# The UE temporal runner owns this state while the editor is running.  It is
+# deliberately separate from the random interactive scatter state: temporal
+# defect IDs, road coordinates, camera poses and ground-truth records must be
+# stable across all inspection days.
+_TEMPORAL_STATE: Dict[str, Any] = {
+    "day": None,
+    "manifest_path": None,
+    "segments": {},
+    "ground_truth": [],
+    "camera_config": {},
+}
 
 os.makedirs(CAPTURES_DIR, exist_ok=True)
 os.makedirs(MANIFEST_DIR, exist_ok=True)
@@ -571,7 +586,8 @@ def spawn_full_world(
                           actor.actor_has_tag(unreal.Name("RS_Guardrail")) or
                           actor.actor_has_tag(unreal.Name("RS_Streetlamp")) or
                           actor.actor_has_tag(unreal.Name("RS_Terrain")) or
-                          actor.actor_has_tag(unreal.Name("RS_Defect"))):
+                          actor.actor_has_tag(unreal.Name("RS_Defect")) or
+                          actor.get_name() == "Floor"):
                 unreal.EditorLevelLibrary.destroy_actor(actor)
 
         cube_mesh = unreal.EditorAssetLibrary.load_asset("/Engine/BasicShapes/Cube.Cube")
@@ -613,7 +629,7 @@ def spawn_full_world(
         # 3. Straight Highway Slab (250m continuous)
         road_width_cm = 1600.0
         slab_thick_cm = 20.0
-        marking_thick_cm = 0.8
+        marking_thick_cm = 4.0
 
         straight_road = unreal.EditorLevelLibrary.spawn_actor_from_class(
             unreal.StaticMeshActor,
@@ -630,10 +646,10 @@ def spawn_full_world(
                     sc.set_material(0, mat_asphalt)
 
         # Double yellow center lines
-        for offset_cm in [-12.0, 12.0]:
+        for offset_cm in [-14.0, 14.0]:
             ylw = unreal.EditorLevelLibrary.spawn_actor_from_class(
                 unreal.StaticMeshActor,
-                unreal.Vector(12500.0, offset_cm, 0.4),
+                unreal.Vector(12500.0, offset_cm, 2.0),
                 unreal.Rotator(roll=0.0, pitch=0.0, yaw=0.0)
             )
             if ylw and cube_mesh:
@@ -641,7 +657,7 @@ def spawn_full_world(
                 yc = ylw.static_mesh_component
                 if yc:
                     yc.set_static_mesh(cube_mesh)
-                    yc.set_world_scale3d(unreal.Vector(250.0, 0.12, marking_thick_cm / 100.0))
+                    yc.set_world_scale3d(unreal.Vector(250.0, 0.22, marking_thick_cm / 100.0))
                     if mat_yellow:
                         yc.set_material(0, mat_yellow)
 
@@ -649,7 +665,7 @@ def spawn_full_world(
         for fog_offset_cm in [-750.0, 750.0]:
             fog = unreal.EditorLevelLibrary.spawn_actor_from_class(
                 unreal.StaticMeshActor,
-                unreal.Vector(12500.0, fog_offset_cm, 0.4),
+                unreal.Vector(12500.0, fog_offset_cm, 2.0),
                 unreal.Rotator(roll=0.0, pitch=0.0, yaw=0.0)
             )
             if fog and cube_mesh:
@@ -657,7 +673,7 @@ def spawn_full_world(
                 fc = fog.static_mesh_component
                 if fc:
                     fc.set_static_mesh(cube_mesh)
-                    fc.set_world_scale3d(unreal.Vector(250.0, 0.15, marking_thick_cm / 100.0))
+                    fc.set_world_scale3d(unreal.Vector(250.0, 0.20, marking_thick_cm / 100.0))
                     if mat_white:
                         fc.set_material(0, mat_white)
 
@@ -666,7 +682,7 @@ def spawn_full_world(
             for lane_offset_cm in [-375.0, 375.0]:
                 dash = unreal.EditorLevelLibrary.spawn_actor_from_class(
                     unreal.StaticMeshActor,
-                    unreal.Vector(x_m * 100.0, lane_offset_cm, 0.4),
+                    unreal.Vector(x_m * 100.0, lane_offset_cm, 2.0),
                     unreal.Rotator(roll=0.0, pitch=0.0, yaw=0.0)
                 )
                 if dash and cube_mesh:
@@ -674,7 +690,7 @@ def spawn_full_world(
                     dc = dash.static_mesh_component
                     if dc:
                         dc.set_static_mesh(cube_mesh)
-                        dc.set_world_scale3d(unreal.Vector(3.0, 0.15, marking_thick_cm / 100.0))
+                        dc.set_world_scale3d(unreal.Vector(3.0, 0.20, marking_thick_cm / 100.0))
                         if mat_white:
                             dc.set_material(0, mat_white)
 
@@ -772,7 +788,7 @@ def spawn_full_world(
 
             c_ylw = unreal.EditorLevelLibrary.spawn_actor_from_class(
                 unreal.StaticMeshActor,
-                unreal.Vector(cx_cm, cy_cm, 0.4),
+                unreal.Vector(cx_cm, cy_cm, 2.0),
                 unreal.Rotator(roll=0.0, pitch=0.0, yaw=yaw_deg)
             )
             if c_ylw and cube_mesh:
@@ -780,7 +796,7 @@ def spawn_full_world(
                 cyc = c_ylw.static_mesh_component
                 if cyc:
                     cyc.set_static_mesh(cube_mesh)
-                    cyc.set_world_scale3d(unreal.Vector(5.5, 0.20, marking_thick_cm / 100.0))
+                    cyc.set_world_scale3d(unreal.Vector(5.5, 0.25, marking_thick_cm / 100.0))
                     if mat_yellow:
                         cyc.set_material(0, mat_yellow)
 
@@ -908,7 +924,281 @@ def spawn_full_world(
 
 
 # ==============================================================================
-# 6. Drone Camera Navigation & Photo Capture ('C')
+# 6. Deterministic 20-Day Temporal Scene Materialisation
+# ==============================================================================
+
+def _resolve_temporal_path(raw_path: str, purpose: str) -> Path:
+    """Resolve a temporal artifact while keeping it under ``env/output``."""
+    if not raw_path:
+        raise ValueError(f"Missing {purpose} path")
+    path = Path(str(raw_path)).expanduser().resolve()
+    allowed_root = (Path(WORKSPACE_ROOT) / "env" / "output").resolve()
+    try:
+        path.relative_to(allowed_root)
+    except ValueError as exc:
+        raise ValueError(f"{purpose} must be inside {allowed_root}") from exc
+    return path
+
+
+def _finite_number(value: Any, name: str, low: float, high: float) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be numeric") from exc
+    if not math.isfinite(number) or not low <= number <= high:
+        raise ValueError(f"{name} must be between {low} and {high}")
+    return number
+
+
+def _temporal_route_pose(along_m: float, across_m: float) -> Tuple[float, float, float, float]:
+    """Map a cumulative road distance to the fixed UE highway geometry.
+
+    The first 250 m is the straight, followed by the persistent curved road
+    section.  This is the one mapping used for both the actual defect meshes
+    and the camera poses, so a SEG id cannot drift between days.
+    """
+    remaining = along_m
+    road_segments = get_road_network()
+    total_length = sum(segment.length_m for segment in road_segments)
+    if not 0.0 <= along_m <= total_length:
+        raise ValueError(f"along_m={along_m} falls outside the Unreal road route (0..{total_length:.1f} m)")
+    for segment in road_segments:
+        if remaining <= segment.length_m + 1e-6:
+            return segment.get_interpolated_point(max(0.0, remaining), across_m)
+        remaining -= segment.length_m
+    return road_segments[-1].get_interpolated_point(road_segments[-1].length_m, across_m)
+
+
+def _temporal_capture_config(manifest: Dict[str, Any]) -> Dict[str, float]:
+    """Return a bounded, fixed camera configuration for the whole experiment."""
+    raw = manifest.get("unreal_capture", {})
+    if not isinstance(raw, dict):
+        raw = {}
+    # Do not inherit CARLA's historical 100 m default from fixed_flight.  The
+    # native UE road is much smaller and 25 m provides defect-visible imagery.
+    return {
+        "altitude_m": _finite_number(raw.get("altitude_m", 25.0), "unreal_capture.altitude_m", 8.0, 80.0),
+        "pitch_deg": _finite_number(raw.get("pitch_deg", -89.0), "unreal_capture.pitch_deg", -90.0, -45.0),
+        "fov_deg": _finite_number(raw.get("fov_deg", 70.0), "unreal_capture.fov_deg", 35.0, 110.0),
+        "width": int(_finite_number(raw.get("width", 1920), "unreal_capture.width", 320, 4096)),
+        "height": int(_finite_number(raw.get("height", 1080), "unreal_capture.height", 240, 4096)),
+    }
+
+
+def _temporal_materials() -> Dict[str, Any]:
+    """Load the same native PBR assets used by the interactive UE world."""
+    if not HAS_UNREAL:
+        raise RuntimeError("The temporal scene must run inside Unreal Engine")
+    return {
+        "cube": unreal.EditorAssetLibrary.load_asset("/Engine/BasicShapes/Cube.Cube"),
+        "cylinder": unreal.EditorAssetLibrary.load_asset("/Engine/BasicShapes/Cylinder.Cylinder"),
+        "dry": get_or_create_textured_material(
+            "M_RS_Pothole_Cavity", os.path.join(TEXTURES_DIR, "T_RS_Pothole_Dry_D.jpg"), roughness=0.98
+        ),
+        "wet": get_or_create_textured_material(
+            "M_RS_Pothole_Wet_PBR", os.path.join(TEXTURES_DIR, "T_RS_Pothole_Wet_D.jpg"), roughness=0.15
+        ),
+        "crack": get_or_create_textured_material(
+            "M_RS_Crack_Distress", os.path.join(TEXTURES_DIR, "T_RS_Crack_Alligator_D.jpg"), roughness=0.94
+        ),
+        "water": ensure_water_material_exists(),
+    }
+
+
+def _tag_temporal_actor(actor: Any, segment_id: str, defect_id: str) -> None:
+    if not actor:
+        return
+    for tag in ("RS_Defect", "RS_TemporalDefect", f"RS_Segment_{segment_id}", f"RS_Defect_{defect_id}"):
+        actor.tags.append(unreal.Name(tag))
+
+
+def _spawn_temporal_defect(raw: Dict[str, Any], materials: Dict[str, Any], day: int) -> Dict[str, Any]:
+    """Instantiate one manifest defect at its persistent UE road coordinate."""
+    segment_id = str(raw.get("road_segment_id", "")).strip()
+    defect_id = str(raw.get("defect_id", "")).strip()
+    if not segment_id or not defect_id:
+        raise ValueError("Every temporal defect needs road_segment_id and defect_id")
+
+    along_m = _finite_number(raw.get("along_m"), f"{defect_id}.along_m", 0.0, 420.0)
+    across_m = _finite_number(raw.get("across_m"), f"{defect_id}.across_m", -7.5, 7.5)
+    dims = raw.get("dimensions", {})
+    if not isinstance(dims, dict):
+        raise ValueError(f"{defect_id}.dimensions must be an object")
+    length_m = _finite_number(dims.get("length_m", dims.get("diameter_m", 0.4)), f"{defect_id}.length_m", 0.03, 4.0)
+    width_m = _finite_number(dims.get("width_m", dims.get("diameter_m", 0.4)), f"{defect_id}.width_m", 0.02, 4.0)
+    depth_m = _finite_number(dims.get("depth_m", 0.01), f"{defect_id}.depth_m", 0.001, 0.5)
+    local_orientation = _finite_number(dims.get("orientation_deg", 0.0), f"{defect_id}.orientation_deg", -360.0, 360.0)
+    defect_type = str(raw.get("defect_type", "pothole")).strip().lower()
+    water_state = raw.get("water_state", {})
+    if not isinstance(water_state, dict):
+        water_state = {}
+    is_water = bool(water_state.get("is_water_filled", False)) or defect_type == "water_filled_pothole"
+
+    x_m, y_m, z_m, road_yaw_deg = _temporal_route_pose(along_m, across_m)
+    world_yaw_deg = road_yaw_deg + local_orientation
+    loc = unreal.Vector(x_m * 100.0, y_m * 100.0, z_m * 100.0 + 0.55)
+    rot = unreal.Rotator(roll=0.0, pitch=0.0, yaw=world_yaw_deg)
+    actor_label = f"RS_Temporal_{segment_id}_{defect_id}"
+    actor_ids: List[str] = []
+
+    if defect_type == "crack":
+        actor = unreal.EditorLevelLibrary.spawn_actor_from_class(unreal.StaticMeshActor, loc, rot)
+        if actor and materials["cube"]:
+            actor.set_actor_label(actor_label)
+            _tag_temporal_actor(actor, segment_id, defect_id)
+            comp = actor.static_mesh_component
+            comp.set_static_mesh(materials["cube"])
+            comp.set_world_scale3d(unreal.Vector(length_m, max(0.025, width_m), 0.004))
+            if materials["crack"]:
+                comp.set_material(0, materials["crack"])
+            actor_ids.append(actor.get_name())
+    else:
+        actor = unreal.EditorLevelLibrary.spawn_actor_from_class(unreal.StaticMeshActor, loc, rot)
+        if actor and materials["cylinder"]:
+            actor.set_actor_label(actor_label)
+            _tag_temporal_actor(actor, segment_id, defect_id)
+            comp = actor.static_mesh_component
+            comp.set_static_mesh(materials["cylinder"])
+            comp.set_world_scale3d(unreal.Vector(length_m, width_m, max(0.006, depth_m * 0.06)))
+            if is_water and materials["wet"]:
+                comp.set_material(0, materials["wet"])
+            elif materials["dry"]:
+                comp.set_material(0, materials["dry"])
+            actor_ids.append(actor.get_name())
+
+        if is_water and materials["water"] and materials["cylinder"]:
+            water = unreal.EditorLevelLibrary.spawn_actor_from_class(
+                unreal.StaticMeshActor,
+                unreal.Vector(loc.x, loc.y, loc.z + 0.35),
+                rot,
+            )
+            if water:
+                water.set_actor_label(f"{actor_label}_Water")
+                _tag_temporal_actor(water, segment_id, defect_id)
+                water_comp = water.static_mesh_component
+                water_comp.set_static_mesh(materials["cylinder"])
+                coverage = _finite_number(
+                    water_state.get("water_coverage_frac", 0.75),
+                    f"{defect_id}.water_coverage_frac",
+                    0.05,
+                    1.0,
+                )
+                water_comp.set_world_scale3d(unreal.Vector(length_m * coverage, width_m * coverage, 0.003))
+                water_comp.set_material(0, materials["water"])
+                actor_ids.append(water.get_name())
+
+    half_extents = (length_m * 50.0, width_m * 50.0, max(1.0, depth_m * 50.0))
+    ground_truth = {
+        "actor_id": actor_label,
+        "actor_names": actor_ids,
+        "defect_id": defect_id,
+        "road_segment_id": segment_id,
+        "day": day,
+        "defect_type": "water_filled_pothole" if is_water else defect_type,
+        "location": {"x_cm": round(loc.x, 2), "y_cm": round(loc.y, 2), "z_cm": round(loc.z, 2)},
+        "route_location": {"along_m": round(along_m, 3), "across_m": round(across_m, 3), "road_yaw_deg": round(road_yaw_deg, 3)},
+        "dimensions": {"length_m": length_m, "width_m": width_m, "depth_m": depth_m},
+        "water_state": {"is_water_filled": is_water, **water_state},
+        "bounding_box_world": compute_8_corner_bbox_world((loc.x, loc.y, loc.z), world_yaw_deg, half_extents),
+        "renderer_condition_score": raw.get("true_severity_score"),
+    }
+    return ground_truth
+
+
+def materialize_temporal_manifest(manifest_path: str, ground_truth_path: Optional[str] = None) -> Dict[str, Any]:
+    """Apply one deterministic temporal day to the native UE road scene.
+
+    This function consumes the condition manifest directly.  It never invokes
+    the interactive random scatter generator for temporal defects, ensuring
+    that SEG_001, etc. retain both their ID and physical coordinates through
+    all 20 days.
+    """
+    if not HAS_UNREAL:
+        raise RuntimeError("materialize_temporal_manifest must be run by Unreal Engine Python")
+    resolved_manifest = _resolve_temporal_path(manifest_path, "temporal manifest")
+    if not resolved_manifest.is_file():
+        raise FileNotFoundError(f"Temporal manifest does not exist: {resolved_manifest}")
+    payload = json.loads(resolved_manifest.read_text(encoding="utf-8"))
+    if payload.get("schema_version") != "RoadSentinelTemporalManifest/v1":
+        raise ValueError("Unsupported temporal manifest schema")
+    day = int(_finite_number(payload.get("day"), "day", 1.0, 20.0))
+    raw_segments = payload.get("segments", [])
+    raw_defects = payload.get("defects", [])
+    if not isinstance(raw_segments, list) or not isinstance(raw_defects, list):
+        raise ValueError("Temporal manifest segments and defects must be arrays")
+
+    camera_config = _temporal_capture_config(payload)
+    segment_state: Dict[str, Dict[str, Any]] = {}
+    for raw in raw_segments:
+        if not isinstance(raw, dict):
+            raise ValueError("Each temporal segment must be an object")
+        segment_id = str(raw.get("road_segment_id", "")).strip()
+        if not segment_id or segment_id in segment_state:
+            raise ValueError("Temporal segment ids must be non-empty and unique")
+        along_m = _finite_number(raw.get("along_m"), f"{segment_id}.along_m", 0.0, 420.0)
+        across_m = _finite_number(raw.get("across_m"), f"{segment_id}.across_m", -7.5, 7.5)
+        x_m, y_m, z_m, yaw_deg = _temporal_route_pose(along_m, across_m)
+        segment_state[segment_id] = {
+            "road_segment_id": segment_id,
+            "persistent_location": {"along_m": along_m, "across_m": across_m},
+            "world_location_cm": {"x": round(x_m * 100.0, 2), "y": round(y_m * 100.0, 2), "z": round(z_m * 100.0, 2)},
+            "camera_pose": {
+                "x_cm": round(x_m * 100.0, 2),
+                "y_cm": round(y_m * 100.0, 2),
+                "z_cm": round((z_m + camera_config["altitude_m"]) * 100.0, 2),
+                "pitch_deg": camera_config["pitch_deg"],
+                "yaw_deg": round(yaw_deg, 3),
+                "roll_deg": 0.0,
+            },
+            "renderer_condition_score": raw.get("renderer_condition_score"),
+        }
+
+    # Rebuild exactly the same UE road and lighting each day with *zero*
+    # random defects.  Only the following manifest-driven meshes differ.
+    spawn_full_world(
+        road_health="Pristine (Grade A)",
+        lighting_preset="Clear Noon (70° Sun)",
+        size_profile="Multi-Scale Organic (Mixed)",
+        density_per_100m2=0.0,
+        water_ratio="Mixed Wet/Dry",
+        random_seed=2026,
+    )
+    materials = _temporal_materials()
+    ground_truth: List[Dict[str, Any]] = []
+    for raw in raw_defects:
+        if not isinstance(raw, dict):
+            raise ValueError("Each temporal defect must be an object")
+        if str(raw.get("road_segment_id", "")) not in segment_state:
+            raise ValueError("Every temporal defect must refer to a declared segment")
+        ground_truth.append(_spawn_temporal_defect(raw, materials, day))
+
+    _TEMPORAL_STATE.update({
+        "day": day,
+        "manifest_path": str(resolved_manifest),
+        "segments": segment_state,
+        "ground_truth": ground_truth,
+        "camera_config": camera_config,
+    })
+    result = {
+        "schema_version": "RoadSentinelUnrealTemporalGroundTruth/v1",
+        "engine": "Unreal Engine native scene",
+        "day": day,
+        "manifest_path": str(resolved_manifest),
+        "segments": list(segment_state.values()),
+        "defects": ground_truth,
+        "camera_config": camera_config,
+    }
+    if ground_truth_path:
+        resolved_ground_truth = _resolve_temporal_path(ground_truth_path, "ground-truth")
+        resolved_ground_truth.parent.mkdir(parents=True, exist_ok=True)
+        resolved_ground_truth.write_text(json.dumps(result, indent=2), encoding="utf-8")
+        result["ground_truth_path"] = str(resolved_ground_truth)
+    unreal.log(f"[RoadSentinel] Materialised temporal day {day:02d}: {len(ground_truth)} manifest defects.")
+    return result
+
+
+# ==============================================================================
+# 7. Drone Camera Navigation & Photo Capture ('C')
 # ==============================================================================
 
 DRONE_VIEWPOINTS = {
@@ -1001,10 +1291,216 @@ def capture_drone_photo() -> str:
 
 
 # ==============================================================================
+# 7a. Inspection Capture Helper (SceneCapture2D, validate, metadata)
+# ==============================================================================
+
+def _ipc_inspection_capture(day: int, segment_id: str) -> dict:
+    """Perform a full SceneCapture2D render for the given day+segment.
+
+    This is the UE-side implementation of the ``inspection_capture`` IPC action.
+    It re-uses the same SceneCapture2D / render-target export pipeline that the
+    automated temporal runner uses, ensuring genuine UE renders.
+
+    Saves:
+      env/output/manual_inspections/day_XX/SEG_XXX/raw.png
+      env/output/manual_inspections/day_XX/SEG_XXX/metadata.json
+
+    Returns a dict merged into the IPC response:
+      status, path, metadata_path, validated, validation_reason
+    """
+    if not HAS_UNREAL:
+        raise RuntimeError("_ipc_inspection_capture must run inside Unreal Engine Python")
+
+    # Locate the rs_inspection_capture helper (next to this file's GUI script)
+    _helper_dir = os.path.join(WORKSPACE_ROOT, "env", "scripts")
+    if _helper_dir not in sys.path:
+        sys.path.insert(0, _helper_dir)
+    import rs_inspection_capture as _ic
+
+    segments = _TEMPORAL_STATE.get("segments", {})
+    if not segments:
+        raise RuntimeError(
+            "No temporal scene is loaded. Send temporal_open before inspection_capture."
+        )
+    if segment_id not in segments:
+        raise KeyError(
+            f"Segment {segment_id!r} not in the current temporal scene "
+            f"({list(segments.keys())})"
+        )
+
+    seg_state = segments[segment_id]
+    camera_pose = seg_state["camera_pose"]
+    world_location_cm = seg_state["world_location_cm"]
+    persistent_location = seg_state["persistent_location"]
+    condition_score = seg_state.get("renderer_condition_score") or 0.0
+    camera_config = _TEMPORAL_STATE.get("camera_config", {
+        "altitude_m": 25.0, "pitch_deg": -89.0, "fov_deg": 70.0,
+        "width": 1920, "height": 1080,
+    })
+
+    out_dir = _ic.build_output_dir(day, segment_id)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    raw_path = out_dir / "raw.png"
+
+    # ------- SceneCapture2D render -------
+    try:
+        world = unreal.EditorLevelLibrary.get_editor_world()
+    except Exception:
+        subsystem = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
+        world = subsystem.get_editor_world()
+    if not world:
+        raise RuntimeError("Unreal Editor world is not available for SceneCapture2D")
+
+    # Create render target
+    render_format = getattr(
+        unreal.TextureRenderTargetFormat,
+        "RTF_RGBA8_SRGB",
+        unreal.TextureRenderTargetFormat.RTF_RGBA8,
+    )
+    clear = unreal.LinearColor(0.0, 0.0, 0.0, 1.0)
+    try:
+        target = unreal.RenderingLibrary.create_render_target2d(
+            world, int(camera_config["width"]), int(camera_config["height"]),
+            render_format, clear_color=clear, auto_generate_mips=False,
+        )
+    except TypeError:
+        target = unreal.RenderingLibrary.create_render_target2d(
+            world, int(camera_config["width"]), int(camera_config["height"]), render_format,
+        )
+    if not target:
+        raise RuntimeError("Could not create SceneCapture2D render target for inspection")
+
+    # Spawn SceneCapture2D at the segment's fixed camera pose
+    loc = unreal.Vector(
+        float(camera_pose["x_cm"]),
+        float(camera_pose["y_cm"]),
+        float(camera_pose["z_cm"]),
+    )
+    rot = unreal.Rotator(
+        roll=float(camera_pose.get("roll_deg", 0.0)),
+        pitch=float(camera_pose["pitch_deg"]),
+        yaw=float(camera_pose["yaw_deg"]),
+    )
+    cam = unreal.EditorLevelLibrary.spawn_actor_from_class(unreal.SceneCapture2D, loc, rot)
+    if not cam:
+        raise RuntimeError("Could not spawn SceneCapture2D actor for inspection capture")
+
+    try:
+        comp = None
+        try:
+            comp = cam.get_capture_component2d()
+        except Exception:
+            pass
+        if not comp:
+            comp = cam.get_component_by_class(unreal.SceneCaptureComponent2D)
+        if not comp:
+            raise RuntimeError("SceneCapture2D actor has no capture component")
+
+        comp.set_editor_property("texture_target", target)
+        comp.set_editor_property("fov_angle", float(camera_config["fov_deg"]))
+        comp.set_editor_property("capture_every_frame", False)
+        comp.set_editor_property("capture_on_movement", False)
+        comp.set_editor_property("always_persist_rendering_state", True)
+        comp.set_editor_property("inherit_main_view_camera_post_process_settings", True)
+        try:
+            comp.set_editor_property(
+                "capture_source", unreal.SceneCaptureSource.SCS_FINAL_COLOR_LDR
+            )
+        except (AttributeError, TypeError):
+            pass
+
+        try:
+            pps = comp.get_editor_property("post_process_settings")
+            pps.set_editor_property("override_auto_exposure_bias", True)
+            pps.set_editor_property("auto_exposure_bias", 2.6)
+            comp.set_editor_property("post_process_settings", pps)
+            comp.set_editor_property("post_process_blend_weight", 1.0)
+        except Exception:
+            pass
+
+        # Two captures with a settle between them for material streaming
+        comp.capture_scene()
+        time.sleep(0.25)
+        comp.capture_scene()
+
+        # Export render target → PNG
+        unreal.RenderingLibrary.export_render_target(
+            world, target, str(out_dir), raw_path.name,
+        )
+
+        # Wait for PNG to appear (UE async write)
+        deadline = time.time() + 20.0
+        actual_path = raw_path
+        alt_path = raw_path.with_name(raw_path.name + ".png")
+        while time.time() < deadline:
+            if raw_path.is_file() and raw_path.stat().st_size > 0:
+                actual_path = raw_path
+                break
+            if alt_path.is_file() and alt_path.stat().st_size > 0:
+                alt_path.replace(raw_path)
+                actual_path = raw_path
+                break
+            time.sleep(0.10)
+        else:
+            raise RuntimeError(
+                f"UE did not export inspection PNG within 20s: {raw_path}"
+            )
+
+    finally:
+        try:
+            unreal.EditorLevelLibrary.destroy_actor(cam)
+        except Exception:
+            pass
+
+    # ------- Validate -------
+    val = _ic.validate_png(
+        actual_path,
+        expected_width=int(camera_config["width"]),
+        expected_height=int(camera_config["height"]),
+    )
+
+    # ------- Write metadata -------
+    meta_path = _ic.write_metadata(
+        output_dir=out_dir,
+        day=day,
+        segment_id=segment_id,
+        camera_pose=camera_pose,
+        world_coordinates={
+            "x_cm": world_location_cm.get("x", 0.0),
+            "y_cm": world_location_cm.get("y", 0.0),
+            "z_cm": world_location_cm.get("z", 0.0),
+            "along_m": persistent_location.get("along_m", 0.0),
+            "across_m": persistent_location.get("across_m", 0.0),
+        },
+        condition_score=condition_score,
+        extra={
+            "capture_day": day,
+            "total_defects_day": len(_TEMPORAL_STATE.get("ground_truth", [])),
+        },
+    )
+
+    unreal.log(
+        f"[RoadSentinel] Inspection capture day {day:02d} {segment_id}: "
+        f"{'VALID' if val['valid'] else 'INVALID – ' + str(val.get('reason'))}"
+    )
+
+    return {
+        "status": "ok" if val["valid"] else "warning",
+        "path": str(actual_path),
+        "metadata_path": str(meta_path),
+        "validated": val["valid"],
+        "validation_reason": val.get("reason"),
+        "file_size_bytes": val.get("file_size_bytes", 0),
+    }
+
+
+# ==============================================================================
 # 7. Unreal Engine IPC Server (Receives commands from Studio GUI)
 # ==============================================================================
 
 import socket
+import struct
+import zlib
 import select
 import subprocess
 
@@ -1087,6 +1583,81 @@ def process_ipc_commands(delta_time=0.0):
                         elif action == "lighting":
                             apply_environment_lighting(msg.get("preset", "Clear Noon (70° Sun)"))
 
+                        # -------------------------------------------------------
+                        # Inspection Capture IPC Actions
+                        # -------------------------------------------------------
+
+                        elif action == "temporal_open":
+                            # Materialise a specific day's deterministic scene
+                            day = int(msg.get("day", 1))
+                            manifest_path = str(
+                                Path(TEMPORAL_MANIFEST_ROOT) / f"day_{day:02d}.json"
+                            )
+                            try:
+                                scene = materialize_temporal_manifest(manifest_path)
+                                response["day"] = scene["day"]
+                                response["segments"] = [
+                                    {
+                                        "segment_id": s["road_segment_id"],
+                                        "condition_score": s.get("renderer_condition_score"),
+                                        "camera_pose": s["camera_pose"],
+                                        "world_location_cm": s["world_location_cm"],
+                                        "persistent_location": s["persistent_location"],
+                                    }
+                                    for s in scene["segments"]
+                                ]
+                                response["camera_config"] = scene["camera_config"]
+                                response["total_defects"] = len(scene["defects"])
+                            except Exception as exc:
+                                response["status"] = "error"
+                                response["error"] = str(exc)
+
+                        elif action == "temporal_goto_segment":
+                            # Move the active UE viewport camera to a segment's
+                            # fixed downward-facing inspection pose
+                            segment_id = str(msg.get("segment_id", "")).strip()
+                            try:
+                                segments = _TEMPORAL_STATE.get("segments", {})
+                                if not segments:
+                                    raise RuntimeError(
+                                        "No temporal scene is loaded. "
+                                        "Send temporal_open first."
+                                    )
+                                if segment_id not in segments:
+                                    raise KeyError(
+                                        f"Segment {segment_id!r} not in the "
+                                        f"current temporal scene ({list(segments.keys())})"
+                                    )
+                                pose = segments[segment_id]["camera_pose"]
+                                loc = unreal.Vector(
+                                    float(pose["x_cm"]),
+                                    float(pose["y_cm"]),
+                                    float(pose["z_cm"]),
+                                )
+                                rot = unreal.Rotator(
+                                    roll=float(pose.get("roll_deg", 0.0)),
+                                    pitch=float(pose["pitch_deg"]),
+                                    yaw=float(pose["yaw_deg"]),
+                                )
+                                unreal.EditorLevelLibrary.set_level_viewport_camera_info(loc, rot)
+                                response["segment_id"] = segment_id
+                                response["camera_pose"] = pose
+                            except Exception as exc:
+                                response["status"] = "error"
+                                response["error"] = str(exc)
+
+                        elif action == "inspection_capture":
+                            # Full SceneCapture2D render + validate + save
+                            day = int(msg.get("day", 1))
+                            segment_id = str(msg.get("segment_id", "")).strip()
+                            try:
+                                response.update(
+                                    _ipc_inspection_capture(day, segment_id)
+                                )
+                            except Exception as exc:
+                                response["status"] = "error"
+                                response["error"] = str(exc)
+
                         resp_bytes = (json.dumps(response) + "\n").encode("utf-8")
                         sock.sendall(resp_bytes)
                 except Exception as ex:
@@ -1148,4 +1719,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

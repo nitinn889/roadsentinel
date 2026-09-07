@@ -1,0 +1,8 @@
+{
+  "scenario_status": "MOCK_INTERFACE_ONLY",
+  "rainfall_level": 12.0,
+  "traffic_level": 1500.0,
+  "temperature": 32.0,
+  "water_exposure": 0.4,
+  "days_ahead": 30
+}

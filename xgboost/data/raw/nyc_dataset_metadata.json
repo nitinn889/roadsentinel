@@ -1,0 +1,874 @@
+{
+  "id" : "6yyb-pb25",
+  "name" : "Street Pavement Ratings",
+  "assetType" : "dataset",
+  "attribution" : "Department of Transportation (DOT)",
+  "averageRating" : 0,
+  "category" : "Transportation",
+  "createdAt" : 1667320403,
+  "description" : "The Agency performs ongoing assessments of New York City street pavement. Ratings are based on a scale from 1 to 10, and results are grouped in the following categories:\n- Good (%) - ratings of 8.00 to 10\n- Fair (%) - ratings of 4.00 to 7.00 (except on local streets where a 7 is good)\n- Poor (%) - ratings of 1.00 to 3.00.\n\nInspectors rate roadway pavement conditions throughout the five boroughs using the scale above.",
+  "diciBackend" : false,
+  "displayType" : "table",
+  "downloadCount" : 3116,
+  "hideFromCatalog" : false,
+  "hideFromDataJson" : false,
+  "locked" : false,
+  "newBackend" : true,
+  "numberOfComments" : 0,
+  "oid" : 41750395,
+  "provenance" : "official",
+  "publicationAppendEnabled" : false,
+  "publicationDate" : 1763650795,
+  "publicationGroup" : 18941822,
+  "publicationStage" : "published",
+  "rowClass" : "",
+  "rowsUpdatedAt" : 1788257796,
+  "rowsUpdatedBy" : "8xiq-st2k",
+  "tableId" : 20166512,
+  "totalTimesRated" : 0,
+  "viewCount" : 9798,
+  "viewLastModified" : 1788257555,
+  "viewType" : "tabular",
+  "approvals" : [ {
+    "reviewedAt" : 1667596180,
+    "reviewedAutomatically" : false,
+    "state" : "approved",
+    "submissionId" : 7210994,
+    "submissionObject" : "public_audience_request",
+    "submissionOutcome" : "change_audience",
+    "submittedAt" : 1667596137,
+    "targetAudience" : "public",
+    "workflowId" : 2285,
+    "reviewer" : {
+      "id" : "8u8s-8cxv",
+      "displayName" : "Zachary Feder (NYC Open Data)"
+    },
+    "submissionDetails" : {
+      "permissionType" : "read"
+    },
+    "submissionOutcomeApplication" : {
+      "endedAt" : 1667596180,
+      "failureCount" : 0,
+      "startedAt" : 1667596180,
+      "status" : "success"
+    },
+    "submitter" : {
+      "id" : "8u8s-8cxv",
+      "displayName" : "Zachary Feder (NYC Open Data)"
+    }
+  } ],
+  "clientContext" : {
+    "clientContextVariables" : [ ],
+    "inheritedVariables" : { }
+  },
+  "columns" : [ {
+    "id" : 621493093,
+    "name" : "the_geom",
+    "dataTypeName" : "multiline",
+    "description" : "The geometry type of the entry.",
+    "fieldName" : "the_geom",
+    "position" : 1,
+    "renderTypeName" : "multiline",
+    "tableColumnId" : 144440346,
+    "format" : { }
+  }, {
+    "id" : 621493096,
+    "name" : "OFTCode",
+    "dataTypeName" : "text",
+    "description" : "A unique numerical 18 digit code for the On- From- To location of the street segment. ",
+    "fieldName" : "oftcode",
+    "position" : 2,
+    "renderTypeName" : "text",
+    "tableColumnId" : 144440343,
+    "cachedContents" : {
+      "non_null" : "519413",
+      "largest" : "597240523908548170",
+      "null" : "0",
+      "top" : [ {
+        "item" : "113610137750137790",
+        "count" : "51"
+      }, {
+        "item" : "360530368250375760",
+        "count" : "46"
+      }, {
+        "item" : "236420200468217020",
+        "count" : "44"
+      }, {
+        "item" : "117270112210131715",
+        "count" : "40"
+      }, {
+        "item" : "221090253870253870",
+        "count" : "38"
+      }, {
+        "item" : "236420226850226880",
+        "count" : "36"
+      }, {
+        "item" : "356230312030343730",
+        "count" : "36"
+      }, {
+        "item" : "328830314180356825",
+        "count" : "34"
+      }, {
+        "item" : "356230312400375080",
+        "count" : "34"
+      }, {
+        "item" : "328830314280373500",
+        "count" : "34"
+      }, {
+        "item" : "328830314230356825",
+        "count" : "34"
+      }, {
+        "item" : "328830313980344430",
+        "count" : "34"
+      }, {
+        "item" : "117270112310131715",
+        "count" : "34"
+      }, {
+        "item" : "341730337680337730",
+        "count" : "33"
+      }, {
+        "item" : "236420229620252720",
+        "count" : "33"
+      }, {
+        "item" : "113610135170135190",
+        "count" : "32"
+      }, {
+        "item" : "341330331230376240",
+        "count" : "32"
+      }, {
+        "item" : "341030337830373210",
+        "count" : "32"
+      }, {
+        "item" : "211140216020277450",
+        "count" : "32"
+      }, {
+        "item" : "236420222240226910",
+        "count" : "32"
+      } ],
+      "smallest" : "100016127050132700",
+      "count" : "519413",
+      "cardinality" : "519413"
+    },
+    "format" : { }
+  }, {
+    "id" : 621493105,
+    "name" : "BoroughName",
+    "dataTypeName" : "text",
+    "description" : "The borough where the inspected street segment is located.",
+    "fieldName" : "boroughname",
+    "position" : 3,
+    "renderTypeName" : "text",
+    "tableColumnId" : 163494256,
+    "cachedContents" : {
+      "non_null" : "519355",
+      "largest" : "Staten Island",
+      "null" : "58",
+      "top" : [ {
+        "item" : "Queens",
+        "count" : "195023"
+      }, {
+        "item" : "Brooklyn",
+        "count" : "133430"
+      }, {
+        "item" : "Bronx",
+        "count" : "73063"
+      }, {
+        "item" : "Staten Island",
+        "count" : "69849"
+      }, {
+        "item" : "Manhattan",
+        "count" : "47990"
+      } ],
+      "smallest" : "Bronx",
+      "count" : "519413",
+      "cardinality" : "519413"
+    },
+    "format" : { }
+  }, {
+    "id" : 621493097,
+    "name" : "OnStreetName",
+    "dataTypeName" : "text",
+    "description" : "The name of the street for the street rating to be located on. ",
+    "fieldName" : "onstreetna",
+    "position" : 4,
+    "renderTypeName" : "text",
+    "tableColumnId" : 144440342,
+    "cachedContents" : {
+      "non_null" : "519409",
+      "largest" : "ZWICKY AVENUE",
+      "null" : "4",
+      "top" : [ {
+        "item" : "BROADWAY",
+        "count" : "4270"
+      }, {
+        "item" : "3 AVENUE",
+        "count" : "3495"
+      }, {
+        "item" : "NORTHERN BOULEVARD",
+        "count" : "2138"
+      }, {
+        "item" : "5 AVENUE",
+        "count" : "1912"
+      }, {
+        "item" : "LINDEN BOULEVARD",
+        "count" : "1852"
+      }, {
+        "item" : "PARK AVENUE",
+        "count" : "1835"
+      }, {
+        "item" : "AMBOY ROAD",
+        "count" : "1794"
+      }, {
+        "item" : "JAMAICA AVENUE",
+        "count" : "1739"
+      }, {
+        "item" : "ATLANTIC AVENUE",
+        "count" : "1689"
+      }, {
+        "item" : "HYLAN BOULEVARD",
+        "count" : "1662"
+      }, {
+        "item" : "7 AVENUE",
+        "count" : "1647"
+      }, {
+        "item" : "4 AVENUE",
+        "count" : "1620"
+      }, {
+        "item" : "HILLSIDE AVENUE",
+        "count" : "1537"
+      }, {
+        "item" : "2 AVENUE",
+        "count" : "1438"
+      }, {
+        "item" : "FRANCIS LEWIS BOULEVARD",
+        "count" : "1377"
+      }, {
+        "item" : "1 AVENUE",
+        "count" : "1371"
+      }, {
+        "item" : "BOSTON ROAD",
+        "count" : "1327"
+      }, {
+        "item" : "LIBERTY AVENUE",
+        "count" : "1307"
+      }, {
+        "item" : "8 AVENUE",
+        "count" : "1239"
+      }, {
+        "item" : "METROPOLITAN AVENUE",
+        "count" : "1233"
+      } ],
+      "smallest" : "100 AVENUE",
+      "count" : "519413",
+      "cardinality" : "519413"
+    },
+    "format" : { }
+  }, {
+    "id" : 621493098,
+    "name" : "FromStreetName",
+    "dataTypeName" : "text",
+    "description" : "The closest intersection to the on street in one direction. ",
+    "fieldName" : "fromstreet",
+    "position" : 5,
+    "renderTypeName" : "text",
+    "tableColumnId" : 144440341,
+    "cachedContents" : {
+      "non_null" : "519402",
+      "largest" : "ZICHRON KEDOSHIM SQUARE",
+      "null" : "11",
+      "top" : [ {
+        "item" : "DEAD END",
+        "count" : "8736"
+      }, {
+        "item" : "BEND",
+        "count" : "5320"
+      }, {
+        "item" : "BROADWAY",
+        "count" : "3205"
+      }, {
+        "item" : "3 AVENUE",
+        "count" : "2333"
+      }, {
+        "item" : "5 AVENUE",
+        "count" : "2010"
+      }, {
+        "item" : "BEDFORD AVENUE",
+        "count" : "1892"
+      }, {
+        "item" : "7 AVENUE",
+        "count" : "1683"
+      }, {
+        "item" : "1 AVENUE",
+        "count" : "1573"
+      }, {
+        "item" : "AMSTERDAM AVENUE",
+        "count" : "1422"
+      }, {
+        "item" : "6 AVENUE",
+        "count" : "1406"
+      }, {
+        "item" : "34 AVENUE",
+        "count" : "1368"
+      }, {
+        "item" : "8 AVENUE",
+        "count" : "1335"
+      }, {
+        "item" : "43 AVENUE",
+        "count" : "1327"
+      }, {
+        "item" : "ATLANTIC AVENUE",
+        "count" : "1326"
+      }, {
+        "item" : "89 AVENUE",
+        "count" : "1313"
+      }, {
+        "item" : "2 AVENUE",
+        "count" : "1301"
+      }, {
+        "item" : "23 AVENUE",
+        "count" : "1141"
+      }, {
+        "item" : "10 AVENUE",
+        "count" : "1136"
+      }, {
+        "item" : "4 AVENUE",
+        "count" : "1088"
+      }, {
+        "item" : "AMBOY ROAD",
+        "count" : "1051"
+      } ],
+      "smallest" : "100 AVENUE",
+      "count" : "519413",
+      "cardinality" : "519413"
+    },
+    "format" : { }
+  }, {
+    "id" : 621493099,
+    "name" : "ToStreetName",
+    "dataTypeName" : "text",
+    "description" : "The closest intersection to the on street in the opposite direction. ",
+    "fieldName" : "tostreetna",
+    "position" : 6,
+    "renderTypeName" : "text",
+    "tableColumnId" : 144440340,
+    "cachedContents" : {
+      "non_null" : "519402",
+      "largest" : "ZWICKY AVENUE",
+      "null" : "11",
+      "top" : [ {
+        "item" : "DEAD END",
+        "count" : "7038"
+      }, {
+        "item" : "BEND",
+        "count" : "2773"
+      }, {
+        "item" : "LINDEN BOULEVARD",
+        "count" : "2073"
+      }, {
+        "item" : "PARK AVENUE",
+        "count" : "1927"
+      }, {
+        "item" : "NORTHERN BOULEVARD",
+        "count" : "1827"
+      }, {
+        "item" : "BROADWAY",
+        "count" : "1791"
+      }, {
+        "item" : "JAMAICA AVENUE",
+        "count" : "1717"
+      }, {
+        "item" : "NYCTA SUBWAY",
+        "count" : "1668"
+      }, {
+        "item" : "3 AVENUE",
+        "count" : "1601"
+      }, {
+        "item" : "SUTTER AVENUE",
+        "count" : "1575"
+      }, {
+        "item" : "LIBERTY AVENUE",
+        "count" : "1564"
+      }, {
+        "item" : "FRANCIS LEWIS BOULEVARD",
+        "count" : "1471"
+      }, {
+        "item" : "UNION TURNPIKE",
+        "count" : "1393"
+      }, {
+        "item" : "HILLSIDE AVENUE",
+        "count" : "1289"
+      }, {
+        "item" : "HORACE HARDING EXPRESSWAY",
+        "count" : "1117"
+      }, {
+        "item" : "SPRINGFIELD BOULEVARD",
+        "count" : "1086"
+      }, {
+        "item" : "NOSTRAND AVENUE",
+        "count" : "1042"
+      }, {
+        "item" : "PITKIN AVENUE",
+        "count" : "1003"
+      }, {
+        "item" : "ROCKAWAY BOULEVARD",
+        "count" : "966"
+      }, {
+        "item" : "QUEENS BOULEVARD",
+        "count" : "964"
+      } ],
+      "smallest" : "100 AVENUE",
+      "count" : "519413",
+      "cardinality" : "519413"
+    },
+    "format" : { }
+  }, {
+    "id" : 621493106,
+    "name" : "IsMultiPass",
+    "dataTypeName" : "number",
+    "description" : "This specifies if this street (OFT) has multiple road type (main/ service/ overpass/ underpass) or direction (North, South, East, West) combinations.\n",
+    "fieldName" : "ismultipass",
+    "position" : 7,
+    "renderTypeName" : "number",
+    "tableColumnId" : 163494257,
+    "cachedContents" : {
+      "non_null" : "519413",
+      "largest" : "1",
+      "null" : "0",
+      "top" : [ {
+        "item" : "0",
+        "count" : "469368"
+      }, {
+        "item" : "1",
+        "count" : "50045"
+      } ],
+      "smallest" : "0",
+      "count" : "519413",
+      "cardinality" : "519413"
+    },
+    "format" : { }
+  }, {
+    "id" : 621493108,
+    "name" : "Direction",
+    "dataTypeName" : "text",
+    "description" : "The compass direction of the street. ",
+    "fieldName" : "direction",
+    "position" : 8,
+    "renderTypeName" : "text",
+    "tableColumnId" : 163494259,
+    "cachedContents" : {
+      "non_null" : "45063",
+      "largest" : "West",
+      "null" : "474350",
+      "top" : [ {
+        "item" : "North",
+        "count" : "12895"
+      }, {
+        "item" : "South",
+        "count" : "12761"
+      }, {
+        "item" : "West",
+        "count" : "9810"
+      }, {
+        "item" : "East",
+        "count" : "9597"
+      } ],
+      "smallest" : "East",
+      "count" : "519413",
+      "cardinality" : "519413"
+    },
+    "format" : { }
+  }, {
+    "id" : 621493107,
+    "name" : "Road_Type",
+    "dataTypeName" : "text",
+    "description" : "The classification of the street type. ",
+    "fieldName" : "road_type",
+    "position" : 9,
+    "renderTypeName" : "text",
+    "tableColumnId" : 163494258,
+    "cachedContents" : {
+      "non_null" : "45063",
+      "largest" : "UnderPass",
+      "null" : "474350",
+      "top" : [ {
+        "item" : "Main",
+        "count" : "42282"
+      }, {
+        "item" : "Service",
+        "count" : "2700"
+      }, {
+        "item" : "UnderPass",
+        "count" : "59"
+      }, {
+        "item" : "OverPass",
+        "count" : "22"
+      } ],
+      "smallest" : "Main",
+      "count" : "519413",
+      "cardinality" : "519413"
+    },
+    "format" : { }
+  }, {
+    "id" : 621493109,
+    "name" : "SystemRating",
+    "dataTypeName" : "number",
+    "description" : "The numeric value of the Street Assessment rating on a scale of 1.00-10, 1.00 being a low or poor rating and 10.00 being a high or good rating.",
+    "fieldName" : "systemrating",
+    "position" : 10,
+    "renderTypeName" : "number",
+    "tableColumnId" : 163494260,
+    "cachedContents" : {
+      "non_null" : "519413",
+      "largest" : "10.0",
+      "null" : "0",
+      "top" : [ {
+        "item" : "0.0",
+        "count" : "73089"
+      }, {
+        "item" : "10.0",
+        "count" : "53216"
+      }, {
+        "item" : "9.93",
+        "count" : "45256"
+      }, {
+        "item" : "9.11",
+        "count" : "32784"
+      }, {
+        "item" : "9.19",
+        "count" : "10617"
+      }, {
+        "item" : "9.83",
+        "count" : "8607"
+      }, {
+        "item" : "6.99",
+        "count" : "7521"
+      }, {
+        "item" : "8.87",
+        "count" : "6752"
+      }, {
+        "item" : "9.69",
+        "count" : "5867"
+      }, {
+        "item" : "9.01",
+        "count" : "5861"
+      }, {
+        "item" : "6.18",
+        "count" : "5283"
+      }, {
+        "item" : "8.05",
+        "count" : "5089"
+      }, {
+        "item" : "6.75",
+        "count" : "4215"
+      }, {
+        "item" : "9.68",
+        "count" : "4000"
+      }, {
+        "item" : "8.24",
+        "count" : "3908"
+      }, {
+        "item" : "7.8",
+        "count" : "3417"
+      }, {
+        "item" : "8.49",
+        "count" : "2956"
+      }, {
+        "item" : "7.14",
+        "count" : "2943"
+      }, {
+        "item" : "8.86",
+        "count" : "2938"
+      }, {
+        "item" : "7.95",
+        "count" : "2906"
+      } ],
+      "smallest" : "0.0",
+      "count" : "519413",
+      "cardinality" : "519413"
+    },
+    "format" : { }
+  }, {
+    "id" : 621493110,
+    "name" : "NonRatingReason",
+    "dataTypeName" : "text",
+    "description" : "The reason a street pavement rating was not conducted.",
+    "fieldName" : "nonratingreason",
+    "position" : 11,
+    "renderTypeName" : "text",
+    "tableColumnId" : 163494261,
+    "cachedContents" : {
+      "non_null" : "73428",
+      "largest" : "Weather",
+      "null" : "445985",
+      "top" : [ {
+        "item" : "Duplicate",
+        "count" : "30026"
+      }, {
+        "item" : "Construction",
+        "count" : "11920"
+      }, {
+        "item" : "Multi-pass",
+        "count" : "9906"
+      }, {
+        "item" : "Road Identification",
+        "count" : "9146"
+      }, {
+        "item" : "Other",
+        "count" : "3277"
+      }, {
+        "item" : "Private",
+        "count" : "1987"
+      }, {
+        "item" : "Intersection",
+        "count" : "1683"
+      }, {
+        "item" : "Not a Multi-pass",
+        "count" : "1319"
+      }, {
+        "item" : "Expressway",
+        "count" : "1295"
+      }, {
+        "item" : "Does Not Exist",
+        "count" : "1182"
+      }, {
+        "item" : "Gated",
+        "count" : "470"
+      }, {
+        "item" : "Pedestrian Walkway",
+        "count" : "421"
+      }, {
+        "item" : "Traffic",
+        "count" : "214"
+      }, {
+        "item" : "Weather",
+        "count" : "186"
+      }, {
+        "item" : "Rating Not Applicable",
+        "count" : "185"
+      }, {
+        "item" : "Special Event",
+        "count" : "173"
+      }, {
+        "item" : "Step Street",
+        "count" : "38"
+      } ],
+      "smallest" : "Construction",
+      "count" : "519413",
+      "cardinality" : "519413"
+    },
+    "format" : { }
+  }, {
+    "id" : 621493103,
+    "name" : "InspectionTime",
+    "dataTypeName" : "calendar_date",
+    "description" : "The date the rating information was collected.",
+    "fieldName" : "inspection",
+    "position" : 12,
+    "renderTypeName" : "calendar_date",
+    "tableColumnId" : 144440336,
+    "cachedContents" : {
+      "non_null" : "519413",
+      "largest" : "2026-08-27T00:00:00.000",
+      "null" : "0",
+      "top" : [ {
+        "item" : "2020-01-30T00:00:00.000",
+        "count" : "784"
+      }, {
+        "item" : "2021-11-16T00:00:00.000",
+        "count" : "743"
+      }, {
+        "item" : "2020-03-02T00:00:00.000",
+        "count" : "736"
+      }, {
+        "item" : "2021-09-22T00:00:00.000",
+        "count" : "735"
+      }, {
+        "item" : "2018-07-19T00:00:00.000",
+        "count" : "724"
+      }, {
+        "item" : "2018-08-02T00:00:00.000",
+        "count" : "711"
+      }, {
+        "item" : "2018-07-10T00:00:00.000",
+        "count" : "708"
+      }, {
+        "item" : "2020-04-24T00:00:00.000",
+        "count" : "705"
+      }, {
+        "item" : "2018-07-24T00:00:00.000",
+        "count" : "699"
+      }, {
+        "item" : "2019-10-01T00:00:00.000",
+        "count" : "694"
+      }, {
+        "item" : "2021-11-03T00:00:00.000",
+        "count" : "689"
+      }, {
+        "item" : "2020-04-21T00:00:00.000",
+        "count" : "683"
+      }, {
+        "item" : "2021-11-05T00:00:00.000",
+        "count" : "679"
+      }, {
+        "item" : "2020-04-20T00:00:00.000",
+        "count" : "679"
+      }, {
+        "item" : "2021-12-07T00:00:00.000",
+        "count" : "669"
+      }, {
+        "item" : "2020-04-23T00:00:00.000",
+        "count" : "661"
+      }, {
+        "item" : "2021-08-13T00:00:00.000",
+        "count" : "648"
+      }, {
+        "item" : "2021-11-17T00:00:00.000",
+        "count" : "632"
+      }, {
+        "item" : "2018-08-16T00:00:00.000",
+        "count" : "616"
+      }, {
+        "item" : "2021-10-13T00:00:00.000",
+        "count" : "610"
+      } ],
+      "smallest" : "2006-10-20T00:00:00.000",
+      "count" : "519413",
+      "cardinality" : "519413"
+    },
+    "format" : {
+      "view" : "date_time"
+    }
+  }, {
+    "id" : 621493111,
+    "name" : "LocationGeometry.STLength",
+    "dataTypeName" : "number",
+    "description" : "The length of the street line (block).\n",
+    "fieldName" : "locationgeometry_stlength",
+    "position" : 13,
+    "renderTypeName" : "number",
+    "tableColumnId" : 163494262,
+    "cachedContents" : {
+      "non_null" : "519413",
+      "largest" : "38913.4228608",
+      "null" : "0",
+      "top" : [ {
+        "item" : "734.056280137",
+        "count" : "64"
+      }, {
+        "item" : "521.762292718",
+        "count" : "58"
+      }, {
+        "item" : "739.092284458",
+        "count" : "50"
+      }, {
+        "item" : "139.812479381",
+        "count" : "46"
+      }, {
+        "item" : "308.635509075",
+        "count" : "45"
+      }, {
+        "item" : "484.652583617",
+        "count" : "43"
+      }, {
+        "item" : "743.522295895",
+        "count" : "43"
+      }, {
+        "item" : "374.98268645",
+        "count" : "42"
+      }, {
+        "item" : "408.885829948",
+        "count" : "41"
+      }, {
+        "item" : "148.670264153",
+        "count" : "38"
+      }, {
+        "item" : "340.579203112",
+        "count" : "36"
+      }, {
+        "item" : "260.112856927",
+        "count" : "36"
+      }, {
+        "item" : "278.761681369",
+        "count" : "34"
+      }, {
+        "item" : "881.982183216",
+        "count" : "34"
+      }, {
+        "item" : "260.301146783",
+        "count" : "34"
+      }, {
+        "item" : "730.156939404",
+        "count" : "34"
+      }, {
+        "item" : "151.345740206",
+        "count" : "34"
+      }, {
+        "item" : "381.043641336",
+        "count" : "34"
+      }, {
+        "item" : "920.063592467",
+        "count" : "33"
+      }, {
+        "item" : "272.952881247",
+        "count" : "33"
+      } ],
+      "smallest" : "4.15161587814",
+      "count" : "519413",
+      "cardinality" : "519413"
+    },
+    "format" : {
+      "precision" : "2"
+    }
+  } ],
+  "grants" : [ {
+    "inherited" : false,
+    "type" : "viewer",
+    "flags" : [ "public" ]
+  } ],
+  "metadata" : {
+    "rdfSubject" : "0",
+    "rdfClass" : "",
+    "attachments" : [ {
+      "filename" : "Data Dictionary - StreetPavementRating_Final.xlsx",
+      "assetId" : "0582f80f-e210-4d2d-91e2-9e0a14917ee5",
+      "name" : "Data Dictionary - StreetPavementRating_Final.xlsx"
+    } ],
+    "custom_fields" : {
+      "Update" : {
+        "Automation" : "No",
+        "Date Made Public" : "11/04/2022",
+        "Update Frequency" : "Monthly",
+        "Data Change Frequency" : "Daily"
+      },
+      "Dataset Information" : {
+        "Agency" : "Department of Transportation (DOT)"
+      }
+    },
+    "rowLabel" : "Street Pavement Rating",
+    "availableDisplayTypes" : [ "table", "fatrow", "page" ]
+  },
+  "owner" : {
+    "id" : "5fuc-pqz2",
+    "displayName" : "NYC OpenData",
+    "profileImageUrlLarge" : "/api/users/5fuc-pqz2/profile_images/LARGE",
+    "profileImageUrlMedium" : "/api/users/5fuc-pqz2/profile_images/THUMB",
+    "profileImageUrlSmall" : "/api/users/5fuc-pqz2/profile_images/TINY",
+    "screenName" : "NYC OpenData",
+    "type" : "interactive",
+    "flags" : [ "acceptedEula", "mayBeStoriesCoOwner" ]
+  },
+  "query" : { },
+  "rights" : [ "read" ],
+  "tableAuthor" : {
+    "id" : "5fuc-pqz2",
+    "displayName" : "NYC OpenData",
+    "profileImageUrlLarge" : "/api/users/5fuc-pqz2/profile_images/LARGE",
+    "profileImageUrlMedium" : "/api/users/5fuc-pqz2/profile_images/THUMB",
+    "profileImageUrlSmall" : "/api/users/5fuc-pqz2/profile_images/TINY",
+    "screenName" : "NYC OpenData",
+    "type" : "interactive",
+    "flags" : [ "acceptedEula", "mayBeStoriesCoOwner" ]
+  },
+  "tags" : [ "street", "pavement", "rating", "good", "fair", "poor" ],
+  "flags" : [ "default", "ownerMayBeContacted", "restorable", "restorePossibleForType" ]
+}

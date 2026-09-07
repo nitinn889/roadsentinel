@@ -1,0 +1,26 @@
+{
+  "dataset_id": "6yyb-pb25",
+  "dataset_name": "Street Pavement Ratings",
+  "source": "https://data.cityofnewyork.us/d/6yyb-pb25",
+  "metadata_url": "https://data.cityofnewyork.us/api/views/6yyb-pb25",
+  "api_resource": "https://data.cityofnewyork.us/resource/6yyb-pb25.csv",
+  "selection": "Top 200 OFTCode street segments by count of distinct rated inspection dates; at least 3 distinct dates; SystemRating within documented [1,10] range; non-null InspectionTime.",
+  "verified_fields": {
+    "oftcode": "text",
+    "boroughname": "text",
+    "onstreetna": "text",
+    "fromstreet": "text",
+    "tostreetna": "text",
+    "systemrating": "number",
+    "inspection": "calendar_date"
+  },
+  "selected_site_count": 200,
+  "downloaded_row_count": 2010,
+  "downloaded_csv_bytes": 226004,
+  "metadata_rows_updated_at_epoch": 1788257796,
+  "files": {
+    "metadata": "data/raw/nyc_dataset_metadata.json",
+    "selected_sites": "data/raw/nyc_selected_sites.csv",
+    "records": "data/raw/nyc_pavement_ratings_sample.csv"
+  }
+}

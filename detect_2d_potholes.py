@@ -62,6 +62,7 @@ from inference.vehicle_suppressor import VehicleSuppressor
 from inference.road_marking_suppressor import RoadMarkingSuppressor
 from analytics.severity import calculate_defect_severity
 from analytics.road_health import calculate_road_health_score
+from diagnostics.distribution_visualizer import DistributionVisualizer
 
 logging.basicConfig(
     level=logging.INFO,
@@ -195,8 +196,14 @@ def detect_potholes_2d(
     # 3. DINOv2 Dense Patch Feature Extraction on restored road surface
     embeddings, coords = pipeline.embedder.extract_road_patch_embeddings(proc_rgb, road_mask)
 
-    # 4. Anomaly Scoring & Heat-Map Generation
-    patch_scores = pipeline.detector.score_patches(embeddings)
+    # 4. Anomaly Scoring & Heat-Map Generation (Adaptive Self-Referential)
+    if hasattr(pipeline.detector, "score_patches_adaptive"):
+        raw_patch_scores, norm_patch_scores, norm_stats = pipeline.detector.score_patches_adaptive(embeddings)
+        patch_scores = raw_patch_scores
+    else:
+        patch_scores = pipeline.detector.score_patches(embeddings)
+        norm_stats = {}
+
     anomaly_map = pipeline.detector.build_anomaly_map(
         coords, patch_scores, rgb.shape[:2], pipeline.embedder.grid_size
     )
@@ -227,17 +234,15 @@ def detect_potholes_2d(
         except Exception as e:
             log.warning("Crater head forward failed: %s", e)
 
-    # Dynamic adaptive statistical thresholding:
-    # With the 10,000-vector healthy road memory bank built from real highway imagery,
-    # healthy tarmac sits cleanly around mean ~0.38 (std ~0.05).
-    # Real road distress, cavities, and craters elevate above mean + 1.70 * std (~0.48 - 0.75).
-    # Calibrated floor is set to 0.48 (not 0.62 which pruned genuine road cavities).
+    # Dynamic adaptive statistical thresholding (domain-invariant):
     road_scores = patch_scores if len(patch_scores) else np.array([0.0])
-    mean_score = float(np.mean(road_scores))
-    std_score = float(np.std(road_scores))
-    threshold_px = max(0.48, mean_score + 1.70 * std_score)
-    log.info("  DINOv2 patch anomaly threshold: %.4f (Mean: %.4f, Std: %.4f, Max: %.4f)",
-             threshold_px, mean_score, std_score, float(np.max(road_scores)))
+    baseline_median = norm_stats.get("baseline_median", float(np.percentile(road_scores, 50.0)))
+    road_iqr = norm_stats.get("road_iqr", float(np.percentile(road_scores, 75.0) - np.percentile(road_scores, 25.0)))
+    road_std = norm_stats.get("road_std", float(np.std(road_scores)))
+    
+    threshold_px = float(baseline_median + max(0.04, 1.35 * max(road_std, road_iqr)))
+    log.info("  Adaptive patch anomaly threshold: %.4f (Baseline: %.4f, Spread: %.4f, Max: %.4f)",
+             threshold_px, baseline_median, max(road_std, road_iqr), float(np.max(road_scores)))
 
     # 7. Localize Candidates & SAM2 Refinement
     if crater_presence_prob < 0.12:
@@ -265,13 +270,35 @@ def detect_potholes_2d(
 
     # 9. Render Overlays & Export Results
     output_dir.mkdir(parents=True, exist_ok=True)
-    # Render overlay on enhanced RGB if low-light, so the user can visually verify the asphalt aggregate
     render_base = proc_rgb if was_enhanced else rgb
     overlay_img, summary = render_2d_pothole_overlay(render_base, candidates, image_name=image_path.name)
 
     overlay_filename = f"{image_path.stem}_detection_overlay.jpg"
     overlay_path = output_dir / overlay_filename
     cv2.imwrite(str(overlay_path), overlay_img)
+
+    # 10. Calculate Calibrated Road Health Score & Render 6-Panel Diagnostic Board
+    health_score = 100.0
+    for cand in candidates:
+        health_score -= min(25.0, (cand.pothole_confidence * 20.0))
+    health_score = max(0.0, min(100.0, health_score))
+
+    diag_filename = f"{image_path.stem}_diagnostic_board.jpg"
+    diag_path = output_dir / diag_filename
+    hier_results = [
+        cand.hierarchical_classification or {"final_type": cand.defect_type, "calibrated_confidence": cand.pothole_confidence}
+        for cand in candidates
+    ]
+    DistributionVisualizer.render_diagnostic_board(
+        rgb_image=render_base,
+        road_mask=road_mask,
+        raw_anomaly_map=anomaly_map,
+        filtered_anomaly_map=filtered_anomaly_map,
+        candidates=candidates,
+        hierarchical_results=hier_results,
+        road_health_score=health_score,
+        output_path=diag_path,
+    )
 
     result_payload = {
         "image_name": image_path.name,
@@ -284,7 +311,9 @@ def detect_potholes_2d(
         "min_area_px": min_area_px,
         "detections": summary["detections"],
         "total_defects": summary["total_defects"],
+        "road_health_score": round(health_score, 2),
         "overlay_path": str(overlay_path),
+        "diagnostic_board_path": str(diag_path),
     }
 
     return result_payload

@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0.0",
+  "image_id": "original",
+  "segment_id": "SEG_SMOKE",
+  "day": 1,
+  "original_filename": "original.jpg",
+  "condition": null,
+  "current_severity": 0.6049,
+  "crack_area_ratio": 0.0,
+  "defect_area_ratio": 0.00188446044921875,
+  "defect_count": 2,
+  "surface_anomaly_score": 0.7069,
+  "water_flag": false,
+  "defects": [
+    {
+      "bbox": [
+        227,
+        241,
+        243,
+        255
+      ],
+      "defect_type": "pothole",
+      "area_ratio": 0.0007781982421875
+    },
+    {
+      "bbox": [
+        192,
+        331,
+        203,
+        355
+      ],
+      "defect_type": "pothole",
+      "area_ratio": 0.00110626220703125
+    }
+  ]
+}

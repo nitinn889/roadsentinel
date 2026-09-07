@@ -15,16 +15,13 @@ Algorithm overview
 4. Patch scores are mapped back to a 2D grid and upsampled to the original
    image resolution to produce a spatial anomaly heat-map.
 
-Threshold
----------
-The per-image anomaly threshold is taken as the ``CONFIG.anomaly_percentile``
-(default 98th) of the road-patch score distribution for that image.  This is
-an image-relative threshold: it highlights patches that are unusually anomalous
-*compared to the rest of the same image's road patches*, which is more robust
-than a global absolute threshold when road appearance varies between scenes.
-
-Calibrating ``CONFIG.anomaly_percentile`` against a labelled validation set
-is required before deployment; the default is a reasonable starting point.
+Active threshold
+----------------
+``select_active_threshold`` is the single source of truth for ``infer()``. It
+uses the 92nd percentile of positive locally-normalized road-patch scores,
+clipped to [0.10, 0.85]. The image headline score is the 95th percentile of all
+locally-normalized road-patch scores. These values live in ``Config`` and still
+require calibration on a labelled validation set.
 """
 
 from __future__ import annotations
@@ -78,6 +75,15 @@ class AnomalyDetector:
                 f"embeddings.npy ({self.embeddings.shape[1]})"
             )
 
+        dist_path = self.memory_bank_dir / "distribution_model.json"
+        self.distribution_model = None
+        if dist_path.exists():
+            try:
+                from inference.road_distribution import RoadDistributionModel
+                self.distribution_model = RoadDistributionModel.load(dist_path)
+            except Exception as e:
+                log.warning("Could not load RoadDistributionModel: %s", e)
+
         log.info(
             "Memory bank loaded: %d vectors, dim=%d (built from %d images)",
             self.index.ntotal,
@@ -119,6 +125,32 @@ class AnomalyDetector:
         sim = np.clip(similarity, -1.0, 1.0).mean(axis=1)
         # Anomaly score: 0 = healthy, 1 = maximally anomalous
         return (1.0 - sim).astype(np.float32)
+
+    def score_patches_adaptive(
+        self,
+        embeddings: np.ndarray,
+        road_mask_indices: Optional[np.ndarray] = None,
+        percentile_baseline: float = 50.0,
+    ) -> Tuple[np.ndarray, np.ndarray, dict]:
+        """Compute raw and locally-normalized patch anomaly scores.
+
+        Cancels out global domain gap and uniform lighting offsets across
+        both real-world and CARLA imagery.
+
+        Returns
+        -------
+        raw_scores: Shape (N,) in [0, 1]
+        normalized_scores: Shape (N,) in [0, 1] (self-referential contrast)
+        stats: dictionary of baseline and spread statistics
+        """
+        raw_scores = self.score_patches(embeddings)
+        from inference.road_distribution import RoadDistributionModel
+        norm_scores, stats = RoadDistributionModel.apply_local_road_normalization(
+            raw_scores,
+            road_mask_indices=road_mask_indices,
+            percentile_baseline=percentile_baseline,
+        )
+        return raw_scores, norm_scores, stats
 
     # ------------------------------------------------------------------
     # Anomaly map
@@ -213,8 +245,62 @@ class AnomalyDetector:
     # Summarisation and normalisation
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def select_active_threshold(scores: np.ndarray) -> tuple[float, float, dict]:
+        """Select the exact threshold and headline score used by ``infer()``.
+
+        Inputs must be locally-normalized road-patch scores in ``[0, 1]``.
+        Diagnostics expose clipping and empty-score behavior without changing
+        the threshold values previously active in ``infer()``.
+        """
+        values = np.asarray(scores, dtype=np.float32).reshape(-1)
+        details = {
+            "policy": "positive_score_percentile_with_clip",
+            "percentile": CONFIG.active_anomaly_percentile,
+            "floor": CONFIG.active_anomaly_floor,
+            "ceiling": CONFIG.active_anomaly_ceiling,
+            "image_score_percentile": CONFIG.active_image_score_percentile,
+        }
+        if values.size == 0:
+            return 1.0, 0.0, {
+                **details,
+                "positive_score_count": 0,
+                "unclipped_threshold": None,
+                "clip_applied": "empty_scores",
+            }
+        if not np.isfinite(values).all():
+            raise ValueError("Active anomaly threshold received non-finite scores")
+        if np.any(values < 0.0) or np.any(values > 1.0):
+            raise ValueError("Active anomaly threshold expects scores in [0,1]")
+
+        positive = values[values > 1e-6]
+        image_score = float(np.percentile(values, CONFIG.active_image_score_percentile))
+        if positive.size == 0:
+            return 1.0, image_score, {
+                **details,
+                "positive_score_count": 0,
+                "unclipped_threshold": None,
+                "clip_applied": "no_positive_scores",
+            }
+
+        unclipped = float(np.percentile(positive, CONFIG.active_anomaly_percentile))
+        threshold = float(np.clip(
+            unclipped,
+            CONFIG.active_anomaly_floor,
+            CONFIG.active_anomaly_ceiling,
+        ))
+        clip_applied = "floor" if unclipped < CONFIG.active_anomaly_floor else (
+            "ceiling" if unclipped > CONFIG.active_anomaly_ceiling else "none"
+        )
+        return threshold, image_score, {
+            **details,
+            "positive_score_count": int(positive.size),
+            "unclipped_threshold": unclipped,
+            "clip_applied": clip_applied,
+        }
+
     def summarize(self, scores: np.ndarray) -> tuple[float, float]:
-        """Summarise per-patch scores into an image-level anomaly score and threshold.
+        """Legacy raw-score summarizer retained for existing tests/tools.
 
         Parameters
         ----------
@@ -231,11 +317,8 @@ class AnomalyDetector:
             Downstream code compares individual patch scores against this value to
             identify anomalous regions.
 
-        Note
-        ----
-        The threshold was previously hard-coded to the 75th percentile, which was
-        inconsistent with ``CONFIG.anomaly_percentile`` (default 98).  Both values
-        are now derived from the same configurable percentile.
+        This is not the active inference threshold. ``infer()`` calls
+        ``select_active_threshold`` after local road normalization.
         """
         if len(scores) == 0:
             return 0.0, 0.0

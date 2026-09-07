@@ -22,6 +22,7 @@ import uvicorn
 ROOT = Path(__file__).resolve().parents[1]
 WORKSPACE_ROOT = ROOT.parent
 RESULTS_DIR = WORKSPACE_ROOT / "results"
+TEMPORAL_RESULTS_PATH = WORKSPACE_ROOT / "env" / "output" / "temporal_20_day" / "temporal_results.json"
 
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -931,6 +932,52 @@ def get_stats():
     }
 
 
+def load_temporal_results() -> Dict[str, Any]:
+    """Load the integrated temporal Unreal Engine inspection dataset."""
+    search_paths = [
+        WORKSPACE_ROOT / "env" / "output" / "temporal_segments" / "temporal_results.json",
+        WORKSPACE_ROOT / "env" / "output" / "temporal_20_day" / "temporal_results.json",
+        WORKSPACE_ROOT / "env" / "output" / "temporal_results.json",
+        TEMPORAL_RESULTS_PATH,
+    ]
+    for path in search_paths:
+        if path.is_file():
+            try:
+                return json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                pass
+    raise HTTPException(
+        404,
+        "No temporal inspection results found. Run ./.venv/bin/python road_health_pipeline/ingest_manual_inspections.py first.",
+    )
+
+
+@app.get("/api/temporal_20_day")
+def get_temporal_20_day() -> JSONResponse:
+    """Return all persistent segment histories, forecasts and work orders."""
+    return JSONResponse(load_temporal_results())
+
+
+@app.api_route("/api/temporal_20_day/image/{segment_id}/{day}/{kind}", methods=["GET", "HEAD"])
+def get_temporal_20_day_image(segment_id: str, day: int, kind: str):
+    """Serve a selected temporal capture or its ML bounding-box overlay."""
+    if kind not in {"raw", "overlay"}:
+        raise HTTPException(400, "kind must be 'raw' or 'overlay'")
+    data = load_temporal_results()
+    segment = next((s for s in data.get("segments", []) if s.get("road_segment_id") == segment_id), None)
+    if not segment:
+        raise HTTPException(404, f"Unknown temporal road segment: {segment_id}")
+    observation = next((x for x in segment.get("history", []) if int(x.get("day", -1)) == day), None)
+    if not observation:
+        raise HTTPException(404, f"No day {day} observation for {segment_id}")
+    path = Path(observation.get("image_path" if kind == "raw" else "overlay_path", "")).resolve()
+    allowed_root = (WORKSPACE_ROOT / "env" / "output").resolve()
+    if allowed_root not in path.parents or not path.is_file():
+        raise HTTPException(404, "Temporal image artifact is unavailable")
+    media_type = "image/png" if path.suffix.lower() == ".png" else "image/jpeg"
+    return FileResponse(str(path), media_type=media_type)
+
+
 @app.post("/api/ingest")
 async def ingest_detection(request: Request):
     """Accept detection payload and apply spatial deduplication."""
@@ -1536,6 +1583,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     <span class="badge badge-mode" id="header-mode-badge">2D TEST MODE</span>
     <span class="badge badge-time" id="header-time-badge">⚡ 1.24s</span>
     <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;" id="clock-display">--:--:-- UTC</span>
+    <a class="btn-refresh" href="/temporal" style="text-decoration:none;">20-Day Deterioration</a>
     <button class="btn-refresh" onclick="fetchAll(true)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
       Refresh
@@ -2254,6 +2302,106 @@ setInterval(fetchAll, 3500);
 </body>
 </html>
 """
+
+
+TEMPORAL_DASHBOARD_HTML = r"""<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RoadSentinel | 20-Day Road Deterioration</title>
+<style>
+:root{--bg:#070a11;--card:#111827;--line:#263247;--text:#edf5ff;--muted:#91a0b7;--cyan:#00e5ff;--green:#3ddc97;--amber:#ffb020;--red:#ff4d6d}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#14213a,#070a11 55%);color:var(--text);font:14px system-ui,-apple-system,Segoe UI,sans-serif}header{padding:18px 4vw;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:16px;background:#090d16ee;position:sticky;top:0;z-index:2}h1{font-size:20px;margin:0}a{color:var(--cyan);text-decoration:none}.sub{color:var(--muted);font-size:12px;margin-top:3px}main{padding:24px 4vw;max-width:1500px;margin:auto}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.card{background:#111827dd;border:1px solid var(--line);border-radius:12px;padding:15px}.k{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.v{font-size:25px;font-weight:700;margin-top:5px}.layout{display:grid;grid-template-columns:285px minmax(0,1fr) 330px;gap:16px;margin-top:16px}@media(max-width:1050px){.layout{grid-template-columns:1fr}}select,button{background:#0b1220;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:9px 11px}select{width:100%}button{cursor:pointer}button.active{border-color:var(--cyan);color:var(--cyan)}.seg{border:1px solid var(--line);border-radius:8px;padding:10px;margin-top:8px;cursor:pointer}.seg.active{border-color:var(--cyan);background:#0c1d2d}.sev{height:7px;background:#1d2a3b;border-radius:9px;overflow:hidden;margin-top:8px}.sev i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--amber),var(--red))}.chart{width:100%;height:220px;background:#0a101c;border-radius:9px;margin-top:13px}.days{display:flex;gap:5px;overflow:auto;margin-top:12px;padding-bottom:4px}.day{min-width:37px;padding:7px 4px;font-size:11px}.day.invalid{border-color:#ff4d6d66;color:#ff8a9e}.day.invalid.active{border-color:var(--red);background:#35131a;color:#fff}.image{display:block;width:100%;border-radius:9px;background:#000;min-height:230px;object-fit:contain}.row{display:flex;justify-content:space-between;gap:10px;margin:9px 0}.badge{display:inline-block;border-radius:99px;padding:4px 8px;font-size:11px;font-weight:700}.good{color:var(--green);background:#3ddc9720}.warn{color:var(--amber);background:#ffb02020}.bad{color:var(--red);background:#ff4d6d20}.list{max-height:620px;overflow:auto}.order{border-left:3px solid var(--red);padding:10px;margin-top:10px;background:#0b1220}.empty{color:var(--muted);padding:20px;text-align:center}#overall{margin-top:16px}.heat{display:grid;grid-template-columns:repeat(20,minmax(7px,1fr));gap:3px;margin-top:9px}.heat i{height:15px;border-radius:2px;background:#182536}.err-banner{background:#2b1219;border:1px solid #ff4d6d88;color:#ffd0d8;padding:10px 14px;border-radius:8px;margin-top:10px;display:flex;align-items:flex-start;gap:10px}
+</style></head><body>
+<header><div><h1>RoadSentinel · 20-Day Road Deterioration</h1><div class="sub">User Unreal Engine inspection ingestion · persistent segments SEG_001–SEG_008 · input validation & domain-adaptive ML</div></div><a href="/">← Government dashboard</a></header>
+<main><div id="summary" class="grid"></div><div class="layout"><aside class="card"><div class="k">Persistent road patches</div><div id="segments" class="list"></div></aside><section class="card"><div class="row"><div><div class="k" id="segment-title">Select a segment</div><div class="v" id="condition">—</div></div><div id="work-badge"></div></div><svg class="chart" id="chart" viewBox="0 0 1000 220" preserveAspectRatio="none"></svg><div class="days" id="days"></div><div class="row"><span class="k" id="day-caption">Day —</span><div><button id="raw" onclick="setImage('raw')">Raw image</button><button id="overlay" class="active" onclick="setImage('overlay')">ML boxes</button></div></div><img class="image" id="image" alt="Selected Unreal Engine inspection image"><div class="sub" id="evidence">No observation selected.</div></section><aside class="card"><div class="k">Prediction & work order</div><div class="row"><span>Future severity (Day <span id="future-day">—</span>)</span><b id="future">—</b></div><div class="row"><span>Unseen MAE</span><b id="mae">—</b></div><div class="row"><span>Current health</span><b id="health">—</b></div><div id="order"></div></aside></div><section class="card" id="overall"><div class="k">Overall road-health progression (green → amber → red · hatched = rejected)</div><div id="overall-content"></div></section></main>
+<script>
+let data=null,selected=null,day=20,kind='overlay'; const $=id=>document.getElementById(id); const esc=x=>String(x??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function color(v){return v<.1?'#3ddc97':v<.35?'#d7d54a':v<.65?'#ffb020':'#ff4d6d'}
+function drawChart(s){
+  const h=s.history||[],w=1000,ht=220,p=18;
+  let validPts = h.filter(x=>x.severity_score!==null&&x.severity_score!==undefined);
+  let pts = validPts.map(x=>`${p+(x.day-1)*(w-p*2)/19},${ht-p-x.severity_score*(ht-p*2)}`).join(' ');
+  let invalidDots = h.filter(x=>x.is_valid===false).map(x=>`<circle cx="${p+(x.day-1)*(w-p*2)/19}" cy="${ht-p}" r="4.5" fill="#ff4d6d" stroke="#070a11" stroke-width="1.5"><title>Day ${x.day}: ${esc(x.validation_error||'Rejected Capture')}</title></circle>`).join('');
+  let pred=(s.prediction?.held_out_predictions||[]).filter(x=>x.predicted_severity!==undefined).map(x=>`${p+(x.day-1)*(w-p*2)/19},${ht-p-x.predicted_severity*(ht-p*2)}`).join(' ');
+  $('chart').innerHTML=`<path d="M${p} ${ht-p}H${w-p} M${p} ${ht/2}H${w-p} M${p} ${p}H${w-p}" stroke="#263247" fill="none"/>
+  ${pts?`<polyline points="${pts}" fill="none" stroke="#00e5ff" stroke-width="3"/>`:''}
+  ${pred?`<polyline points="${pred}" fill="none" stroke="#ffb020" stroke-width="2" stroke-dasharray="8 5"/>`:''}
+  ${invalidDots}
+  <text x="20" y="25" fill="#91a0b7" font-size="12">severity (cyan = ML observed · red dots = rejected frames)</text>
+  <text x="775" y="25" fill="#ffb020" font-size="12">dashed = frozen unseen forecast</text>`;
+}
+function selectSegment(id){selected=data.segments.find(x=>x.road_segment_id===id); if(selected&&selected.history.length>0){day=Math.min(day,selected.history.length);}render()}
+function selectDay(d){day=d;render()}
+function setImage(k){kind=k;$('raw').classList.toggle('active',k==='raw');$('overlay').classList.toggle('active',k==='overlay');renderImage()}
+function renderImage(){
+  if(!selected)return;
+  let o=selected.history.find(x=>x.day===day);
+  if(!o){
+    $('day-caption').textContent=`Day ${day} · No Record`;
+    $('evidence').innerHTML='<div class="sub">No observation recorded for this day.</div>';
+    $('image').src='';
+    return;
+  }
+  $('image').src=`/api/temporal_20_day/image/${encodeURIComponent(selected.road_segment_id)}/${day}/${kind}`;
+  if(o.is_valid===false){
+    $('day-caption').innerHTML=`<span class="badge bad">REJECTED CAPTURE</span> <span class="sub">Day ${day} · ${esc(o.weather_preset||'Unrecorded')}</span>`;
+    $('evidence').innerHTML=`<div class="err-banner"><span style="font-size:18px;">⚠️</span><div><b>Frame Excluded from ML Perception:</b> ${esc(o.validation_error||'Input rejected')}<br><span class="sub" style="color:#ffa0b0">Zero-defect assumption suppressed. Frame marked invalid to prevent distorting deterioration curve.</span></div></div>`;
+  }else{
+    $('day-caption').innerHTML=`Day ${day} · <b>${esc(o.condition)}</b> <span class="sub">(${esc(o.weather_preset||'Standard')}) · Severity ${(o.severity_score||0).toFixed(2)}</span>`;
+    let dets=o.detections||[];
+    let summary=dets.map(d=>`${d.defect_type} (${(d.severity_score||0).toFixed(2)})`).join(' | ')||'clean road corridor';
+    $('evidence').innerHTML=`<span style="color:var(--cyan);font-weight:600;">${o.detection_count} ML detection(s)</span> · anomaly ${o.ml_anomaly_score} / threshold ${o.ml_anomaly_threshold} · <span class="sub">${esc(summary)}</span>`;
+  }
+}
+function render(){
+  if(!selected)return;
+  let c=selected.current||{},p=selected.prediction||{},wo=selected.work_order;
+  $('segment-title').textContent=`${selected.road_segment_id} · ${selected.description}`;
+  let sevStr=c.severity_score!==null&&c.severity_score!==undefined?c.severity_score.toFixed(2):'Pending';
+  $('condition').textContent=`${c.condition||'Pending'} — ${sevStr}`;
+  $('work-badge').innerHTML=wo?`<span class="badge bad">${esc(wo.priority)}</span>`:'<span class="badge good">No work order</span>';
+  $('future-day').textContent=p.predicted_future_day||'—';
+  let futSevStr=p.predicted_future_severity!==null&&p.predicted_future_severity!==undefined?p.predicted_future_severity.toFixed(2):'—';
+  $('future').textContent=`${futSevStr} · ${p.predicted_future_condition||'Pending Validation'}`;
+  $('mae').textContent=p.unseen_mae??'n/a';
+  $('health').textContent=c.road_health_score!==null&&c.road_health_score!==undefined?`${c.road_health_score.toFixed(1)}/100`:'—';
+  $('order').innerHTML=wo?`<div class="order"><b>${esc(wo.work_order_id)}</b><br><span class="badge bad">${esc(wo.priority)}</span><p class="sub">${esc(wo.recommended_maintenance_action)}</p></div>`:'<div class="empty">Threshold not reached.</div>';
+  drawChart(selected);
+  $('days').innerHTML=selected.history.map(x=>{
+    let cls=x.day===day?'active':'';
+    if(x.is_valid===false)cls+=' invalid';
+    return `<button class="day ${cls}" onclick="selectDay(${x.day})" title="Day ${x.day}${x.is_valid===false?' (Rejected)':''}">D${x.day}${x.is_valid===false?' ✗':''}</button>`;
+  }).join('');
+  $('segments').innerHTML=data.segments.map(s=>{
+    let curr=s.current||{};
+    let sScore=curr.severity_score;
+    let sStr=sScore!==null&&sScore!==undefined?sScore.toFixed(2):'No data';
+    let pct=sScore!==null&&sScore!==undefined?sScore*100:0;
+    return `<div class="seg ${s.road_segment_id===selected.road_segment_id?'active':''}" onclick="selectSegment('${s.road_segment_id}')"><b>${s.road_segment_id}</b><div class="sub">${esc(curr.condition||'Uninspected')} · ${sStr}</div><div class="sev"><i style="width:${pct}%"></i></div></div>`;
+  }).join('');
+  renderImage();
+}
+function overall(){
+  let d=data.segments;
+  let summary=data.metadata.validation_summary||{};
+  $('summary').innerHTML=[
+    ['Segments',d.length],
+    ['Days',data.metadata.days],
+    ['Deteriorated',data.overall_health.segments_deteriorated.length],
+    ['Dispatched orders',data.work_orders.length],
+    ['Rejected frames',summary.rejected_frames||0]
+  ].map(x=>`<div class="card"><div class="k">${x[0]}</div><div class="v">${x[1]}</div></div>`).join('');
+  $('overall-content').innerHTML=d.map(s=>`<div class="row"><b>${s.road_segment_id}</b><span>${esc(s.current.condition||'Pending')}</span></div><div class="heat">${s.history.map(x=>{
+    let bg=x.is_valid===false?'#2b1219;border:1px dashed #ff4d6d':color(x.severity_score||0);
+    return `<i title="Day ${x.day}: ${x.is_valid===false?esc(x.validation_error):'Sev '+x.severity_score}" style="background:${bg}"></i>`;
+  }).join('')}</div>`).join('');
+}
+fetch('/api/temporal_20_day').then(r=>{if(!r.ok)throw Error('Run the 20-day simulation first');return r.json()}).then(x=>{data=x;selected=data.segments[0];overall();render()}).catch(e=>document.querySelector('main').innerHTML=`<div class="card empty">${esc(e.message)}</div>`);
+</script></body></html>"""
+
+
+@app.get("/temporal", response_class=HTMLResponse)
+def get_temporal_dashboard():
+    """Dedicated temporal section of the existing RoadSentinel dashboard server."""
+    return HTMLResponse(content=TEMPORAL_DASHBOARD_HTML, status_code=200)
 
 
 @app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)

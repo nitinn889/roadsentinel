@@ -107,8 +107,14 @@ class Config:
     candidate_min_area_px_3d: int = 100
     pothole_confidence_threshold_2d: float = 0.15
     pothole_confidence_threshold_3d: float = 0.55
+    # Legacy percentile used only by AnomalyDetector.summarize(). The active
+    # infer() path uses the explicit normalized-score policy below.
     anomaly_percentile_2d: float = 90.0
     anomaly_percentile_3d: float = 98.0
+    active_anomaly_percentile: float = 92.0
+    active_anomaly_floor: float = 0.10
+    active_anomaly_ceiling: float = 0.85
+    active_image_score_percentile: float = 95.0
 
     # Defect Severity Model Weights & Thresholds
     severity_weight_confidence: float = 0.30
@@ -185,4 +191,3 @@ class Config:
 
 
 CONFIG = Config()
-

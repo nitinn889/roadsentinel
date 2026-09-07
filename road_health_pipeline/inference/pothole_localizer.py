@@ -7,7 +7,7 @@ Pipeline
 --------
 DINOv2 patch anomaly map
         ↓
-  Thresholding (CONFIG.anomaly_percentile)
+  Active threshold supplied by AnomalyDetector.select_active_threshold
         ↓
   Morphological close + open (noise removal)
         ↓
@@ -53,6 +53,9 @@ import numpy as np
 
 from common.schemas import CandidateRegion, SegmentationResult
 from config import CONFIG
+from inference.spatial_filtering import SpatialContextFilter
+from inference.hierarchical_classifier import HierarchicalClassifier
+from calibration.calibrator import ProbabilityCalibrator
 
 log = logging.getLogger(__name__)
 
@@ -72,6 +75,9 @@ class PotholeLocalizer:
         confidence_threshold: float = CONFIG.pothole_confidence_threshold,
     ) -> None:
         self.confidence_threshold = confidence_threshold
+        self.spatial_filter = SpatialContextFilter()
+        self.hierarchical_classifier = HierarchicalClassifier()
+        self.calibrator = ProbabilityCalibrator()
 
     # ------------------------------------------------------------------
     # Heuristic scoring helpers
@@ -206,6 +212,7 @@ class PotholeLocalizer:
         test_mode_2d: Optional[bool] = None,
         min_area_px: Optional[int] = None,
         confidence_threshold: Optional[float] = None,
+        diagnostics: Optional[dict] = None,
     ) -> list[CandidateRegion]:
         """Localise pothole candidates from the anomaly map.
         
@@ -246,6 +253,12 @@ class PotholeLocalizer:
             candidate_u8, connectivity=8
         )
 
+        if diagnostics is not None:
+            diagnostics["threshold_mask"] = candidate_bin.copy()
+            diagnostics["candidate_mask"] = candidate_u8.astype(bool)
+            diagnostics["connected_component_count_before_filters"] = int(n - 1)
+            diagnostics["sam2_prompts"] = []
+
         out: list[CandidateRegion] = []
         for label in range(1, n):  # 0 = background
             area = int(stats[label, cv2.CC_STAT_AREA])
@@ -264,12 +277,7 @@ class PotholeLocalizer:
                 rgb, comp_mask, raw_anomaly_mean, raw_anomaly_max
             )
 
-            # Debug logging immediately after DINOv2 feature extraction before any filtering
-            print(
-                f"[DEBUG DINOv2 RAW] Candidate Box: [{x}, {y}, {x + w}, {y + h_cc}] "
-                f"| Confidence: {conf:.4f} | Raw Area: {area} px | Anomaly: {raw_anomaly_mean:.4f}"
-            )
-            log.info(
+            log.debug(
                 "[DEBUG DINOv2 RAW] Candidate Box: [%d, %d, %d, %d] | Confidence: %.4f | Raw Area: %d px",
                 x, y, x + w, y + h_cc, conf, area
             )
@@ -359,8 +367,18 @@ class PotholeLocalizer:
             sam2_result: Optional[SegmentationResult] = None
 
             if sam2 is not None:
+                prompt_diagnostic = {
+                    "bbox_xyxy": raw_bbox,
+                    "sam2_status": "pending",
+                }
+                if diagnostics is not None:
+                    diagnostics["sam2_prompts"].append(prompt_diagnostic)
                 try:
                     result = sam2.refine_box(rgb, raw_bbox)
+                    prompt_diagnostic["sam2_status"] = "refined"
+                    prompt_diagnostic["sam2_confidence"] = float(result.confidence)
+                    prompt_diagnostic["sam2_bbox_xyxy"] = result.bbox_xyxy
+                    prompt_diagnostic["sam2_area_px"] = int(result.area_px)
                     if is_2d:
                         # In 2D test mode, retain full SAM2 segmentation without cutting off crater boundaries
                         refined_mask = result.mask
@@ -389,26 +407,56 @@ class PotholeLocalizer:
                                 x, y, x + w, y + h_cc, int(refined_road.sum()),
                             )
                 except Exception as exc:
+                    prompt_diagnostic["sam2_status"] = "fallback_to_candidate_mask"
+                    prompt_diagnostic["error"] = str(exc)
                     log.warning(
                         "SAM2 refinement failed for box [%d,%d,%d,%d]: %s — "
                         "falling back to anomaly-map mask.",
                         x, y, x + w, y + h_cc, exc,
                     )
 
+            # Spatial consistency & neighborhood contrast evaluation
+            filter_res = self.spatial_filter.evaluate_candidate(
+                rgb, refined_mask, raw_bbox, anomaly_map, aspect_ratio, shape_circ
+            )
+            cal_conf = float(self.calibrator.predict_probability(conf))
+            hier_res = self.hierarchical_classifier.classify(
+                rgb,
+                refined_mask,
+                raw_anomaly_score=raw_anomaly_mean,
+                spatial_consistency=filter_res.spatial_score,
+                filter_passed=filter_res.passed,
+                rejection_reason=filter_res.rejection_reason,
+                calibrated_confidence=cal_conf,
+            )
+            # Refine defect type based on hierarchical classification
+            hier_type_val = hier_res.final_type.value
+            if hier_res.is_water_hazard:
+                defect_type = "water_filled_pothole"
+            elif "crack" in hier_type_val:
+                defect_type = "crack"
+            elif "pothole" in hier_type_val:
+                defect_type = "pothole"
+
             out.append(
                 CandidateRegion(
                     mask=refined_mask,
                     bbox_xyxy=raw_bbox,
                     anomaly_score=raw_anomaly_mean,
-                    pothole_confidence=conf,
+                    pothole_confidence=hier_res.calibrated_confidence,
                     sam2_result=sam2_result,
                     defect_type=defect_type,
                     shape_circularity=shape_circ,
                     aspect_ratio=aspect_ratio,
                     surrounding_damage=surrounding_damage,
+                    hierarchical_classification=hier_res.to_dict(),
+                    filter_result=filter_res.__dict__,
                 )
             )
 
         out.sort(key=lambda c: c.pothole_confidence, reverse=True)
+        if diagnostics is not None:
+            diagnostics["accepted_candidate_count"] = len(out)
+            diagnostics["accepted_candidate_boxes"] = [c.bbox_xyxy for c in out]
+            diagnostics["sam2_refined_count"] = sum(c.sam2_result is not None for c in out)
         return out
-

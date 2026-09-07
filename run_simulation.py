@@ -256,6 +256,10 @@ def build_drone_cmd(cfg: Dict[str, Any], output_dir: Path, standalone: bool = Fa
     if cfg.get("headless", False):
         cmd.append("--headless")
 
+    defect_manifest = cfg.get("defect_manifest")
+    if defect_manifest:
+        cmd.extend(["--defect-manifest", str(defect_manifest)])
+
     if standalone:
         cmd.append("--standalone")
 
@@ -468,6 +472,10 @@ def parse_cli_args() -> argparse.Namespace:
     parser.add_argument("--standalone", action="store_true", help="Force standalone simulation engine without CARLA")
     parser.add_argument("--output-dir", type=str, default=str(DEFAULT_OUTPUT_DIR), help="Destination output directory")
     parser.add_argument("--no-docker", action="store_true", help="Do not attempt to auto-launch CARLA docker container")
+    parser.add_argument("--defect-manifest", type=str, default=None,
+                        help="Persistent temporal condition manifest passed to the CARLA road injector")
+    parser.add_argument("--require-carla", action="store_true",
+                        help="Fail instead of falling back to the standalone renderer when CARLA is unavailable")
     return parser.parse_args()
 
 
@@ -526,6 +534,7 @@ def main():
             "seed": cli_args.seed if cli_args.seed is not None else "42",
             "duration": cli_args.duration if cli_args.duration is not None else 60.0,
             "rendering": "Headless" if cli_args.headless else "GUI",
+            "defect_manifest": cli_args.defect_manifest,
         }
 
     # Validate and normalize configuration
@@ -555,10 +564,20 @@ def main():
             print("[RoadSentinel] CARLA server not detected. Attempting Docker startup...")
             is_running = start_carla_docker(headless=cfg["headless"])
             if not is_running:
+                if cli_args.require_carla:
+                    raise RuntimeError(
+                        "CARLA is required for this run but the headless CARLA server could not be started. "
+                        "Check Docker/NVIDIA availability and retry."
+                    )
                 print("[RoadSentinel] CARLA could not be reached. Falling back to Standalone Simulation Engine.")
                 is_standalone = True
         elif is_running:
             print("[RoadSentinel] Active CARLA server detected on 127.0.0.1:2000. Ready!")
+
+        if not is_running and cli_args.require_carla:
+            raise RuntimeError(
+                "CARLA is required for this run but no CARLA RPC server is available on 127.0.0.1:2000."
+            )
 
     # Build execution command
     cmd = build_drone_cmd(cfg, output_dir, standalone=is_standalone)

@@ -130,6 +130,46 @@ Evaluates:
 
 ---
 
+### 5. Fully Automated 20-Day Deterioration Experiment
+
+Run the end-to-end temporal experiment with no CARLA process or manual setup:
+
+```bash
+./.venv/bin/python run_20_day_simulation.py
+```
+
+Or use the Studio launcher to display the Unreal Editor during the capture:
+
+```bash
+./launch_studio.sh --temporal-20-day
+```
+
+`launch_studio.sh` without `--temporal-20-day` remains the existing PySide
+controller; the temporal option is the one that boots the actual Unreal project.
+
+The runner launches the `RoadSentinelSim` Unreal project itself and uses native
+`SceneCapture2D` render targets—not CARLA, synthetic PIL frames, or an editor
+viewport screenshot. It rebuilds the same Unreal road for each simulated day,
+keeps `SEG_001`–`SEG_006` at fixed physical coordinates, and runs the existing
+DINOv2/SAM2 inference pipeline for every selected segment view. It writes
+captures, ML bounding-box overlays, per-segment 20-day histories, leakage-free
+Day 15–20 predictions, and dispatched threshold work orders to:
+
+```text
+env/output/temporal_20_day/temporal_results.json
+```
+
+To watch the Unreal Editor while it produces the same images, add
+`--unreal-gui`. The output images are at
+`env/output/temporal_20_day/captures/day_XX/images/SEG_XXX.png`.
+
+Start the existing Government Dashboard as usual, then choose **20-Day
+Deterioration** in the header (or open `http://localhost:8000/temporal`) to
+inspect every segment timeline, frame/overlay, forecast, work order and the
+road-wide health heatmap.
+
+---
+
 ## 🧪 Running the Test Suite
 
 Run the full automated test suite (26 unit and regression tests):

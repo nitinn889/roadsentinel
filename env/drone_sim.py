@@ -165,11 +165,72 @@ def draw_hud_overlay(screen, hud_lines: List[str], font: Any, frame_rgb: np.ndar
         frame_hud = frame_rgb.copy()
         for i, line in enumerate(hud_lines):
             color = (254, 242, 0) if i == 0 else (0, 255, 255)  # RGB
-            # Draw black outline then colored text
             cv2.putText(frame_hud, line, (15, 25 + i * 22), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 0), 3, cv2.LINE_AA)
             cv2.putText(frame_hud, line, (15, 25 + i * 22), cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 1, cv2.LINE_AA)
         surface = pygame.image.frombuffer(frame_hud.tobytes(), (frame_hud.shape[1], frame_hud.shape[0]), "RGB")
         screen.blit(surface, (0, 0))
+
+
+def load_temporal_manifest_records(manifest_path: str, altitude_m: float) -> tuple[dict, List[Dict[str, Any]]]:
+    """Load stable temporal patches for the standalone renderer.
+
+    CARLA uses :class:`RoadDefectManager` to materialise the same file against
+    its world coordinates.  The standalone engine has a simple local road
+    datum, so it converts the manifest to the normal ground-truth schema here.
+    """
+    manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+    defects: List[Dict[str, Any]] = []
+    for raw in manifest.get("defects", []):
+        along_m = float(raw.get("along_m", 0.0))
+        across_m = float(raw.get("across_m", 0.0))
+        lat, lon = geo_utils.local_xy_to_latlon(across_m, along_m)
+        dimensions = dict(raw.get("dimensions", {}))
+        surface = dict(raw.get("surface_properties", {}))
+        water = dict(raw.get("water_state", {}))
+        associated = dict(raw.get("associated_defects", {}))
+        defects.append({
+            "defect_id": str(raw.get("defect_id", "temporal_defect")),
+            "actor_ids": [],
+            "segment_index": 0,
+            "road_segment_id": str(raw.get("road_segment_id", "SEG_001")),
+            "defect_type": str(raw.get("defect_type", "pothole")),
+            "shape_category": str(raw.get("shape_category", "irregular_natural")),
+            "carla_location": {"x": round(across_m, 3), "y": round(along_m, 3), "z": 0.035},
+            "gps_coordinates": {"latitude": round(lat, 8), "longitude": round(lon, 8), "altitude_m": round(altitude_m, 2)},
+            "lane_position": str(raw.get("lane_position", "right_wheel_track")),
+            "dimensions": {
+                "length_m": float(dimensions.get("length_m", 0.35)),
+                "width_m": float(dimensions.get("width_m", 0.08)),
+                "diameter_m": float(dimensions.get("diameter_m", 0.17)),
+                "depth_m": float(dimensions.get("depth_m", 0.01)),
+                "area_m2": float(dimensions.get("area_m2", 0.03)),
+                "aspect_ratio": float(dimensions.get("aspect_ratio", 1.0)),
+                "orientation_deg": float(dimensions.get("orientation_deg", 0.0)),
+            },
+            "surface_properties": {
+                "irregularity": float(surface.get("irregularity", 0.35)),
+                "edge_breakup": float(surface.get("edge_breakup", 0.15)),
+                "roughness": float(surface.get("roughness", 0.15)),
+            },
+            "water_state": {
+                "is_water_filled": bool(water.get("is_water_filled", False)),
+                "water_level_m": float(water.get("water_level_m", 0.0)),
+                "water_coverage_frac": float(water.get("water_coverage_frac", 0.0)),
+                "turbidity": float(water.get("turbidity", 0.0)),
+                "wet_halo_radius_m": float(water.get("wet_halo_radius_m", 0.0)),
+            },
+            "associated_defects": {
+                "has_cracks": bool(associated.get("has_cracks", False)),
+                "crack_pattern": str(associated.get("crack_pattern", "none")),
+                "has_road_patch": bool(associated.get("has_road_patch", False)),
+            },
+            "scenario": "temporal",
+            "severity_category": str(raw.get("severity_category", "low")),
+            "true_severity_score": float(raw.get("true_severity_score", 0.0)),
+            "generation_seed": int(raw.get("generation_seed", 42)),
+            "day": int(manifest.get("day", 0)),
+        })
+    return manifest, defects
 
 
 def run_standalone_flight_simulator(screen, font, clock, args) -> None:
@@ -199,17 +260,23 @@ def run_standalone_flight_simulator(screen, font, clock, args) -> None:
     yaw_deg = 0.0
     paused = False
 
-    # 1. Procedurally generate road defect plan for the corridor
+    # 1. Procedurally generate road defects, or load the deterministic
+    # temporal manifest used by the 20-day simulator.
     corridor_length_m = max(180.0, duration * speed_mps + 50.0) if duration > 0 else 600.0
-    generator = ProceduralRoadGenerator(scenario=args.scenario, seed=args.seed)
-    plan = generator.generate_corridor_plan(
-        segment_length_m=corridor_length_m,
-        defects_count=args.num_defects,
-        water_ratio_override=args.water_ratio,
-    )
+    manifest_payload: Optional[dict] = None
+    if args.defect_manifest:
+        manifest_payload, ground_truth_records = load_temporal_manifest_records(args.defect_manifest, alt_m)
+        plan = []
+    else:
+        generator = ProceduralRoadGenerator(scenario=args.scenario, seed=args.seed)
+        plan = generator.generate_corridor_plan(
+            segment_length_m=corridor_length_m,
+            defects_count=args.num_defects,
+            water_ratio_override=args.water_ratio,
+        )
+        ground_truth_records = []
 
-    # 2. Build structured ground truth records
-    ground_truth_records: List[Dict[str, Any]] = []
+    # 2. Build structured ground truth records for normal procedural runs.
     for along_m, across_m, spec in plan:
         lat, lon = geo_utils.local_xy_to_latlon(across_m, along_m)
         ground_truth_records.append({
@@ -280,7 +347,10 @@ def run_standalone_flight_simulator(screen, font, clock, args) -> None:
             "total_defects": len(ground_truth_records),
             "total_water_filled": sum(1 for d in ground_truth_records if d["water_state"]["is_water_filled"]),
             "corridor_length_m": corridor_length_m,
+            "temporal_manifest": str(Path(args.defect_manifest).resolve()) if args.defect_manifest else None,
+            "day": int(manifest_payload.get("day", 0)) if manifest_payload else None,
         },
+        "segments": manifest_payload.get("segments", []) if manifest_payload else [],
         "defects": ground_truth_records,
     }
 
@@ -290,7 +360,7 @@ def run_standalone_flight_simulator(screen, font, clock, args) -> None:
         json.dump(gt_export, f, indent=2)
 
     print(f"\n[RoadSentinel] Standalone Procedural Engine initialized [{args.scenario.upper()} | {args.weather.upper()} | seed={args.seed}].")
-    print(f"[RoadSentinel] Generated {len(plan)} procedural defects. Ground truth saved to: {out_dir / 'ground_truth.json'}")
+    print(f"[RoadSentinel] Generated {len(ground_truth_records)} procedural defects. Ground truth saved to: {out_dir / 'ground_truth.json'}")
 
     weather_cfg = config.WEATHER_PRESETS.get(args.weather.lower(), config.WEATHER_PRESETS["clear"])
     is_wet_weather = weather_cfg.get("wetness", 0.0) >= 50.0
@@ -438,6 +508,8 @@ def main():
                         help="Horizontal camera field-of-view in degrees (default 60° survey lens)")
     parser.add_argument("--output-dir", type=str, default=None,
                         help="Destination output directory for images and telemetry")
+    parser.add_argument("--defect-manifest", type=str, default=None,
+                        help="Persistent temporal road-condition manifest generated by the 20-day runner")
     args = parser.parse_args()
 
     infinite_flight = (args.duration <= 0 or args.duration >= 99999)
@@ -508,6 +580,7 @@ def main():
         defects_per_segment=args.num_defects,
         water_ratio=args.water_ratio,
         output_dir=out_dir,
+        defect_manifest=Path(args.defect_manifest).resolve() if args.defect_manifest else None,
         verbose=True,
     )
 

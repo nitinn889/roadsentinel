@@ -1,0 +1,31 @@
+{
+  "metadata": {
+    "generated_at": "2026-09-06T15:19:58Z",
+    "total_images_processed": 1,
+    "total_defects_detected": 0,
+    "confidence_threshold": 0.4,
+    "min_area_px": 80,
+    "elapsed_time_s": 1.73
+  },
+  "results": [
+    {
+      "image_name": "frame_0001.png",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/dataset/rendered_frames/frame_0001.png",
+      "test_mode_2d": true,
+      "timestamp": "2026-09-06T15:19:58Z",
+      "image_shape": [
+        720,
+        1280,
+        3
+      ],
+      "anomaly_threshold": 0.5673,
+      "confidence_threshold": 0.4,
+      "min_area_px": 80,
+      "detections": [],
+      "total_defects": 0,
+      "road_health_score": 100.0,
+      "overlay_path": "/home/nitin-nandakumar/Downloads/roadsentinel/results/test_eval/frame_0001_detection_overlay.jpg",
+      "diagnostic_board_path": "/home/nitin-nandakumar/Downloads/roadsentinel/results/test_eval/frame_0001_diagnostic_board.jpg"
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://roadsentinel.local/schemas/perception-feature-record-1.0.0.json",
+  "title": "RoadSentinel perception feature record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "image_id",
+    "segment_id",
+    "day",
+    "original_filename",
+    "condition",
+    "current_severity",
+    "crack_area_ratio",
+    "defect_area_ratio",
+    "defect_count",
+    "surface_anomaly_score",
+    "water_flag",
+    "defects"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "image_id": {"type": "string", "minLength": 1},
+    "segment_id": {"type": "string", "minLength": 1},
+    "day": {"type": "integer", "minimum": 1, "maximum": 10},
+    "original_filename": {"type": "string", "minLength": 1},
+    "condition": {"type": ["string", "null"]},
+    "current_severity": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+    "crack_area_ratio": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+    "defect_area_ratio": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+    "defect_count": {"type": "integer", "minimum": 0},
+    "surface_anomaly_score": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+    "water_flag": {"type": ["boolean", "null"]},
+    "defects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "bbox": {
+            "type": "array",
+            "items": {"type": "number"},
+            "minItems": 4,
+            "maxItems": 4
+          },
+          "mask_path": {"type": "string", "minLength": 1},
+          "centroid_x": {"type": "number"},
+          "centroid_y": {"type": "number"},
+          "area_ratio": {"type": "number", "minimum": 0, "maximum": 1},
+          "defect_type": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}
