@@ -37,6 +37,13 @@ SCENARIO_FEATURES = (
     "water_exposure",
     "days_ahead",
 )
+SCENARIO_NAMES = (
+    "NORMAL",
+    "HEAVY_RAIN",
+    "HEAVY_TRAFFIC",
+    "HIGH_HEAT",
+    "WET_EXPOSURE",
+)
 MODEL_FEATURES = CURRENT_FEATURES + SCENARIO_FEATURES
 TARGET = "future_severity"
 
@@ -46,8 +53,9 @@ class ScenarioError(ValueError):
 
 
 def validate_scenario(scenario: Mapping[str, Any]) -> None:
-    allowed = {"scenario_status", *SCENARIO_FEATURES}
-    missing = sorted(allowed - set(scenario))
+    required = {"scenario_status", *SCENARIO_FEATURES}
+    allowed = {"scenario_name", *required}
+    missing = sorted(required - set(scenario))
     extra = sorted(set(scenario) - allowed)
     if missing:
         raise ScenarioError(f"Missing scenario fields: {', '.join(missing)}")
@@ -55,6 +63,12 @@ def validate_scenario(scenario: Mapping[str, Any]) -> None:
         raise ScenarioError(f"Unknown scenario fields: {', '.join(extra)}")
     if scenario["scenario_status"] not in {"USER_SUPPLIED", "MOCK_INTERFACE_ONLY"}:
         raise ScenarioError("scenario_status must be USER_SUPPLIED or MOCK_INTERFACE_ONLY")
+    if "scenario_name" in scenario:
+        name = scenario["scenario_name"]
+        if not isinstance(name, str) or name.upper() not in SCENARIO_NAMES:
+            raise ScenarioError(
+                f"scenario_name must be one of: {', '.join(SCENARIO_NAMES)}"
+            )
     for name in SCENARIO_FEATURES:
         value = scenario[name]
         if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(float(value)):

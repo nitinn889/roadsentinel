@@ -1,0 +1,136 @@
+{
+  "model_id": "roadsentinel_xgb_v2_ltpp_scenario",
+  "random_seed": 1,
+  "feature_order": [
+    "current_severity",
+    "rainfall_level",
+    "traffic_level",
+    "temperature",
+    "water_exposure",
+    "days_ahead"
+  ],
+  "target": "future_severity",
+  "test_fraction_by_site": 0.25,
+  "supported_horizons_days": [
+    30,
+    60,
+    90
+  ],
+  "xgboost_parameters": {
+    "objective": "reg:squarederror",
+    "n_estimators": 240,
+    "max_depth": 3,
+    "learning_rate": 0.04,
+    "subsample": 0.9,
+    "colsample_bytree": 0.9,
+    "min_child_weight": 2,
+    "reg_lambda": 4.0,
+    "n_jobs": 1,
+    "tree_method": "hist",
+    "monotone_constraints": "(1,1,1,1,1,1)"
+  },
+  "model_path": "model/scenario_model_v2.json",
+  "training_table": "data/processed/scenario_training_pairs.csv",
+  "training_row_count": 89,
+  "test_row_count": 24,
+  "train_site_count": 17,
+  "test_site_count": 6,
+  "training_horizon_range_days": [
+    30,
+    720
+  ],
+  "feature_ranges": {
+    "current_severity": {
+      "minimum": 0.0,
+      "maximum": 0.9012950055058979
+    },
+    "rainfall_level": {
+      "minimum": 0.719482495,
+      "maximum": 5.143452356
+    },
+    "traffic_level": {
+      "minimum": 58.0,
+      "maximum": 1257.0
+    },
+    "temperature": {
+      "minimum": -4.447222227,
+      "maximum": 24.684525555
+    },
+    "water_exposure": {
+      "minimum": 0.26146789,
+      "maximum": 0.777777778
+    },
+    "days_ahead": {
+      "minimum": 30.0,
+      "maximum": 720.0
+    }
+  },
+  "scenario_quantiles": {
+    "rainfall_level": {
+      "minimum": 0.719482495,
+      "p10": 1.3403211860000002,
+      "median": 2.737569049,
+      "p90": 3.7690057844,
+      "maximum": 5.143452356
+    },
+    "traffic_level": {
+      "minimum": 58.0,
+      "p10": 87.0,
+      "median": 346.0,
+      "p90": 784.0,
+      "maximum": 1257.0
+    },
+    "temperature": {
+      "minimum": -4.447222227,
+      "p10": 0.8678725246000004,
+      "median": 6.396535814,
+      "p90": 21.491477299400003,
+      "maximum": 24.684525555
+    },
+    "water_exposure": {
+      "minimum": 0.26146789,
+      "p10": 0.4217662086,
+      "median": 0.56626506,
+      "p90": 0.6875886524,
+      "maximum": 0.777777778
+    }
+  },
+  "scenario_presets": {
+    "NORMAL": {
+      "rainfall_level": 2.737569049,
+      "traffic_level": 346.0,
+      "temperature": 6.396535814,
+      "water_exposure": 0.56626506
+    },
+    "HEAVY_RAIN": {
+      "rainfall_level": 3.7690057844,
+      "traffic_level": 346.0,
+      "temperature": 6.396535814,
+      "water_exposure": 0.56626506
+    },
+    "HEAVY_TRAFFIC": {
+      "rainfall_level": 2.737569049,
+      "traffic_level": 784.0,
+      "temperature": 6.396535814,
+      "water_exposure": 0.56626506
+    },
+    "HIGH_HEAT": {
+      "rainfall_level": 2.737569049,
+      "traffic_level": 346.0,
+      "temperature": 21.491477299400003,
+      "water_exposure": 0.56626506
+    },
+    "WET_EXPOSURE": {
+      "rainfall_level": 2.737569049,
+      "traffic_level": 346.0,
+      "temperature": 6.396535814,
+      "water_exposure": 0.6875886524
+    }
+  },
+  "iri_severity_mapping": {
+    "formula": "clip((IRI - training_p01) / (training_p99 - training_p01), 0, 1)",
+    "training_p01_m_per_km": 0.78940002057,
+    "training_p99_m_per_km": 2.8149299283999993,
+    "fit_on_training_sites_only": true
+  }
+}

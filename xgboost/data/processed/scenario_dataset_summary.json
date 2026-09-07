@@ -1,0 +1,109 @@
+{
+  "dataset": "FHWA LTPP InfoPave Standard Data Release 40",
+  "source_page": "https://infopave.fhwa.dot.gov/Data/StandardDataRelease/",
+  "states": [
+    "AK",
+    "HI",
+    "LA",
+    "ND",
+    "NY",
+    "RI"
+  ],
+  "source_files": [
+    {
+      "state": "AK",
+      "url": "https://du993ylnpbddg.cloudfront.net/SDR/40/By_State_Province/SDR40_AK.zip",
+      "downloaded_bytes": 9766144,
+      "sha256": "2f604c7827fd3a4b90b6de79634e36964a262f475d6f19ca66aff46623443ffe",
+      "accepted_pairs": 19,
+      "rejected_pairs": {
+        "horizon_outside_7_730_days": 10
+      }
+    },
+    {
+      "state": "HI",
+      "url": "https://du993ylnpbddg.cloudfront.net/SDR/40/By_State_Province/SDR40_HI.zip",
+      "downloaded_bytes": 4610908,
+      "sha256": "e9e72a86b238a4dd1165d7d5ababc91ce7d7b51d4c702924174408b7510d2885",
+      "accepted_pairs": 12,
+      "rejected_pairs": {
+        "horizon_outside_7_730_days": 15
+      }
+    },
+    {
+      "state": "LA",
+      "url": "https://du993ylnpbddg.cloudfront.net/SDR/40/By_State_Province/SDR40_LA.zip",
+      "downloaded_bytes": 9119730,
+      "sha256": "63cb6c90fb891c2dc6a3cf1b5a49185febec3d303da08cd45db89cd50f9b074d",
+      "accepted_pairs": 5,
+      "rejected_pairs": {
+        "horizon_outside_7_730_days": 36,
+        "missing_climate_station_link": 86
+      }
+    },
+    {
+      "state": "ND",
+      "url": "https://du993ylnpbddg.cloudfront.net/SDR/40/By_State_Province/SDR40_ND.zip",
+      "downloaded_bytes": 13795137,
+      "sha256": "4a0a1189cfa59662b299d536f613ddcbca3facaf3ba113922028f8c27d305a50",
+      "accepted_pairs": 18,
+      "rejected_pairs": {
+        "missing_traffic_interval": 6,
+        "horizon_outside_7_730_days": 70,
+        "missing_climate_station_link": 178
+      }
+    },
+    {
+      "state": "NY",
+      "url": "https://du993ylnpbddg.cloudfront.net/SDR/40/By_State_Province/SDR40_NY.zip",
+      "downloaded_bytes": 26381099,
+      "sha256": "6b72287058352fbcf182888dea2c026a34c6ed043e26300caa7e781c32638215",
+      "accepted_pairs": 50,
+      "rejected_pairs": {
+        "missing_climate_station_link": 141,
+        "horizon_outside_7_730_days": 9
+      }
+    },
+    {
+      "state": "RI",
+      "url": "https://du993ylnpbddg.cloudfront.net/SDR/40/By_State_Province/SDR40_RI.zip",
+      "downloaded_bytes": 3847093,
+      "sha256": "7fd6214c80b25ab4dd2fcb72728a52b62ed7f27644a23e0fcfe9d55d44bd015a",
+      "accepted_pairs": 9,
+      "rejected_pairs": {
+        "horizon_outside_7_730_days": 5
+      }
+    }
+  ],
+  "output": "data/processed/scenario_training_pairs.csv",
+  "accepted_pair_count": 113,
+  "unique_site_count": 23,
+  "rejected_pair_counts": {
+    "horizon_outside_7_730_days": 145,
+    "missing_climate_station_link": 405,
+    "missing_traffic_interval": 6
+  },
+  "observed_pair_horizon_days": {
+    "minimum": 31,
+    "maximum": 728
+  },
+  "model_horizon_days": {
+    "minimum": 30,
+    "maximum": 720,
+    "bucket_size": 30,
+    "supported_interface_values": [
+      30,
+      60,
+      90
+    ]
+  },
+  "joins": {
+    "condition": "ANALYSIS_IRI consecutive visits within one construction number",
+    "rainfall_level": "mean DAY_PRECIPITATION (mm/day) over the future interval",
+    "temperature": "mean MEAN_DAY_TEMP (degrees C) over the future interval",
+    "water_exposure": "fraction of interval precipitation observations above 0 mm",
+    "traffic_level": "mean observed AADTT_LTPPLN, with overlapping REP_AADTT fallback; heavy trucks/day in the LTPP lane"
+  },
+  "climate_minimum_coverage": 0.8,
+  "severity_jumps_added": false
+}

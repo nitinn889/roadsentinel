@@ -14,10 +14,11 @@
   ],
   "properties": {
     "scenario_status": {"enum": ["USER_SUPPLIED", "MOCK_INTERFACE_ONLY"]},
+    "scenario_name": {"enum": ["NORMAL", "HEAVY_RAIN", "HEAVY_TRAFFIC", "HIGH_HEAT", "WET_EXPOSURE"]},
     "rainfall_level": {"type": "number", "minimum": 0, "description": "Scenario mean rainfall in millimetres per day."},
-    "traffic_level": {"type": "number", "minimum": 0, "description": "Scenario mean traffic volume in vehicles per day."},
+    "traffic_level": {"type": "number", "minimum": 0, "description": "Scenario mean heavy-truck volume in trucks per day in the forecast lane."},
     "temperature": {"type": "number", "description": "Scenario mean ambient temperature in degrees Celsius."},
     "water_exposure": {"type": "number", "minimum": 0, "maximum": 1, "description": "Fraction of forecast days with standing-water exposure."},
-    "days_ahead": {"type": "integer", "minimum": 1}
+    "days_ahead": {"type": "integer", "enum": [30, 60, 90]}
   }
 }
