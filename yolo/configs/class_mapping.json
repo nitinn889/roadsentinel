@@ -1,0 +1,27 @@
+{
+  "dataset": "RDD2022",
+  "classes": {
+    "0": "D00",
+    "1": "D10",
+    "2": "D20",
+    "3": "D40",
+    "4": "Repair"
+  },
+  "class_descriptions": {
+    "D00": "Longitudinal Crack",
+    "D10": "Transverse Crack",
+    "D20": "Alligator (Fatigue) Crack",
+    "D40": "Pothole",
+    "Repair": "Repaired / Patched Road Surface"
+  },
+  "remapping_notes": "Preserves official RDD2022 defect taxonomy. Classes 0-3 correspond to international CRDDC damage standards (D00, D10, D20, D40); class 4 preserves the Repair category present in RDD2022 China_Drone. Rare non-standard classes (e.g., 'Block crack') are filtered out.",
+  "ignored_classes": [
+    "Block crack",
+    "D43",
+    "D44",
+    "D01",
+    "D11",
+    "D50",
+    "D0w0"
+  ]
+}

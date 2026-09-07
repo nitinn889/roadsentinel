@@ -1,0 +1,13 @@
+# RoadSentinel YOLO Dataset Configuration (RDD2022 China_Drone)
+path: /home/nitin-nandakumar/Downloads/roadsentinel/yolo/data/rdd2022
+train: images/train
+val: images/val
+
+# Classes
+nc: 5
+names:
+  0: D00
+  1: D10
+  2: D20
+  3: D40
+  4: Repair

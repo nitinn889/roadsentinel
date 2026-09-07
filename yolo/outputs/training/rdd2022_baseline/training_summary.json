@@ -1,0 +1,20 @@
+{
+  "status": "COMPLETED",
+  "model": "yolov8n",
+  "initialization": "yolov8n.pt (COCO pretrained)",
+  "fine_tuned_weights_path": "/home/nitin-nandakumar/Downloads/roadsentinel/yolo/weights/best.pt",
+  "save_dir": "/home/nitin-nandakumar/Downloads/roadsentinel/yolo/outputs/training/rdd2022_baseline",
+  "data_yaml": "/home/nitin-nandakumar/Downloads/roadsentinel/yolo/configs/data.yaml",
+  "epochs": 3,
+  "imgsz": 512,
+  "batch_size": 32,
+  "device": "0",
+  "duration_seconds": 30.33,
+  "metrics": {
+    "metrics/precision(B)": 0.3895375632132937,
+    "metrics/recall(B)": 0.2935063451424127,
+    "metrics/mAP50(B)": 0.26284071469328385,
+    "metrics/mAP50-95(B)": 0.140741088295708,
+    "fitness": 0.140741088295708
+  }
+}

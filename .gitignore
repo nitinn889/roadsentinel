@@ -87,6 +87,10 @@ yolo/datasets/
 # Prepared train/val/test images and labels
 yolo/data/images/
 yolo/data/labels/
+yolo/data/rdd2022/
+yolo/data/smoke_test_images/
+yolo/data/**/images/
+yolo/data/**/labels/
 
 # Dataset caches
 yolo/data/**/*.cache
@@ -108,6 +112,8 @@ yolo/outputs/predictions/
 yolo/outputs/temp/
 yolo/outputs/debug/
 yolo/outputs/runs/
+yolo/outputs/inference/annotated/
+yolo/outputs/training/**/*.jpg
 
 # IMPORTANT:
 # Do NOT ignore the entire yolo/outputs/ folder.

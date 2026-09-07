@@ -1,0 +1,120 @@
+{
+  "scan_timestamp": "2026-09-07T23:43:00+05:30",
+  "datasets": [
+    {
+      "name": "RDD2022_full (China_Drone)",
+      "path": "RoadSentinel_datasets/rdd2022_full/China_Drone/China_Drone",
+      "image_count": 2401,
+      "annotation_format": "PASCAL VOC XML",
+      "classes": [
+        "D00",
+        "D10",
+        "D20",
+        "D40",
+        "Repair",
+        "Block crack"
+      ],
+      "structure": "train/images, train/annotations/xmls",
+      "yolo_compatible": false,
+      "conversion_required": true,
+      "usable_for_yolo": true,
+      "notes": "Drone/UAV nadir imagery, 512x512 resolution. Primary drone defect dataset."
+    },
+    {
+      "name": "RDD2022_full (India)",
+      "path": "RoadSentinel_datasets/rdd2022_full/India/India",
+      "image_count": 9665,
+      "annotated_images": 7706,
+      "unannotated_test_images": 1959,
+      "annotation_format": "PASCAL VOC XML",
+      "classes": [
+        "D00",
+        "D10",
+        "D20",
+        "D40",
+        "D43",
+        "D44",
+        "D01",
+        "D11",
+        "D50",
+        "D0w0"
+      ],
+      "structure": "train/images, train/annotations/xmls, test/images",
+      "yolo_compatible": false,
+      "conversion_required": true,
+      "usable_for_yolo": true,
+      "notes": "Ground vehicle dashcam imagery in Indian road conditions with abundant potholes (D40: 3187) and cracks."
+    },
+    {
+      "name": "Multi-Weather Pothole Detection (MWPD)",
+      "path": "RoadSentinel_datasets/mwpd/Multi-Weather Pothole Detection (MWPD)/MWPD",
+      "image_count": 2752,
+      "annotation_format": "YOLO TXT",
+      "classes": [
+        "Potholes"
+      ],
+      "structure": "train (2064), valid (413), test (275) with images/ and labels/",
+      "yolo_compatible": true,
+      "conversion_required": false,
+      "usable_for_yolo": true,
+      "notes": "Already in YOLO format with data.yaml, covers rain/night/daylight conditions."
+    },
+    {
+      "name": "Annotated Water-Filled and Dry Potholes",
+      "path": "RoadSentinel_datasets/water_filled_potholes/An Annotated Water-Filled, and Dry Potholes Dataset for Deep Learning Applications",
+      "image_count": 713,
+      "annotation_format": "Pascal VOC XML and YOLO TXT",
+      "classes": [
+        "pothole"
+      ],
+      "structure": "IMG/, XML/, TXT/, Dashcam videos",
+      "yolo_compatible": true,
+      "conversion_required": false,
+      "usable_for_yolo": true,
+      "notes": "Specialized water-filled and dry pothole dataset with YOLO TXT boxes already provided."
+    },
+    {
+      "name": "Pothole-600",
+      "path": "RoadSentinel_datasets/pothole_600/Pothole",
+      "image_count": 600,
+      "annotation_format": "Binary segmentation masks (PNG) + disparity maps",
+      "classes": [
+        "pothole (mask)"
+      ],
+      "structure": "rgb/, label/, tdisp/",
+      "yolo_compatible": false,
+      "conversion_required": true,
+      "usable_for_yolo": false,
+      "notes": "Stereo pixel mask dataset used by SAM2/DINOv2. Not native bounding boxes."
+    },
+    {
+      "name": "Pothole Mix (SHREC2022)",
+      "path": "RoadSentinel_datasets/pothole_mix",
+      "image_count": 4340,
+      "annotation_format": "Binary pixel masks (PNG)",
+      "classes": [
+        "pothole (mask)"
+      ],
+      "structure": "images/, masks/",
+      "yolo_compatible": false,
+      "conversion_required": true,
+      "usable_for_yolo": false,
+      "notes": "Pixel masks for semantic segmentation, not bounding boxes."
+    },
+    {
+      "name": "QR4Change",
+      "path": "RoadSentinel_datasets/qr4change",
+      "image_count": 2966,
+      "annotation_format": "Image-level classification only",
+      "classes": [
+        "pothole",
+        "plain-road"
+      ],
+      "structure": "unstructured images",
+      "yolo_compatible": false,
+      "conversion_required": false,
+      "usable_for_yolo": false,
+      "notes": "No localization/bounding boxes."
+    }
+  ]
+}
