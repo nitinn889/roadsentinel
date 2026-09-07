@@ -49,7 +49,7 @@ ml/models/*.pth
 ml/models/*.bin
 ml/models/*.safetensors
 
-# Global model/checkpoint formats
+# Ignore model/checkpoint formats globally
 *.pt
 *.pth
 *.onnx
@@ -65,7 +65,6 @@ ml/outputs/*
 
 # ============================================================
 # Root-level generated outputs / training caches
-# Leading "/" means only repository-root directories
 # ============================================================
 /outputs/
 /output/
@@ -73,104 +72,85 @@ ml/outputs/*
 /checkpoints/
 
 # ============================================================
-# RoadSentinel downloaded datasets
+# Main downloaded datasets
 # ============================================================
 RoadSentinel_datasets/
 
 # ============================================================
-# YOLO — Vrinda
+# YOLO
 # ============================================================
 
-# Never commit downloaded YOLO datasets
+# Do not commit downloaded/raw datasets
 yolo/datasets/
 
-# Prepared train/val/test images and labels
+# Do not commit prepared image/label copies
 yolo/data/images/
 yolo/data/labels/
-yolo/data/rdd2022/
-yolo/data/smoke_test_images/
-yolo/data/**/images/
-yolo/data/**/labels/
 
-# Dataset caches
+# Dataset / Ultralytics caches
 yolo/data/**/*.cache
 yolo/**/*.cache
 
-# YOLO training runs
+# Training runs/checkpoints
 yolo/runs/
 yolo/checkpoints/
 
-# Large YOLO weights
+# Ignore generated/intermediate weights by default
 yolo/weights/*.pt
 yolo/weights/*.pth
 yolo/weights/*.onnx
 yolo/weights/*.engine
 yolo/weights/*.ckpt
 
-# Temporary/raw prediction images that may become large
+# Large/raw YOLO output directories
 yolo/outputs/predictions/
 yolo/outputs/temp/
 yolo/outputs/debug/
 yolo/outputs/runs/
-yolo/outputs/inference/annotated/
-yolo/outputs/training/**/*.jpg
+yolo/outputs/train/
+yolo/outputs/train*/
+yolo/outputs/val/
+yolo/outputs/val*/
 
-# IMPORTANT:
-# Do NOT ignore the entire yolo/outputs/ folder.
-# This allows small useful files such as:
-# - metrics.csv
-# - results.csv
-# - evaluation.json
-# - summaries
-# - small research plots
-# to be committed.
+# Keep small useful files inside yolo/outputs/
+# such as metrics CSV/JSON, summaries and research plots.
 
 # ============================================================
-# XGBoost — Nitin
+# XGBoost
 # ============================================================
 
-# Ignore raw downloaded external data if it becomes large
+# Raw externally downloaded data
 xgboost/data/raw/
 
-# Keep processed tables unless individually too large.
-# These are useful for reproducibility.
-
-# Ignore temporary/cache files
+# Temporary/cache data
 xgboost/cache/
 xgboost/tmp/
 
-# NOTE:
-# XGBoost JSON models are intentionally NOT ignored.
-# Files such as:
+# IMPORTANT:
+# XGBoost JSON models/configs/processed CSVs/results remain tracked.
+# Example:
 # xgboost/model/model_v1.json
 # xgboost/model/scenario_model_v2.json
-# are small and should be committed.
-
-# Joblib models are allowed unless they become very large.
-# Nitin's Linear Regression baseline can therefore be preserved.
+# xgboost/config/*.json
+# xgboost/outputs/*.json
+# xgboost/outputs/*.csv
 
 # ============================================================
-# DINOv2 + SAM2 — Marion
+# DINOv2 + SAM2
 # ============================================================
 
-# Ignore large downloaded checkpoints
+# Large downloaded checkpoints/models
 sam2_dino/checkpoints/
 sam2_dino/models/
 sam2_dino/cache/
 
-# Ignore large raw datasets if created here
+# Raw datasets
 sam2_dino/datasets/
 
-# Keep:
-# sam2_dino/*.py
-# feature_contract files
-# DAY*_PROGRESS.md
-# schema/tests/configuration
-
-# Generated per-image masks and visualizations can become large.
+# Generated per-image artifacts
 sam2_dino/outputs/*/
 
-# But keep useful top-level machine-readable summaries if present
+# Keep top-level machine-readable summaries
 !sam2_dino/outputs/*.json
 !sam2_dino/outputs/*.csv
 !sam2_dino/outputs/*.md
@@ -180,19 +160,16 @@ sam2_dino/outputs/*/
 # road_health_pipeline generated data
 # ============================================================
 
-# Generated inference outputs
 road_health_pipeline/output/generated/
 road_health_pipeline/output/temp/
 road_health_pipeline/output/debug/
 
-# Large model/checkpoint directories if created
+# Large memory-bank artifacts
+road_health_pipeline/output/real_memory_bank/
+
+# Large model/checkpoint folders
 road_health_pipeline/checkpoints/
 road_health_pipeline/models/checkpoints/
-
-# NOTE:
-# Do not globally ignore road_health_pipeline/output/
-# because existing useful resources such as configuration,
-# metadata, or memory-bank references may live there.
 
 # ============================================================
 # CARLA / environment generated content
@@ -214,6 +191,15 @@ RoadSentinelSim/Saved/
 RoadSentinelSim/DerivedDataCache/
 
 # ============================================================
+# ML / experiment temporary files
+# ============================================================
+events.out.tfevents.*
+*.tfevents.*
+*.npy
+*.npz
+*.pkl
+
+# ============================================================
 # Archives / downloaded installers
 # ============================================================
 *.zip
@@ -223,7 +209,7 @@ RoadSentinelSim/DerivedDataCache/
 *.whl
 
 # ============================================================
-# OS files
+# OS
 # ============================================================
 .DS_Store
 Thumbs.db
@@ -234,3 +220,11 @@ Thumbs.db
 .env
 *.pem
 *.key
+
+# ============================================================
+# IMPORTANT: FINAL YOLO MODEL REQUIRED FOR DEMO
+# ============================================================
+
+# Override the global *.pt ignore rule for ONLY the final
+# road-defect YOLO checkpoint used by RoadSentinel.
+!yolo/weights/best.pt
