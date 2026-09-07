@@ -93,6 +93,7 @@ class DefectClassifier:
         mean_val = float(np.mean(masked_gray))
         std_val = float(np.std(masked_gray))
 
+<<<<<<< HEAD
         # Collar comparison: true standing liquid in a cavity has low variance and
         # is darker than the surrounding pavement collar
         m_u8 = (mask > 0).astype(np.uint8) * 255
@@ -119,6 +120,27 @@ class DefectClassifier:
 
         water_confidence = min(1.0, water_score)
         is_water = water_confidence >= 0.50
+=======
+        # Water in asphalt puddles typically has low spatial variance and either very dark appearance
+        # or specular highlights with high local contrast gradient
+        is_dark_puddle = mean_val < self.water_darkness_thresh and std_val < 35.0
+        is_smooth_water = std_val < 18.0
+
+        # Check for specular reflections (clipping in R, G, B channels simultaneously)
+        specular_ratio = float(np.mean((pixels[:, 0] > 240) & (pixels[:, 1] > 240) & (pixels[:, 2] > 240)))
+        has_specular = specular_ratio > 0.03
+
+        water_score = 0.0
+        if is_dark_puddle:
+            water_score += 0.45
+        if is_smooth_water:
+            water_score += 0.35
+        if has_specular:
+            water_score += 0.40
+
+        water_confidence = min(1.0, water_score)
+        is_water = water_confidence >= 0.40
+>>>>>>> 0e75352 (Add road health scoring and deterioration prediction)
         return is_water, water_confidence
 
     def classify(self,

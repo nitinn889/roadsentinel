@@ -9,10 +9,13 @@ PIPELINE_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PIPELINE_ROOT))
 
 import tests.test_analytics_layer as tal
+<<<<<<< HEAD
 import tests.test_spatial_index as tsi
 import tests.test_spatial_dedup as tsd
 import tests.test_procedural_sim as tps
 import tests.test_interactive_sim as tis
+=======
+>>>>>>> 0e75352 (Add road health scoring and deterioration prediction)
 
 
 def run_all_unit_tests():
@@ -26,6 +29,7 @@ def run_all_unit_tests():
         ("Severity Calculation (With & Without Depth)", tal.test_severity_calculation_with_and_without_depth),
         ("Road Health Scoring & Deductions", tal.test_road_health_scoring),
         ("Segment Aggregation & Defect Traceability", tal.test_segment_aggregation_traceability),
+<<<<<<< HEAD
         ("Spatial Index KD-Tree & Geofencing", tsi.test_spatial_index_kd_tree),
         ("Spatial Deduplication (3m Radius & Work Order Preservation)", tsd.test_spatial_deduplication_3m_radius),
         ("Spatial Deduplication (Distinct Clusters >3m)", tsd.test_distinct_clusters_beyond_3m),
@@ -46,6 +50,11 @@ def run_all_unit_tests():
         ("Water State Diversity (Coverage, Turbidity, Halos)", tis.test_water_state_diversity),
         ("Ground Truth Correctness & Schema Integrity", tis.test_ground_truth_correctness),
         ("CARLA Server Readiness & Socket Probing", tis.test_launcher_carla_readiness_detection),
+=======
+        ("CARLA Ground Truth Validation", tal.test_carla_ground_truth_comparison),
+        ("Temporal Prediction Interface", tal.test_temporal_prediction_interface),
+        ("CARLA Temporal Dataset & Split Integrity", tal.test_carla_synthetic_temporal_dataset_and_evaluator),
+>>>>>>> 0e75352 (Add road health scoring and deterioration prediction)
     ]
 
     passed = 0

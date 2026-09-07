@@ -1,72 +1,196 @@
+# ============================================================
 # Python
+# ============================================================
 __pycache__/
 *.py[cod]
 *.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
+# ============================================================
 # Virtual environments
+# ============================================================
 .venv/
 venv/
 carla_env/
 
+# ============================================================
 # IDE
+# ============================================================
 .vscode/
 .idea/
 
+# ============================================================
 # Hugging Face / ML caches
+# ============================================================
 .cache/
 cache/
 huggingface/
 hf_cache/
 
-# Datasets
+# ============================================================
+# Existing ML datasets
+# ============================================================
 ml/data/*
+
+# Keep small/reference project data
 !ml/data/healthy_road/
 !ml/data/test_road/
 !ml/data/healthy_road/.gitkeep
 !ml/data/test_road/.gitkeep
 
+# ============================================================
 # Large/generated model files
+# ============================================================
 ml/models/*.npy
 ml/models/*.pt
 ml/models/*.pth
 ml/models/*.bin
 ml/models/*.safetensors
 
-# Generated outputs
-ml/outputs/*
-!ml/outputs/.gitkeep
-
-# ML outputs / caches
-outputs/
-output/
-runs/
-checkpoints/
+# Global model/checkpoint formats
 *.pt
 *.pth
 *.onnx
 *.engine
 *.ckpt
+*.safetensors
 
-# Dataset files
+# ============================================================
+# Existing ML generated outputs
+# ============================================================
+ml/outputs/*
+!ml/outputs/.gitkeep
+
+# ============================================================
+# Root-level generated outputs / training caches
+# Leading "/" means only repository-root directories
+# ============================================================
+/outputs/
+/output/
+/runs/
+/checkpoints/
+
+# ============================================================
+# RoadSentinel downloaded datasets
+# ============================================================
 RoadSentinel_datasets/
 
-# Large archives
-*.zip
-*.tar
-*.tar.gz
-*.7z
-*.whl
+# ============================================================
+# YOLO — Vrinda
+# ============================================================
 
-# OS
-.DS_Store
-Thumbs.db
+# Never commit downloaded YOLO datasets
+yolo/datasets/
 
-# Secrets
-.env
-*.pem
-*.key
+# Prepared train/val/test images and labels
+yolo/data/images/
+yolo/data/labels/
 
-# ---- env/ directory: allow source code, ignore generated/binary content ----
+# Dataset caches
+yolo/data/**/*.cache
+yolo/**/*.cache
+
+# YOLO training runs
+yolo/runs/
+yolo/checkpoints/
+
+# Large YOLO weights
+yolo/weights/*.pt
+yolo/weights/*.pth
+yolo/weights/*.onnx
+yolo/weights/*.engine
+yolo/weights/*.ckpt
+
+# Temporary/raw prediction images that may become large
+yolo/outputs/predictions/
+yolo/outputs/temp/
+yolo/outputs/debug/
+yolo/outputs/runs/
+
+# IMPORTANT:
+# Do NOT ignore the entire yolo/outputs/ folder.
+# This allows small useful files such as:
+# - metrics.csv
+# - results.csv
+# - evaluation.json
+# - summaries
+# - small research plots
+# to be committed.
+
+# ============================================================
+# XGBoost — Nitin
+# ============================================================
+
+# Ignore raw downloaded external data if it becomes large
+xgboost/data/raw/
+
+# Keep processed tables unless individually too large.
+# These are useful for reproducibility.
+
+# Ignore temporary/cache files
+xgboost/cache/
+xgboost/tmp/
+
+# NOTE:
+# XGBoost JSON models are intentionally NOT ignored.
+# Files such as:
+# xgboost/model/model_v1.json
+# xgboost/model/scenario_model_v2.json
+# are small and should be committed.
+
+# Joblib models are allowed unless they become very large.
+# Nitin's Linear Regression baseline can therefore be preserved.
+
+# ============================================================
+# DINOv2 + SAM2 — Marion
+# ============================================================
+
+# Ignore large downloaded checkpoints
+sam2_dino/checkpoints/
+sam2_dino/models/
+sam2_dino/cache/
+
+# Ignore large raw datasets if created here
+sam2_dino/datasets/
+
+# Keep:
+# sam2_dino/*.py
+# feature_contract files
+# DAY*_PROGRESS.md
+# schema/tests/configuration
+
+# Generated per-image masks and visualizations can become large.
+sam2_dino/outputs/*/
+
+# But keep useful top-level machine-readable summaries if present
+!sam2_dino/outputs/*.json
+!sam2_dino/outputs/*.csv
+!sam2_dino/outputs/*.md
+!sam2_dino/outputs/.gitkeep
+
+# ============================================================
+# road_health_pipeline generated data
+# ============================================================
+
+# Generated inference outputs
+road_health_pipeline/output/generated/
+road_health_pipeline/output/temp/
+road_health_pipeline/output/debug/
+
+# Large model/checkpoint directories if created
+road_health_pipeline/checkpoints/
+road_health_pipeline/models/checkpoints/
+
+# NOTE:
+# Do not globally ignore road_health_pipeline/output/
+# because existing useful resources such as configuration,
+# metadata, or memory-bank references may live there.
+
+# ============================================================
+# CARLA / environment generated content
+# ============================================================
 env/__pycache__/
 env/output/
 env/carla_env/
@@ -74,7 +198,33 @@ env/Blender files/
 env/assets/
 env/road_defects_preview/
 env/*.jpg
+
+# ============================================================
+# Unreal Engine generated folders
+# ============================================================
 RoadSentinelSim/Intermediate/
 RoadSentinelSim/Binaries/
 RoadSentinelSim/Saved/
 RoadSentinelSim/DerivedDataCache/
+
+# ============================================================
+# Archives / downloaded installers
+# ============================================================
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.whl
+
+# ============================================================
+# OS files
+# ============================================================
+.DS_Store
+Thumbs.db
+
+# ============================================================
+# Secrets
+# ============================================================
+.env
+*.pem
+*.key

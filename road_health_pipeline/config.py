@@ -84,8 +84,19 @@ class Config:
 
     # Road camera geometry / SAM2 prompt strategy
     camera_mode: str = os.getenv("ROADSENTINEL_CAMERA_MODE", "nadir")  # nadir|forward
-    forward_roi_box_fractions: tuple[float, float, float, float] = (0.05, 0.35, 0.95, 1.0)
-    nadir_roi_box_fractions: tuple[float, float, float, float] = (0.0, 0.0, 1.0, 1.0)
+    forward_roi_box_fractions: tuple[float, float, float, float] = (0.08, 0.35, 0.92, 1.0)
+    nadir_roi_box_fractions: tuple[float, float, float, float] = (0.08, 0.05, 0.92, 0.98)
+    # Road masks that occupy nearly the whole frame or too little of the
+    # prompted corridor are unreliable.  These bounds are sanity checks, not
+    # a replacement for a labelled road segmentation model.
+    road_mask_max_area_fraction: float = 0.94
+    road_mask_min_prior_coverage: float = 0.35
+    road_mask_min_area_fraction: float = 0.30
+    road_mask_vegetation_hue_low: int = 35
+    road_mask_vegetation_hue_high: int = 95
+    road_mask_vegetation_min_saturation: int = 45
+    road_mask_merge_iou: float = 0.20
+    road_mask_merge_centroid_px: float = 48.0
     road_patch_fraction: float = 0.50
 
     # Memory bank

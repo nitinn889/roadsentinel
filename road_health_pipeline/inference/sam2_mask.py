@@ -33,6 +33,7 @@ from pathlib import Path
 from typing import Optional
 
 import numpy as np
+import cv2
 import torch
 
 from common.schemas import SegmentationResult
@@ -86,6 +87,8 @@ class RoadMasker:
         log.info("Loading SAM2 from %s on %s", ckpt, device)
         model = build_sam2(CONFIG.sam2_model_cfg, str(ckpt), device=device)
         self.predictor = SAM2ImagePredictor(model)
+        self.last_raw_road_mask: Optional[np.ndarray] = None
+        self.last_road_mask_diagnostics: dict = {}
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -229,6 +232,58 @@ class RoadMasker:
         mask[:, x1:x2] = True
         return mask
 
+    def _road_prior(self, w: int, h: int) -> np.ndarray:
+        """Return the conservative camera-mode prompt corridor as a mask."""
+        x1, y1, x2, y2 = self._roi_box(w, h).astype(int)
+        prior = np.zeros((h, w), dtype=bool)
+        prior[max(0, y1):min(h, y2), max(0, x1):min(w, x2)] = True
+        return prior
+
+    @staticmethod
+    def _largest_component(mask: np.ndarray) -> np.ndarray:
+        count, labels, stats, _ = cv2.connectedComponentsWithStats(mask.astype(np.uint8), 8)
+        if count <= 1:
+            return np.zeros_like(mask, dtype=bool)
+        label = 1 + int(np.argmax(stats[1:, cv2.CC_STAT_AREA]))
+        return labels == label
+
+    def _stabilize_road_mask(self, raw_mask: np.ndarray, image_rgb: np.ndarray) -> tuple[np.ndarray, dict]:
+        """Reject full-frame leaks and undersized masks using only camera priors.
+
+        Vegetation suppression is deliberately applied only to an implausibly
+        large SAM2 mask; it is not used to define a road on normal images.
+        """
+        h, w = raw_mask.shape
+        prior = self._road_prior(w, h)
+        raw = np.asarray(raw_mask, dtype=bool)
+        raw_ratio = float(raw.mean())
+        prior_coverage = float((raw & prior).sum() / max(1, prior.sum()))
+        reason = "accepted_raw"
+        candidate = self._largest_component(raw)
+        if raw_ratio > CONFIG.road_mask_max_area_fraction:
+            hsv = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2HSV)
+            vegetation = (
+                (hsv[..., 0] >= CONFIG.road_mask_vegetation_hue_low)
+                & (hsv[..., 0] <= CONFIG.road_mask_vegetation_hue_high)
+                & (hsv[..., 1] >= CONFIG.road_mask_vegetation_min_saturation)
+            )
+            candidate = self._largest_component(candidate & prior & ~vegetation)
+            reason = "full_frame_sanitized_with_prior"
+        elif prior_coverage < CONFIG.road_mask_min_prior_coverage:
+            candidate = prior
+            reason = "undersized_replaced_with_prior"
+
+        if candidate.mean() < CONFIG.road_mask_min_area_fraction:
+            candidate = prior
+            reason = "empty_after_sanitization_replaced_with_prior"
+        return candidate, {
+            "raw_area_ratio": raw_ratio,
+            "improved_area_ratio": float(candidate.mean()),
+            "prior_area_ratio": float(prior.mean()),
+            "raw_prior_coverage": prior_coverage,
+            "selection_reason": reason,
+        }
+
     def get_road_mask(self, image_rgb: np.ndarray) -> np.ndarray:
         """Return a boolean HxW mask covering the road surface.
 
@@ -262,11 +317,11 @@ class RoadMasker:
                 box=box[None, :], multimask_output=True
             )
         # Select best road mask
-        road_mask = self._choose_road_mask(masks, scores, h, w)
-        if road_mask is None or road_mask.sum() < 0.08 * h * w:
-            log.warning("SAM2 road mask confidence low; using road corridor isolation fallback.")
-            road_mask = self._extract_road_corridor_fallback(image_rgb)
-
+        raw_mask = self._choose_road_mask(masks, scores, h, w)
+        self.last_raw_road_mask = raw_mask.copy()
+        road_mask, diagnostics = self._stabilize_road_mask(raw_mask, image_rgb)
+        diagnostics["sam2_scores"] = [float(v) for v in scores]
+        self.last_road_mask_diagnostics = diagnostics
         return road_mask
 
     def refine_box(
