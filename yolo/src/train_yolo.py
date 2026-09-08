@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Train YOLOv8n road-defect detector on RDD2022 dataset for RoadSentinel Day 1 baseline."""
+"""Train YOLOv8n road-defect detector on RDD2022 for RoadSentinel."""
 
 from __future__ import annotations
 
@@ -22,6 +22,8 @@ def train(
     imgsz: int = 512,
     batch_size: int = 32,
     device: str = "0",
+    patience: int = 7,
+    seed: int = 42,
     project: Path = YOLO_ROOT / "outputs" / "training",
     name: str = "rdd2022_baseline",
     weights_dir: Path = YOLO_ROOT / "weights",
@@ -33,7 +35,10 @@ def train(
     print(f"Loading base model: {base_model} (COCO pretrained initialization)")
     model = YOLO(base_model)
 
-    print(f"Starting training on device={device}, epochs={epochs}, imgsz={imgsz}, batch={batch_size}...")
+    print(
+        f"Starting training on device={device}, epochs={epochs}, imgsz={imgsz}, "
+        f"batch={batch_size}, patience={patience}, seed={seed}..."
+    )
     results = model.train(
         data=str(data_yaml),
         epochs=epochs,
@@ -44,6 +49,8 @@ def train(
         name=name,
         exist_ok=True,
         workers=4,
+        patience=patience,
+        seed=seed,
         plots=True,
         save=True,
         val=True,
@@ -82,6 +89,8 @@ def train(
         "imgsz": imgsz,
         "batch_size": batch_size,
         "device": device,
+        "patience": patience,
+        "seed": seed,
         "duration_seconds": round(elapsed_s, 2),
         "metrics": metrics,
     }
@@ -110,6 +119,17 @@ def main() -> None:
     parser.add_argument("--imgsz", type=int, default=512, help="Image size")
     parser.add_argument("--batch", type=int, default=32, help="Batch size")
     parser.add_argument("--device", type=str, default="0", help="GPU device ID or 'cpu'")
+    parser.add_argument(
+        "--patience", type=int, default=7,
+        help="Early-stopping patience in epochs",
+    )
+    parser.add_argument("--seed", type=int, default=42, help="Reproducibility seed")
+    parser.add_argument(
+        "--name",
+        type=str,
+        default="rdd2022_baseline",
+        help="Run directory name within the training project",
+    )
     args = parser.parse_args()
 
     summary = train(
@@ -119,6 +139,9 @@ def main() -> None:
         imgsz=args.imgsz,
         batch_size=args.batch,
         device=args.device,
+        patience=args.patience,
+        seed=args.seed,
+        name=args.name,
     )
     print(json.dumps(summary, indent=2))
 
