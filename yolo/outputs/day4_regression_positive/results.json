@@ -1,0 +1,49 @@
+{
+  "model_weights": "/home/nitin-nandakumar/Downloads/roadsentinel/yolo/weights/best.pt",
+  "classes": {
+    "0": "D00",
+    "1": "D10",
+    "2": "D20",
+    "3": "D40",
+    "4": "Repair"
+  },
+  "confidence_threshold": 0.25,
+  "device": "0",
+  "total_images": 1,
+  "total_defects_detected": 2,
+  "results": [
+    {
+      "image_name": "China_Drone_001267.jpg",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/RoadSentinel_datasets/rdd2022_full/China_Drone/China_Drone/train/images/China_Drone_001267.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 1623.29,
+      "defect_count": 2,
+      "annotated_image": null,
+      "detections": [
+        {
+          "class": "D00",
+          "class_id": 0,
+          "confidence": 0.6710000038146973,
+          "bbox": [
+            435,
+            2,
+            463,
+            206
+          ]
+        },
+        {
+          "class": "D00",
+          "class_id": 0,
+          "confidence": 0.6211000084877014,
+          "bbox": [
+            432,
+            296,
+            457,
+            486
+          ]
+        }
+      ]
+    }
+  ]
+}

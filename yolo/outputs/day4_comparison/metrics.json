@@ -1,0 +1,48 @@
+{
+  "checkpoint_hash": "ddbea38144425aad288f05d90f07a38bcac35eeb467767643c707eb8e2fb5dcf",
+  "iou_threshold": 0.5,
+  "condition_provenance_note": "Metrics use compatible YOLO ground-truth boxes; condition labels remain visual, not weather-verified.",
+  "images": 14,
+  "metrics_by_class": {
+    "Repair": {
+      "class_id": 4,
+      "tp": 9,
+      "fp": 5,
+      "fn": 3,
+      "precision": 0.6429,
+      "recall": 0.75,
+      "f1": 0.6923,
+      "mean_matched_iou": 0.8975
+    },
+    "D10": {
+      "class_id": 1,
+      "tp": 3,
+      "fp": 3,
+      "fn": 2,
+      "precision": 0.5,
+      "recall": 0.6,
+      "f1": 0.5455,
+      "mean_matched_iou": 0.7863
+    },
+    "D00": {
+      "class_id": 0,
+      "tp": 2,
+      "fp": 0,
+      "fn": 2,
+      "precision": 1.0,
+      "recall": 0.5,
+      "f1": 0.6667,
+      "mean_matched_iou": 0.7435
+    },
+    "D20": {
+      "class_id": 2,
+      "tp": 1,
+      "fp": 5,
+      "fn": 2,
+      "precision": 0.1667,
+      "recall": 0.3333,
+      "f1": 0.2222,
+      "mean_matched_iou": 0.7142
+    }
+  }
+}

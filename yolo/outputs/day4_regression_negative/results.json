@@ -1,0 +1,26 @@
+{
+  "model_weights": "/home/nitin-nandakumar/Downloads/roadsentinel/yolo/weights/best.pt",
+  "classes": {
+    "0": "D00",
+    "1": "D10",
+    "2": "D20",
+    "3": "D40",
+    "4": "Repair"
+  },
+  "confidence_threshold": 0.25,
+  "device": "0",
+  "total_images": 1,
+  "total_defects_detected": 0,
+  "results": [
+    {
+      "image_name": "original_healthy.jpg",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/output/e2e_test/original_healthy.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 881.39,
+      "defect_count": 0,
+      "annotated_image": null,
+      "detections": []
+    }
+  ]
+}
