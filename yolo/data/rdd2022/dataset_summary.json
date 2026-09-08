@@ -1,0 +1,25 @@
+{
+  "train_images": 1921,
+  "val_images": 480,
+  "class_counts_train": {
+    "D00": 1160,
+    "D10": 1007,
+    "D20": 235,
+    "D40": 71,
+    "Repair": 622
+  },
+  "class_counts_val": {
+    "D00": 266,
+    "D10": 256,
+    "D20": 58,
+    "D40": 15,
+    "Repair": 147
+  },
+  "id_to_class": {
+    "0": "D00",
+    "1": "D10",
+    "2": "D20",
+    "3": "D40",
+    "4": "Repair"
+  }
+}
