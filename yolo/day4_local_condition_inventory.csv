@@ -1,0 +1,8 @@
+dataset,image_count,annotation_type,classes,viewpoint,natural_weather_information_available,usable_for_detection_metrics,notes
+RDD2022 (China_Drone local subset),35,YOLO bounding boxes,"D00,D10,D20,D40,Repair",UAV / nadir,false,true,"35 actual image binaries in ml/data (10 in test_road, 25 in healthy_road); 2401 matching ground-truth label files in yolo/data/rdd2022/labels; natural daylight, shadow, and low-light variations"
+RDD2022 (India dashcam sample),1,Pascal VOC XML (source),D00,dashcam,false,false,"Engineering reference sample India_005086.jpg (symlink pointer and annotated output); full dataset remote; highlights vehicle dashcam viewpoint shift"
+Pothole-600,1,Pixel segmentation mask,Pothole (binary),ground-level / nadir close-up,false,false,"Engineering reference sample 0454.png (symlink pointer and annotated output); full dataset remote; segmentation mask not 5-class YOLO boxes"
+MWPD (Multi-Weather Pothole Dataset),0,None,Pothole,dashcam,false,false,"Only 2 historical detection overlays in results/verified_lowlight/; raw images and labels not present locally"
+Water-filled / Dry Pothole Textures,2,None,Pothole texture,orthographic texture,false,false,"Simulation material diffuse textures (T_RS_Pothole_Wet_D.jpg, T_RS_Pothole_Dry_D.jpg) in RoadSentinelSim/env; not evaluation photos"
+CARLA / RoadSentinelSim Rendered Frames,6,Simulation injection log,Injected defects,UAV / nadir (simulated 30m),false,false,"Rendered synthetic simulation frames in dataset/rendered_frames/; not naturally captured"
+Road Health Pipeline Mock Fixtures,6,Unit test fixtures,Healthy / Pothole,nadir mock,false,false,"Synthetic unit test fixtures in road_health_pipeline/tests/fixtures/; not real road imagery"

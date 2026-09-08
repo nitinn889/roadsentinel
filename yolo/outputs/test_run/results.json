@@ -1,0 +1,49 @@
+{
+  "model_weights": "C:\\Users\\vrind\\Downloads\\roadsentinel\\yolo\\weights\\best.pt",
+  "classes": {
+    "0": "D00",
+    "1": "D10",
+    "2": "D20",
+    "3": "D40",
+    "4": "Repair"
+  },
+  "confidence_threshold": 0.25,
+  "device": "cpu",
+  "total_images": 1,
+  "total_defects_detected": 2,
+  "results": [
+    {
+      "image_name": "China_Drone_000213.jpg",
+      "image_path": "C:\\Users\\vrind\\Downloads\\roadsentinel\\ml\\data\\test_road\\China_Drone_000213.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 8813.43,
+      "defect_count": 2,
+      "annotated_image": "yolo\\outputs\\test_run\\annotated\\annotated_China_Drone_000213.jpg",
+      "detections": [
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.7915999889373779,
+          "bbox": [
+            303,
+            1,
+            475,
+            195
+          ]
+        },
+        {
+          "class": "D00",
+          "class_id": 0,
+          "confidence": 0.4269999861717224,
+          "bbox": [
+            113,
+            0,
+            180,
+            107
+          ]
+        }
+      ]
+    }
+  ]
+}

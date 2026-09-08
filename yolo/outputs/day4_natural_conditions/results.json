@@ -1,0 +1,478 @@
+{
+  "model_weights": "C:\\Users\\vrind\\Downloads\\roadsentinel\\yolo\\weights\\best.pt",
+  "classes": {
+    "0": "D00",
+    "1": "D10",
+    "2": "D20",
+    "3": "D40",
+    "4": "Repair"
+  },
+  "confidence_threshold": 0.25,
+  "device": "cpu",
+  "total_images": 14,
+  "total_defects_detected": 28,
+  "results": [
+    {
+      "image_name": "China_Drone_000104.jpg",
+      "image_path": "C:\\Users\\vrind\\Downloads\\roadsentinel\\yolo\\natural_condition_holdout\\images\\China_Drone_000104.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 3775.11,
+      "defect_count": 2,
+      "annotated_image": "yolo\\outputs\\day4_natural_conditions\\annotated\\annotated_China_Drone_000104.jpg",
+      "detections": [
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.9182999730110168,
+          "bbox": [
+            120,
+            0,
+            287,
+            152
+          ]
+        },
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.8841999769210815,
+          "bbox": [
+            0,
+            365,
+            226,
+            475
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000122.jpg",
+      "image_path": "C:\\Users\\vrind\\Downloads\\roadsentinel\\yolo\\natural_condition_holdout\\images\\China_Drone_000122.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 104.01,
+      "defect_count": 2,
+      "annotated_image": "yolo\\outputs\\day4_natural_conditions\\annotated\\annotated_China_Drone_000122.jpg",
+      "detections": [
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.8999000191688538,
+          "bbox": [
+            164,
+            0,
+            332,
+            188
+          ]
+        },
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.6638000011444092,
+          "bbox": [
+            394,
+            99,
+            511,
+            317
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000175.jpg",
+      "image_path": "C:\\Users\\vrind\\Downloads\\roadsentinel\\yolo\\natural_condition_holdout\\images\\China_Drone_000175.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 90.07,
+      "defect_count": 3,
+      "annotated_image": "yolo\\outputs\\day4_natural_conditions\\annotated\\annotated_China_Drone_000175.jpg",
+      "detections": [
+        {
+          "class": "D10",
+          "class_id": 1,
+          "confidence": 0.5419999957084656,
+          "bbox": [
+            241,
+            459,
+            510,
+            512
+          ]
+        },
+        {
+          "class": "D10",
+          "class_id": 1,
+          "confidence": 0.4090000092983246,
+          "bbox": [
+            361,
+            459,
+            512,
+            502
+          ]
+        },
+        {
+          "class": "D10",
+          "class_id": 1,
+          "confidence": 0.3301999866962433,
+          "bbox": [
+            304,
+            461,
+            511,
+            504
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000213.jpg",
+      "image_path": "C:\\Users\\vrind\\Downloads\\roadsentinel\\yolo\\natural_condition_holdout\\images\\China_Drone_000213.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 114.9,
+      "defect_count": 2,
+      "annotated_image": "yolo\\outputs\\day4_natural_conditions\\annotated\\annotated_China_Drone_000213.jpg",
+      "detections": [
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.7915999889373779,
+          "bbox": [
+            303,
+            1,
+            475,
+            195
+          ]
+        },
+        {
+          "class": "D00",
+          "class_id": 0,
+          "confidence": 0.4269999861717224,
+          "bbox": [
+            113,
+            0,
+            180,
+            107
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000258.jpg",
+      "image_path": "C:\\Users\\vrind\\Downloads\\roadsentinel\\yolo\\natural_condition_holdout\\images\\China_Drone_000258.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 109.62,
+      "defect_count": 5,
+      "annotated_image": "yolo\\outputs\\day4_natural_conditions\\annotated\\annotated_China_Drone_000258.jpg",
+      "detections": [
+        {
+          "class": "D20",
+          "class_id": 2,
+          "confidence": 0.3912000060081482,
+          "bbox": [
+            376,
+            361,
+            483,
+            453
+          ]
+        },
+        {
+          "class": "D20",
+          "class_id": 2,
+          "confidence": 0.3375000059604645,
+          "bbox": [
+            361,
+            191,
+            480,
+            455
+          ]
+        },
+        {
+          "class": "D20",
+          "class_id": 2,
+          "confidence": 0.29919999837875366,
+          "bbox": [
+            361,
+            62,
+            462,
+            463
+          ]
+        },
+        {
+          "class": "D20",
+          "class_id": 2,
+          "confidence": 0.2888999879360199,
+          "bbox": [
+            364,
+            214,
+            447,
+            387
+          ]
+        },
+        {
+          "class": "D20",
+          "class_id": 2,
+          "confidence": 0.2734000086784363,
+          "bbox": [
+            372,
+            268,
+            483,
+            475
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000295.jpg",
+      "image_path": "C:\\Users\\vrind\\Downloads\\roadsentinel\\yolo\\natural_condition_holdout\\images\\China_Drone_000295.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 112.85,
+      "defect_count": 1,
+      "annotated_image": "yolo\\outputs\\day4_natural_conditions\\annotated\\annotated_China_Drone_000295.jpg",
+      "detections": [
+        {
+          "class": "D20",
+          "class_id": 2,
+          "confidence": 0.36640000343322754,
+          "bbox": [
+            0,
+            280,
+            92,
+            512
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000318.jpg",
+      "image_path": "C:\\Users\\vrind\\Downloads\\roadsentinel\\yolo\\natural_condition_holdout\\images\\China_Drone_000318.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 91.79,
+      "defect_count": 4,
+      "annotated_image": "yolo\\outputs\\day4_natural_conditions\\annotated\\annotated_China_Drone_000318.jpg",
+      "detections": [
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.5873000025749207,
+          "bbox": [
+            348,
+            247,
+            512,
+            511
+          ]
+        },
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.5284000039100647,
+          "bbox": [
+            174,
+            246,
+            502,
+            512
+          ]
+        },
+        {
+          "class": "D10",
+          "class_id": 1,
+          "confidence": 0.34470000863075256,
+          "bbox": [
+            348,
+            0,
+            512,
+            16
+          ]
+        },
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.2856000065803528,
+          "bbox": [
+            298,
+            0,
+            359,
+            251
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000322.jpg",
+      "image_path": "C:\\Users\\vrind\\Downloads\\roadsentinel\\yolo\\natural_condition_holdout\\images\\China_Drone_000322.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 89.52,
+      "defect_count": 2,
+      "annotated_image": "yolo\\outputs\\day4_natural_conditions\\annotated\\annotated_China_Drone_000322.jpg",
+      "detections": [
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.7840999960899353,
+          "bbox": [
+            0,
+            371,
+            341,
+            512
+          ]
+        },
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.5062000155448914,
+          "bbox": [
+            59,
+            0,
+            140,
+            93
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000484.jpg",
+      "image_path": "C:\\Users\\vrind\\Downloads\\roadsentinel\\yolo\\natural_condition_holdout\\images\\China_Drone_000484.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 103.4,
+      "defect_count": 2,
+      "annotated_image": "yolo\\outputs\\day4_natural_conditions\\annotated\\annotated_China_Drone_000484.jpg",
+      "detections": [
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.8938000202178955,
+          "bbox": [
+            0,
+            273,
+            512,
+            463
+          ]
+        },
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.43540000915527344,
+          "bbox": [
+            1,
+            20,
+            512,
+            97
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000494.jpg",
+      "image_path": "C:\\Users\\vrind\\Downloads\\roadsentinel\\yolo\\natural_condition_holdout\\images\\China_Drone_000494.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 101.98,
+      "defect_count": 1,
+      "annotated_image": "yolo\\outputs\\day4_natural_conditions\\annotated\\annotated_China_Drone_000494.jpg",
+      "detections": [
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.853600025177002,
+          "bbox": [
+            412,
+            64,
+            512,
+            98
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000511.jpg",
+      "image_path": "C:\\Users\\vrind\\Downloads\\roadsentinel\\yolo\\natural_condition_holdout\\images\\China_Drone_000511.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 93.01,
+      "defect_count": 1,
+      "annotated_image": "yolo\\outputs\\day4_natural_conditions\\annotated\\annotated_China_Drone_000511.jpg",
+      "detections": [
+        {
+          "class": "D10",
+          "class_id": 1,
+          "confidence": 0.7342000007629395,
+          "bbox": [
+            204,
+            4,
+            512,
+            109
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000534.jpg",
+      "image_path": "C:\\Users\\vrind\\Downloads\\roadsentinel\\yolo\\natural_condition_holdout\\images\\China_Drone_000534.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 171.91,
+      "defect_count": 1,
+      "annotated_image": "yolo\\outputs\\day4_natural_conditions\\annotated\\annotated_China_Drone_000534.jpg",
+      "detections": [
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.7189000248908997,
+          "bbox": [
+            202,
+            47,
+            391,
+            451
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000535.jpg",
+      "image_path": "C:\\Users\\vrind\\Downloads\\roadsentinel\\yolo\\natural_condition_holdout\\images\\China_Drone_000535.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 110.06,
+      "defect_count": 1,
+      "annotated_image": "yolo\\outputs\\day4_natural_conditions\\annotated\\annotated_China_Drone_000535.jpg",
+      "detections": [
+        {
+          "class": "D00",
+          "class_id": 0,
+          "confidence": 0.3580000102519989,
+          "bbox": [
+            234,
+            0,
+            287,
+            512
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000592.jpg",
+      "image_path": "C:\\Users\\vrind\\Downloads\\roadsentinel\\yolo\\natural_condition_holdout\\images\\China_Drone_000592.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 97.45,
+      "defect_count": 1,
+      "annotated_image": "yolo\\outputs\\day4_natural_conditions\\annotated\\annotated_China_Drone_000592.jpg",
+      "detections": [
+        {
+          "class": "D10",
+          "class_id": 1,
+          "confidence": 0.698199987411499,
+          "bbox": [
+            0,
+            240,
+            267,
+            282
+          ]
+        }
+      ]
+    }
+  ]
+}
