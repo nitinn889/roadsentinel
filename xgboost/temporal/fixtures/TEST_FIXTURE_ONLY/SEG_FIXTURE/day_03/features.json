@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0.0",
+  "image_id": "fixture_d3",
+  "segment_id": "SEG_FIXTURE",
+  "day": 3,
+  "original_filename": "fixture_day3.jpg",
+  "condition": "wet appearance",
+  "current_severity": 0.3,
+  "crack_area_ratio": 0.01,
+  "defect_area_ratio": 0.025,
+  "defect_count": 2,
+  "surface_anomaly_score": 0.4,
+  "water_flag": true,
+  "defects": [{"bbox": [11, 11, 35, 35], "centroid_x": 23, "centroid_y": 23, "area_ratio": 0.02, "defect_type": "pothole"}, {"bbox": [60, 60, 72, 72], "centroid_x": 66, "centroid_y": 66, "area_ratio": 0.005, "defect_type": "crack"}]
+}

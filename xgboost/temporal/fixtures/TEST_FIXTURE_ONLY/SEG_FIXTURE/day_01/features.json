@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0.0",
+  "image_id": "fixture_d1",
+  "segment_id": "SEG_FIXTURE",
+  "day": 1,
+  "original_filename": "fixture_day1.jpg",
+  "condition": null,
+  "current_severity": 0.2,
+  "crack_area_ratio": 0.01,
+  "defect_area_ratio": 0.01,
+  "defect_count": 1,
+  "surface_anomaly_score": 0.2,
+  "water_flag": false,
+  "defects": [{"bbox": [10, 10, 30, 30], "centroid_x": 20, "centroid_y": 20, "area_ratio": 0.01, "defect_type": "pothole"}]
+}
