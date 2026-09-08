@@ -107,15 +107,23 @@ class RoadMarkingSuppressor:
         h, w = rgb.shape[:2]
         x1, y1, x2, y2 = [int(v) for v in bbox]
 
-        # Check 1: Horizon artifact (perspective horizon in upper 12% of frame)
-        if y1 < 0.10 * h and y2 < 0.16 * h:
-            return True
+        # Check 1 & 2: Horizon and Border artifacts only apply in forward camera mode, never in nadir/top-down views.
+        try:
+            from config import CONFIG
+            is_forward = (getattr(CONFIG, "camera_mode", "nadir") == "forward") and not getattr(CONFIG, "test_mode_2d", False)
+        except Exception:
+            is_forward = False
 
-        # Check 2: Border touching (camera truncation at borders, guardrails, curbs, verge transition)
-        margin_x = max(35, int(0.048 * w))
-        margin_y = max(30, int(0.040 * h))
-        if x1 <= margin_x or x2 >= w - margin_x or y1 <= margin_y or y2 >= h - margin_y:
-            return True
+        if is_forward:
+            # Check 1: Horizon artifact (perspective horizon in upper 12% of frame)
+            if y1 < 0.10 * h and y2 < 0.16 * h:
+                return True
+
+            # Check 2: Border touching (camera truncation at borders, guardrails, curbs, verge transition)
+            margin_x = max(35, int(0.048 * w))
+            margin_y = max(30, int(0.040 * h))
+            if x1 <= margin_x or x2 >= w - margin_x or y1 <= margin_y or y2 >= h - margin_y:
+                return True
 
         # Check 3: Check color profile of candidate
         cand_pixels = rgb[mask] if np.any(mask) else rgb[y1:y2, x1:x2].reshape(-1, 3)

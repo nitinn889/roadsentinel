@@ -229,11 +229,12 @@ class PotholeLocalizer:
             for group in groups:
                 group_mask = np.logical_or.reduce([item.mask for item in group])
                 iou = self._mask_iou(candidate.mask, group_mask)
+                touching = np.any(cv2.dilate(group_mask.astype(np.uint8), np.ones((9, 9), np.uint8)).astype(bool) & candidate.mask)
                 dilated = cv2.dilate(group_mask.astype(np.uint8), np.ones((49, 49), np.uint8)).astype(bool)
                 cx, cy = self._centroid(candidate.mask)
                 gx, gy = self._centroid(group_mask)
                 nearby = np.any(dilated & candidate.mask) and np.hypot(cx - gx, cy - gy) <= CONFIG.road_mask_merge_centroid_px
-                if iou >= CONFIG.road_mask_merge_iou or nearby:
+                if iou >= CONFIG.road_mask_merge_iou or touching or nearby:
                     group.append(candidate)
                     placed = True
                     break
@@ -366,21 +367,24 @@ class PotholeLocalizer:
             if (area / candidate_u8.size > getattr(CONFIG, "candidate_max_area_fraction", 0.35)):
                 continue
 
-            # 3. Shape & Artifact Filtering (Suppress thin grid lines, checkerboard edges)
-            if aspect_ratio > 4.5 and shape_circ < 0.15:
+            # 3. Shape & Artifact Filtering (Suppress simulation grid lines without suppressing organic cracks)
+            if not is_2d and aspect_ratio > 8.0 and shape_circ < 0.05:
                 # Linear artifact/grid line rather than organic road distress
                 continue
 
             # 3b. Perspective Horizon & Boundary Rejection
+            # Perspective horizon artifact only exists in forward camera mode, never in nadir/top-down views.
             img_h, img_w = rgb.shape[:2]
-            if y < 0.10 * img_h and (y + h_cc) < 0.16 * img_h:
+            is_forward = (getattr(CONFIG, "camera_mode", "nadir") == "forward") and not is_2d
+            if is_forward and y < 0.10 * img_h and (y + h_cc) < 0.16 * img_h:
                 # Distant perspective vanishing horizon artifact
                 continue
-            margin_x = max(25, int(0.03 * img_w))
-            margin_y = max(25, int(0.035 * img_h))
-            if x <= margin_x or (x + w) >= img_w - margin_x or y <= margin_y or (y + h_cc) >= img_h - margin_y:
-                # Outer camera frame truncation / roadside verge transition
-                continue
+            if not is_2d:
+                margin_x = max(25, int(0.03 * img_w))
+                margin_y = max(25, int(0.035 * img_h))
+                if x <= margin_x or (x + w) >= img_w - margin_x or y <= margin_y or (y + h_cc) >= img_h - margin_y:
+                    # Outer camera frame truncation / roadside verge transition
+                    continue
 
             # 3c. Painted Road Marking Rejection (Yellow stripes and white lane lines)
             cand_pixels = rgb[comp_mask]
@@ -436,14 +440,23 @@ class PotholeLocalizer:
             sam2_result: Optional[SegmentationResult] = None
 
             if sam2 is not None:
+                pad_x = 8 if w < 30 else 0
+                pad_y = 8 if h_cc < 30 else 0
+                prompt_box = [
+                    max(0, x - pad_x),
+                    max(0, y - pad_y),
+                    min(img_w, x + w + pad_x),
+                    min(img_h, y + h_cc + pad_y),
+                ]
                 prompt_diagnostic = {
                     "bbox_xyxy": raw_bbox,
+                    "prompt_box_xyxy": prompt_box,
                     "sam2_status": "pending",
                 }
                 if diagnostics is not None:
                     diagnostics["sam2_prompts"].append(prompt_diagnostic)
                 try:
-                    result = sam2.refine_box(rgb, raw_bbox)
+                    result = sam2.refine_box(rgb, prompt_box)
                     prompt_diagnostic["sam2_status"] = "refined"
                     prompt_diagnostic["sam2_confidence"] = float(result.confidence)
                     prompt_diagnostic["sam2_bbox_xyxy"] = result.bbox_xyxy

@@ -96,7 +96,7 @@ class Config:
     road_mask_vegetation_hue_high: int = 95
     road_mask_vegetation_min_saturation: int = 45
     road_mask_merge_iou: float = 0.20
-    road_mask_merge_centroid_px: float = 48.0
+    road_mask_merge_centroid_px: float = 65.0
     road_patch_fraction: float = 0.50
 
     # Memory bank
