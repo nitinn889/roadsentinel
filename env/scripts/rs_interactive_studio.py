@@ -23,15 +23,18 @@ import sys
 import json
 import time
 import socket
+from datetime import datetime, timezone
 from pathlib import Path
 
 from PySide6 import QtWidgets, QtCore, QtGui
+from rs_capture_metadata_logger import record_capture_attempt
 
 WORKSPACE_ROOT = Path(__file__).resolve().parents[2]
 CAPTURES_DIR = WORKSPACE_ROOT / "env" / "output" / "captures"
 CAPTURES_DIR.mkdir(parents=True, exist_ok=True)
 MANUAL_INSPECTIONS_ROOT = WORKSPACE_ROOT / "env" / "output" / "manual_inspections"
 MANIFESTS_ROOT = WORKSPACE_ROOT / "env" / "output" / "temporal_20_day" / "manifests"
+TEMPORAL_SEGMENTS_ROOT = WORKSPACE_ROOT / "env" / "output" / "temporal_segments"
 
 IPC_HOST = "127.0.0.1"
 IPC_PORT = 8899
@@ -499,6 +502,54 @@ class RoadSentinelStudioWindow(QtWidgets.QMainWindow):
     def _selected_segment(self) -> str:
         return self.combo_segment.currentText()
 
+    def _inspection_metadata_snapshot(self) -> dict:
+        """Read, without changing, the exact GUI values shown at capture time."""
+        return {
+            "segment_id": self.combo_segment.currentText(),
+            "day": int(self.combo_day.currentData() or 1),
+            "day_display": self.combo_day.currentText(),
+            "lighting_preset": self.combo_light.currentText(),
+            "road_health_state": self.combo_health.currentText(),
+            "pothole_sizing_spectrum": self.combo_sizing.currentText(),
+            "pothole_density_per_100m2": self.slider_density.value() / 10.0,
+            "pothole_density_display": self.lbl_density.text(),
+            "pothole_moisture_state": self.combo_water.currentText(),
+            "camera_preset": self.combo_viewpoint.currentText(),
+            "capture_timestamp": datetime.now(timezone.utc).astimezone().isoformat(),
+        }
+
+    def _safe_inspection_metadata_snapshot(self):
+        """Never allow optional metadata reads to interrupt image capture."""
+        try:
+            return self._inspection_metadata_snapshot()
+        except Exception as exc:
+            print(f"Warning: inspection metadata snapshot failed: {exc}", file=sys.stderr)
+            return None
+
+    def _log_inspection_metadata_passively(self, snapshot: dict, response: dict) -> None:
+        """Write metadata without allowing failures to affect image capture."""
+        try:
+            fallback = (
+                TEMPORAL_SEGMENTS_ROOT
+                / snapshot["segment_id"]
+                / f"day_{snapshot['day']:02d}.png"
+            )
+            response_path = response.get("path")
+            image_path = Path(response_path) if response_path else fallback
+            if not image_path.is_absolute():
+                image_path = WORKSPACE_ROOT / image_path
+            status = str(response.get("status", "unknown"))
+            record_capture_attempt(
+                snapshot,
+                image_path=image_path,
+                output_root=TEMPORAL_SEGMENTS_ROOT,
+                workspace_root=WORKSPACE_ROOT,
+                capture_succeeded=status in ("ok", "warning"),
+                capture_status=status,
+            )
+        except Exception as exc:
+            print(f"Warning: inspection metadata logging failed: {exc}", file=sys.stderr)
+
     def _refresh_status_panel(self, extra: str = ""):
         day = self._selected_day()
         seg = self._selected_segment()
@@ -595,6 +646,7 @@ class RoadSentinelStudioWindow(QtWidgets.QMainWindow):
     def on_insp_capture_clicked(self):
         day = self._selected_day()
         seg = self._selected_segment()
+        metadata_snapshot = self._safe_inspection_metadata_snapshot()
 
         self.btn_insp_capture.setEnabled(False)
         self.btn_insp_capture.setText("⏳ Capturing…")
@@ -636,6 +688,9 @@ class RoadSentinelStudioWindow(QtWidgets.QMainWindow):
             self.lbl_insp_saved.setText(f"✗ Capture failed: {err}")
             self._refresh_status_panel(f"✗ Capture error: {err}")
             self.status.showMessage(f"✗ Inspection capture failed: {err}")
+
+        if metadata_snapshot is not None:
+            self._log_inspection_metadata_passively(metadata_snapshot, res)
 
     # ------------------------------------------------------------------
     # Existing Studio Slots (unchanged)
