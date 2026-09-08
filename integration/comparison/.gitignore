@@ -1,0 +1,4 @@
+# Generated pipeline outputs from dual-pipeline comparison runs
+# Only scripts, CSVs and summary JSONs at the top level are tracked.
+yolo/
+sam2_dino/

@@ -1,0 +1,63 @@
+{
+  "integration_run": "VRINDA1-5_MARION1-4_NITIN1-4_SYNC",
+  "total_images": 3,
+  "yolo_success": 3,
+  "yolo_failed": 0,
+  "marion_success": 3,
+  "marion_failed": 0,
+  "interface_compatible": true,
+  "caveat": "This is an interface compatibility check only. Results do NOT constitute a final research benchmark. Class-wise YOLO vs Marion comparison is NOT valid: YOLO uses D00/D10/D20/D40/Repair taxonomy; Marion uses generic road_defect anomaly segmentation.",
+  "records": [
+    {
+      "image_id": "China_Drone_000104",
+      "original_filename": "China_Drone_000104.jpg",
+      "condition": "shadow",
+      "viewpoint": "UAV / nadir",
+      "gt_compatible": "true",
+      "yolo_status": "SUCCESS",
+      "yolo_defect_count": 2,
+      "yolo_inference_ms": 779.65,
+      "yolo_defect_classes": "Repair;Repair",
+      "marion_status": "SUCCESS",
+      "marion_defect_count": 1,
+      "marion_inference_ms": 611.53,
+      "marion_current_severity": 0.2507,
+      "marion_note": "bounding boxes derived from segmentation masks",
+      "class_comparison_note": "YOLO outputs named defect classes (D00/D10/D20/D40/Repair). Marion outputs road_defect (generic anomaly). Class-wise comparison is NOT valid without a shared taxonomy."
+    },
+    {
+      "image_id": "China_Drone_000122",
+      "original_filename": "China_Drone_000122.jpg",
+      "condition": "shadow",
+      "viewpoint": "UAV / nadir",
+      "gt_compatible": "true",
+      "yolo_status": "SUCCESS",
+      "yolo_defect_count": 2,
+      "yolo_inference_ms": 757.88,
+      "yolo_defect_classes": "Repair;Repair",
+      "marion_status": "SUCCESS",
+      "marion_defect_count": 4,
+      "marion_inference_ms": 761.5,
+      "marion_current_severity": 0.8059,
+      "marion_note": "bounding boxes derived from segmentation masks",
+      "class_comparison_note": "YOLO outputs named defect classes (D00/D10/D20/D40/Repair). Marion outputs road_defect (generic anomaly). Class-wise comparison is NOT valid without a shared taxonomy."
+    },
+    {
+      "image_id": "China_Drone_000175",
+      "original_filename": "China_Drone_000175.jpg",
+      "condition": "low_light",
+      "viewpoint": "UAV / nadir",
+      "gt_compatible": "true",
+      "yolo_status": "SUCCESS",
+      "yolo_defect_count": 3,
+      "yolo_inference_ms": 761.93,
+      "yolo_defect_classes": "D10;D10;D10",
+      "marion_status": "SUCCESS",
+      "marion_defect_count": 2,
+      "marion_inference_ms": 756.37,
+      "marion_current_severity": 0.675,
+      "marion_note": "bounding boxes derived from segmentation masks",
+      "class_comparison_note": "YOLO outputs named defect classes (D00/D10/D20/D40/Repair). Marion outputs road_defect (generic anomaly). Class-wise comparison is NOT valid without a shared taxonomy."
+    }
+  ]
+}

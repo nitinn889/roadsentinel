@@ -30,9 +30,10 @@ from typing import Any, List, Optional
 import cv2
 import numpy as np
 
-ROOT = Path(__file__).resolve().parent
-PIPELINE_ROOT = ROOT / "road_health_pipeline"
-SAM2_DINO_ROOT = ROOT / "sam2_dino"
+ROOT = Path(__file__).resolve().parent          # sam2_dino/
+REPO_ROOT = ROOT.parent                         # repository root (for manifest-relative paths)
+PIPELINE_ROOT = REPO_ROOT / "road_health_pipeline"
+SAM2_DINO_ROOT = ROOT
 
 for p in (str(ROOT), str(PIPELINE_ROOT), str(SAM2_DINO_ROOT)):
     if p not in sys.path:
@@ -68,7 +69,7 @@ def collect_images_from_input(input_path: Path) -> list[tuple[str, Path, Optiona
                 img_path_str = row.get("image_path") or row.get("path") or row.get("image")
                 if not img_path_str:
                     continue
-                resolved_path = (ROOT / img_path_str).resolve() if not Path(img_path_str).is_absolute() else Path(img_path_str)
+                resolved_path = (REPO_ROOT / img_path_str).resolve() if not Path(img_path_str).is_absolute() else Path(img_path_str)
                 if not resolved_path.exists():
                     log.warning("Image path from manifest not found: %s", resolved_path)
                     continue
