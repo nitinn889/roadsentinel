@@ -318,26 +318,35 @@ class PotholeLocalizer:
         )
         candidate_u8 = cv2.morphologyEx(candidate_u8, cv2.MORPH_OPEN, kernel_open)
 
-        n, labels, stats, _ = cv2.connectedComponentsWithStats(
-            candidate_u8, connectivity=8
+        # Day 5: Pre-consolidate nearby candidate fragments of the same physical defect
+        # (e.g. adjacent pothole fragments or crack segments) before SAM2 prompting.
+        # This provides SAM2 with the unified candidate bounding box and prevents over-fragmentation.
+        dilated_u8 = cv2.dilate(candidate_u8, np.ones((21, 21), np.uint8))
+        n_grp, labels_grp, stats_grp, _ = cv2.connectedComponentsWithStats(
+            dilated_u8, connectivity=8
         )
 
         if diagnostics is not None:
             diagnostics["threshold_mask"] = candidate_bin.copy()
             diagnostics["candidate_mask"] = candidate_u8.astype(bool)
-            diagnostics["connected_component_count_before_filters"] = int(n - 1)
+            diagnostics["connected_component_count_before_filters"] = int(n_grp - 1)
             diagnostics["sam2_prompts"] = []
 
         out: list[CandidateRegion] = []
-        for label in range(1, n):  # 0 = background
-            area = int(stats[label, cv2.CC_STAT_AREA])
-            x = int(stats[label, cv2.CC_STAT_LEFT])
-            y = int(stats[label, cv2.CC_STAT_TOP])
-            w = int(stats[label, cv2.CC_STAT_WIDTH])
-            h_cc = int(stats[label, cv2.CC_STAT_HEIGHT])
-            raw_bbox = [x, y, x + w, y + h_cc]
+        for grp_label in range(1, n_grp):
+            comp_mask = (labels_grp == grp_label) & (candidate_u8 > 0)
+            area = int(comp_mask.sum())
+            if area == 0:
+                continue
+            ys, xs = np.nonzero(comp_mask)
+            x = int(xs.min())
+            y = int(ys.min())
+            x_max = int(xs.max()) + 1
+            y_max = int(ys.max()) + 1
+            w = x_max - x
+            h_cc = y_max - y
+            raw_bbox = [x, y, x_max, y_max]
 
-            comp_mask = (labels == label)
             pixels = anomaly_map[comp_mask]
             raw_anomaly_mean = float(pixels.mean()) if len(pixels) > 0 else 0.0
             raw_anomaly_max = float(pixels.max()) if len(pixels) > 0 else 0.0
@@ -440,8 +449,19 @@ class PotholeLocalizer:
             sam2_result: Optional[SegmentationResult] = None
 
             if sam2 is not None:
-                pad_x = 8 if w < 30 else 0
-                pad_y = 8 if h_cc < 30 else 0
+                # Day 5 adaptive prompt context:
+                # Longitudinal cracks and elongated defects extend along their major axis.
+                # Expand context along the elongation axis so SAM2 captures the full defect extent.
+                if h_cc >= 1.3 * w and w <= 25:
+                    pad_y = max(32, min(80, int(h_cc * 1.5)))
+                    pad_x = 10
+                elif w >= 1.3 * h_cc and h_cc <= 25:
+                    pad_x = max(32, min(80, int(w * 1.5)))
+                    pad_y = 10
+                else:
+                    pad_x = 12 if w < 40 else 6
+                    pad_y = 12 if h_cc < 40 else 6
+
                 prompt_box = [
                     max(0, x - pad_x),
                     max(0, y - pad_y),
