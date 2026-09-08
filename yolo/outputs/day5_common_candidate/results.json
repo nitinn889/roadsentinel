@@ -1,0 +1,553 @@
+{
+  "model_weights": "/home/nitin-nandakumar/Downloads/roadsentinel/yolo/weights/best.pt",
+  "classes": {
+    "0": "D00",
+    "1": "D10",
+    "2": "D20",
+    "3": "D40",
+    "4": "Repair"
+  },
+  "confidence_threshold": 0.25,
+  "device": "0",
+  "total_images": 18,
+  "total_defects_detected": 31,
+  "results": [
+    {
+      "image_name": "0454.png",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/RoadSentinel_datasets/pothole_600/Pothole/rgb/0454.png",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 917.28,
+      "defect_count": 1,
+      "annotated_image": "yolo/outputs/day5_common_candidate/annotated/annotated_0454.png",
+      "detections": [
+        {
+          "class": "D00",
+          "class_id": 0,
+          "confidence": 0.2508000135421753,
+          "bbox": [
+            187,
+            180,
+            311,
+            260
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000104.jpg",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/yolo/natural_condition_holdout/images/China_Drone_000104.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 4.49,
+      "defect_count": 2,
+      "annotated_image": "yolo/outputs/day5_common_candidate/annotated/annotated_China_Drone_000104.jpg",
+      "detections": [
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.9182999730110168,
+          "bbox": [
+            120,
+            0,
+            287,
+            152
+          ]
+        },
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.8841999769210815,
+          "bbox": [
+            0,
+            365,
+            226,
+            475
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000122.jpg",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/yolo/natural_condition_holdout/images/China_Drone_000122.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 2.96,
+      "defect_count": 2,
+      "annotated_image": "yolo/outputs/day5_common_candidate/annotated/annotated_China_Drone_000122.jpg",
+      "detections": [
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.8999999761581421,
+          "bbox": [
+            164,
+            0,
+            332,
+            188
+          ]
+        },
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.6638000011444092,
+          "bbox": [
+            394,
+            99,
+            511,
+            317
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000175.jpg",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/yolo/natural_condition_holdout/images/China_Drone_000175.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 2.58,
+      "defect_count": 3,
+      "annotated_image": "yolo/outputs/day5_common_candidate/annotated/annotated_China_Drone_000175.jpg",
+      "detections": [
+        {
+          "class": "D10",
+          "class_id": 1,
+          "confidence": 0.5422999858856201,
+          "bbox": [
+            241,
+            459,
+            510,
+            512
+          ]
+        },
+        {
+          "class": "D10",
+          "class_id": 1,
+          "confidence": 0.4090999960899353,
+          "bbox": [
+            361,
+            459,
+            512,
+            502
+          ]
+        },
+        {
+          "class": "D10",
+          "class_id": 1,
+          "confidence": 0.3301999866962433,
+          "bbox": [
+            305,
+            461,
+            511,
+            504
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000213.jpg",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/yolo/natural_condition_holdout/images/China_Drone_000213.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 2.43,
+      "defect_count": 2,
+      "annotated_image": "yolo/outputs/day5_common_candidate/annotated/annotated_China_Drone_000213.jpg",
+      "detections": [
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.7911999821662903,
+          "bbox": [
+            303,
+            1,
+            475,
+            195
+          ]
+        },
+        {
+          "class": "D00",
+          "class_id": 0,
+          "confidence": 0.42730000615119934,
+          "bbox": [
+            113,
+            0,
+            180,
+            107
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000258.jpg",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/yolo/natural_condition_holdout/images/China_Drone_000258.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 2.32,
+      "defect_count": 5,
+      "annotated_image": "yolo/outputs/day5_common_candidate/annotated/annotated_China_Drone_000258.jpg",
+      "detections": [
+        {
+          "class": "D20",
+          "class_id": 2,
+          "confidence": 0.39079999923706055,
+          "bbox": [
+            376,
+            361,
+            483,
+            453
+          ]
+        },
+        {
+          "class": "D20",
+          "class_id": 2,
+          "confidence": 0.33799999952316284,
+          "bbox": [
+            361,
+            191,
+            480,
+            455
+          ]
+        },
+        {
+          "class": "D20",
+          "class_id": 2,
+          "confidence": 0.29980000853538513,
+          "bbox": [
+            361,
+            63,
+            462,
+            463
+          ]
+        },
+        {
+          "class": "D20",
+          "class_id": 2,
+          "confidence": 0.2890999913215637,
+          "bbox": [
+            364,
+            214,
+            447,
+            387
+          ]
+        },
+        {
+          "class": "D20",
+          "class_id": 2,
+          "confidence": 0.27390000224113464,
+          "bbox": [
+            372,
+            268,
+            483,
+            475
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000295.jpg",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/yolo/natural_condition_holdout/images/China_Drone_000295.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 2.3,
+      "defect_count": 1,
+      "annotated_image": "yolo/outputs/day5_common_candidate/annotated/annotated_China_Drone_000295.jpg",
+      "detections": [
+        {
+          "class": "D20",
+          "class_id": 2,
+          "confidence": 0.36640000343322754,
+          "bbox": [
+            0,
+            280,
+            92,
+            512
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000318.jpg",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/yolo/natural_condition_holdout/images/China_Drone_000318.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 2.32,
+      "defect_count": 4,
+      "annotated_image": "yolo/outputs/day5_common_candidate/annotated/annotated_China_Drone_000318.jpg",
+      "detections": [
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.5873000025749207,
+          "bbox": [
+            348,
+            247,
+            512,
+            511
+          ]
+        },
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.5284000039100647,
+          "bbox": [
+            174,
+            246,
+            502,
+            512
+          ]
+        },
+        {
+          "class": "D10",
+          "class_id": 1,
+          "confidence": 0.34459999203681946,
+          "bbox": [
+            348,
+            0,
+            512,
+            16
+          ]
+        },
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.2856999933719635,
+          "bbox": [
+            298,
+            0,
+            359,
+            251
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000322.jpg",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/yolo/natural_condition_holdout/images/China_Drone_000322.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 2.34,
+      "defect_count": 2,
+      "annotated_image": "yolo/outputs/day5_common_candidate/annotated/annotated_China_Drone_000322.jpg",
+      "detections": [
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.7840999960899353,
+          "bbox": [
+            0,
+            371,
+            341,
+            512
+          ]
+        },
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.5074999928474426,
+          "bbox": [
+            59,
+            0,
+            140,
+            93
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000484.jpg",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/yolo/natural_condition_holdout/images/China_Drone_000484.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 2.32,
+      "defect_count": 2,
+      "annotated_image": "yolo/outputs/day5_common_candidate/annotated/annotated_China_Drone_000484.jpg",
+      "detections": [
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.8938999772071838,
+          "bbox": [
+            0,
+            273,
+            512,
+            463
+          ]
+        },
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.43540000915527344,
+          "bbox": [
+            1,
+            20,
+            512,
+            97
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000494.jpg",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/yolo/natural_condition_holdout/images/China_Drone_000494.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 2.27,
+      "defect_count": 1,
+      "annotated_image": "yolo/outputs/day5_common_candidate/annotated/annotated_China_Drone_000494.jpg",
+      "detections": [
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.8540999889373779,
+          "bbox": [
+            412,
+            64,
+            512,
+            98
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000511.jpg",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/yolo/natural_condition_holdout/images/China_Drone_000511.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 2.25,
+      "defect_count": 1,
+      "annotated_image": "yolo/outputs/day5_common_candidate/annotated/annotated_China_Drone_000511.jpg",
+      "detections": [
+        {
+          "class": "D10",
+          "class_id": 1,
+          "confidence": 0.7343999743461609,
+          "bbox": [
+            204,
+            4,
+            512,
+            109
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000534.jpg",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/yolo/natural_condition_holdout/images/China_Drone_000534.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 2.25,
+      "defect_count": 1,
+      "annotated_image": "yolo/outputs/day5_common_candidate/annotated/annotated_China_Drone_000534.jpg",
+      "detections": [
+        {
+          "class": "Repair",
+          "class_id": 4,
+          "confidence": 0.7186999917030334,
+          "bbox": [
+            202,
+            47,
+            391,
+            451
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000535.jpg",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/yolo/natural_condition_holdout/images/China_Drone_000535.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 2.33,
+      "defect_count": 1,
+      "annotated_image": "yolo/outputs/day5_common_candidate/annotated/annotated_China_Drone_000535.jpg",
+      "detections": [
+        {
+          "class": "D00",
+          "class_id": 0,
+          "confidence": 0.35740000009536743,
+          "bbox": [
+            234,
+            0,
+            287,
+            512
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_000592.jpg",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/yolo/natural_condition_holdout/images/China_Drone_000592.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 2.34,
+      "defect_count": 1,
+      "annotated_image": "yolo/outputs/day5_common_candidate/annotated/annotated_China_Drone_000592.jpg",
+      "detections": [
+        {
+          "class": "D10",
+          "class_id": 1,
+          "confidence": 0.6980999708175659,
+          "bbox": [
+            0,
+            240,
+            267,
+            282
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "China_Drone_001267.jpg",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/RoadSentinel_datasets/rdd2022_full/China_Drone/China_Drone/train/images/China_Drone_001267.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 2.38,
+      "defect_count": 2,
+      "annotated_image": "yolo/outputs/day5_common_candidate/annotated/annotated_China_Drone_001267.jpg",
+      "detections": [
+        {
+          "class": "D00",
+          "class_id": 0,
+          "confidence": 0.6710000038146973,
+          "bbox": [
+            435,
+            2,
+            463,
+            206
+          ]
+        },
+        {
+          "class": "D00",
+          "class_id": 0,
+          "confidence": 0.6211000084877014,
+          "bbox": [
+            432,
+            296,
+            457,
+            486
+          ]
+        }
+      ]
+    },
+    {
+      "image_name": "India_005086.jpg",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/RoadSentinel_datasets/rdd2022_full/India/India/train/images/India_005086.jpg",
+      "width": 720,
+      "height": 720,
+      "inference_ms": 4.74,
+      "defect_count": 0,
+      "annotated_image": "yolo/outputs/day5_common_candidate/annotated/annotated_India_005086.jpg",
+      "detections": []
+    },
+    {
+      "image_name": "original_healthy.jpg",
+      "image_path": "/home/nitin-nandakumar/Downloads/roadsentinel/output/e2e_test/original_healthy.jpg",
+      "width": 512,
+      "height": 512,
+      "inference_ms": 3.4,
+      "defect_count": 0,
+      "annotated_image": "yolo/outputs/day5_common_candidate/annotated/annotated_original_healthy.jpg",
+      "detections": []
+    }
+  ]
+}

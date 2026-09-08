@@ -114,6 +114,7 @@ yolo/outputs/val*/
 
 # Keep small useful files inside yolo/outputs/
 # such as metrics CSV/JSON, summaries and research plots.
+yolo/outputs/day5_common_candidate/annotated/
 
 # ============================================================
 # XGBoost
