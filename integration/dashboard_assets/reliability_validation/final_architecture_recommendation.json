@@ -1,0 +1,21 @@
+{
+  "phase": 12,
+  "status": "PASS",
+  "recommended_architecture": "ARCHITECTURE_C",
+  "architecture_title": "DINOv2 Macro Domain Gate + YOLOv8n + Confidence-Based Reliability Estimation",
+  "justification": "Empirical evidence proves a clear separation of concerns: DINOv2 foundation embeddings provide flawless macro domain shift detection (AUROC 1.0000, 100% India detection with 1.46% China false alarm at p99=0.4491) but add negligible sample-level failure predictive power (AUROC 0.54-0.60 alone). Conversely, YOLO confidence features provide strong sample-level failure prediction (AUROC 0.8166-0.8650, 60.5% error reduction) but cannot detect when the whole domain has shifted out of distribution. Architecture C combines DINO Domain Gating at the input boundary with YOLO Confidence Reliability at the decision boundary, reducing unsafe automated acceptance on out-of-domain data from 97.67% down to 0.00%.",
+  "thesis_contribution_decision": "MAJOR_CONTRIBUTION",
+  "research_decisions": {
+    "question_a_selective_prediction": "STRONGLY_SUPPORTED",
+    "question_b_dino_sample_level_value": "NONE_TO_MARGINAL",
+    "question_c_dino_domain_gate_value": "STRONGLY_SUPPORTED",
+    "question_d_temporal_features_value": "INSUFFICIENT_DATA"
+  },
+  "targets_evaluated": {
+    "T0": "image-level F1 > 0 (Lenient Phase-8 Baseline)",
+    "T1": "image-level F1 >= 0.50 (Balanced Quality)",
+    "T2": "image-level Recall >= 0.50 (Moderate Defect Capture)",
+    "T3": "image-level Recall >= 0.75 (High Defect Capture)",
+    "T4": "Complete Recall (100% at IoU >= 0.50 where GT > 0)"
+  }
+}

@@ -1,0 +1,7 @@
+dataset,system_name,description,total_images,accepted_images,acceptance_rate_pct,accepted_failures,unsafe_accepted_failure_rate_pct,unsafe_failure_reduction_vs_raw_pct
+China_Drone_Val (In-Domain),System_1_Standalone_YOLO,"Direct YOLO inference, zero reliability or domain gating",480,480,100.0,86,17.92,0.0
+China_Drone_Val (In-Domain),System_2_YOLO_Confidence_Only,YOLO + Confidence thresholding (rejects unconfident detections),480,407,84.79,43,10.57,41.03
+China_Drone_Val (In-Domain),System_3_Full_Domain_Gated_Architecture,DINO Domain Gate + YOLO + Confidence Reliability,480,402,83.75,43,10.7,50.0
+India_Cross_Domain (Shifted),System_1_Standalone_YOLO,"Direct YOLO inference, zero reliability or domain gating",300,300,100.0,293,97.67,0.0
+India_Cross_Domain (Shifted),System_2_YOLO_Confidence_Only,YOLO + Confidence thresholding (rejects unconfident detections),300,28,9.33,24,85.71,12.24
+India_Cross_Domain (Shifted),System_3_Full_Domain_Gated_Architecture,DINO Domain Gate + YOLO + Confidence Reliability,300,0,0.0,0,0.0,100.0

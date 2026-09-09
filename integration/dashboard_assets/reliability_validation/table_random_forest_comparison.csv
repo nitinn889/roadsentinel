@@ -1,0 +1,41 @@
+model,model_name,classifier,target,AUROC,AUPRC,balanced_accuracy,failure_F1,Brier,ECE
+Model_A,YOLO Max Confidence Only,RandomForest,T0,0.8485,0.6993,0.7707,0.6966,0.0526,0.0315
+Model_B,YOLO Confidence Features,RandomForest,T0,0.8577,0.6955,0.7719,0.7045,0.053,0.0288
+Model_C,DINO OOD Only,RandomForest,T0,0.4802,0.1163,0.4988,0.0,0.1105,0.0433
+Model_D,Image Quality Only,RandomForest,T0,0.5862,0.1572,0.4976,0.0,0.1081,0.0396
+Model_E,YOLO Confidence + DINO OOD,RandomForest,T0,0.8149,0.6842,0.7707,0.6966,0.0531,0.0242
+Model_F,YOLO Confidence + Image Quality,RandomForest,T0,0.8336,0.6932,0.7707,0.6966,0.0525,0.0163
+Model_G,DINO OOD + Image Quality,RandomForest,T0,0.5802,0.1783,0.4988,0.0,0.1052,0.0337
+Model_H,Full Combined (Conf + DINO + Image Quality),RandomForest,T0,0.8148,0.7055,0.7707,0.6966,0.0516,0.0072
+Model_A,YOLO Max Confidence Only,RandomForest,T1,0.7272,0.5655,0.6835,0.5333,0.1042,0.047
+Model_B,YOLO Confidence Features,RandomForest,T1,0.7936,0.6442,0.6997,0.5645,0.0955,0.0327
+Model_C,DINO OOD Only,RandomForest,T1,0.4275,0.1578,0.4987,0.0,0.1573,0.0778
+Model_D,Image Quality Only,RandomForest,T1,0.538,0.1872,0.4949,0.0,0.1532,0.0489
+Model_E,YOLO Confidence + DINO OOD,RandomForest,T1,0.7832,0.6322,0.7055,0.576,0.0973,0.0339
+Model_F,YOLO Confidence + Image Quality,RandomForest,T1,0.7826,0.6281,0.6868,0.5366,0.0979,0.0284
+Model_G,DINO OOD + Image Quality,RandomForest,T1,0.5032,0.1875,0.4987,0.0,0.152,0.0614
+Model_H,Full Combined (Conf + DINO + Image Quality),RandomForest,T1,0.753,0.6093,0.686,0.5424,0.0995,0.0432
+Model_A,YOLO Max Confidence Only,RandomForest,T2,0.816,0.6637,0.7321,0.6226,0.0734,0.0344
+Model_B,YOLO Confidence Features,RandomForest,T2,0.7977,0.6536,0.7321,0.6226,0.074,0.0396
+Model_C,DINO OOD Only,RandomForest,T2,0.4757,0.1456,0.5,0.0,0.1311,0.0532
+Model_D,Image Quality Only,RandomForest,T2,0.5444,0.1585,0.4976,0.0,0.1308,0.0559
+Model_E,YOLO Confidence + DINO OOD,RandomForest,T2,0.777,0.6437,0.7333,0.6286,0.0742,0.039
+Model_F,YOLO Confidence + Image Quality,RandomForest,T2,0.7693,0.6305,0.7178,0.5962,0.0769,0.0416
+Model_G,DINO OOD + Image Quality,RandomForest,T2,0.5213,0.1824,0.4988,0.0,0.128,0.0496
+Model_H,Full Combined (Conf + DINO + Image Quality),RandomForest,T2,0.746,0.6225,0.7274,0.6214,0.0766,0.0316
+Model_A,YOLO Max Confidence Only,RandomForest,T3,0.6011,0.5194,0.6078,0.3678,0.1753,0.0635
+Model_B,YOLO Confidence Features,RandomForest,T3,0.6372,0.5312,0.6101,0.375,0.1738,0.0384
+Model_C,DINO OOD Only,RandomForest,T3,0.4441,0.2638,0.4959,0.0278,0.2111,0.0623
+Model_D,Image Quality Only,RandomForest,T3,0.5602,0.3074,0.4939,0.0403,0.2069,0.0658
+Model_E,YOLO Confidence + DINO OOD,RandomForest,T3,0.6443,0.5428,0.6072,0.3708,0.1722,0.0474
+Model_F,YOLO Confidence + Image Quality,RandomForest,T3,0.6593,0.5532,0.6139,0.3842,0.1704,0.0445
+Model_G,DINO OOD + Image Quality,RandomForest,T3,0.5273,0.2885,0.4973,0.028,0.2063,0.063
+Model_H,Full Combined (Conf + DINO + Image Quality),RandomForest,T3,0.6418,0.5372,0.6064,0.3657,0.1714,0.0338
+Model_A,YOLO Max Confidence Only,RandomForest,T4,0.6208,0.5313,0.6132,0.3846,0.1771,0.053
+Model_B,YOLO Confidence Features,RandomForest,T4,0.6089,0.5298,0.6124,0.3799,0.1764,0.0475
+Model_C,DINO OOD Only,RandomForest,T4,0.4349,0.245,0.484,0.0,0.2181,0.0781
+Model_D,Image Quality Only,RandomForest,T4,0.5249,0.2896,0.492,0.0392,0.2138,0.0672
+Model_E,YOLO Confidence + DINO OOD,RandomForest,T4,0.614,0.526,0.6153,0.3842,0.1767,0.0524
+Model_F,YOLO Confidence + Image Quality,RandomForest,T4,0.6339,0.5409,0.6102,0.3729,0.1748,0.0527
+Model_G,DINO OOD + Image Quality,RandomForest,T4,0.4844,0.2708,0.4832,0.0132,0.2158,0.0687
+Model_H,Full Combined (Conf + DINO + Image Quality),RandomForest,T4,0.6144,0.5264,0.6124,0.3799,0.1762,0.0524

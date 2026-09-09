@@ -1,0 +1,3 @@
+metric_type,china_mean_std,china_median_iqr,china_range,china_p95,china_p99,india_mean_std,india_median_iqr,india_range,india_p95,india_p99,domain_AUROC,domain_AUPRC,separation_margin,p95_threshold,p95_china_false_warning_rate,p95_india_detection_rate,p99_threshold,p99_china_false_warning_rate,p99_india_detection_rate
+Raw_DINO_kNN_Distance,0.1841 ± 0.0847,0.1693 [0.0932],"[0.0393, 0.5247]",0.3499,0.4762,0.8432 ± 0.0441,0.8486 [0.048],"[0.6405, 0.9261]",0.9014,0.9119,1.0,1.0,0.1158,0.3804,0.0396,1.0,0.4491,0.0146,1.0
+Raw_Normalized_Distance_(d/p99),0.41 ± 0.1887,0.377 [0.2075],"[0.0875, 1.1683]",0.7791,1.0603,1.8774 ± 0.0981,1.8895 [0.1068],"[1.4262, 2.0621]",2.007,2.0305,1.0,1.0,0.2578,0.8471,0.0396,1.0,1.0,0.0146,1.0
