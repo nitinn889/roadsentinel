@@ -1,0 +1,65 @@
+[
+  {
+    "category": "A_BOTH_CORRECT",
+    "image_id": "China_Drone_001063",
+    "panel_path": "benchmark/final_comparison/panels/A_BOTH_CORRECT_China_Drone_001063.jpg",
+    "yolo_f1": 1.0,
+    "dino_f1": 1.0
+  },
+  {
+    "category": "B_YOLO_ONLY_SUCCESS",
+    "image_id": "China_Drone_000010",
+    "panel_path": "benchmark/final_comparison/panels/B_YOLO_ONLY_SUCCESS_China_Drone_000010.jpg",
+    "yolo_f1": 0.8,
+    "dino_f1": 0.0
+  },
+  {
+    "category": "C_DINO_SAM_ONLY_SUCCESS",
+    "image_id": "China_Drone_002162",
+    "panel_path": "benchmark/final_comparison/panels/C_DINO_SAM_ONLY_SUCCESS_China_Drone_002162.jpg",
+    "yolo_f1": 0.0,
+    "dino_f1": 0.5
+  },
+  {
+    "category": "D_BOTH_FAIL",
+    "image_id": "China_Drone_000033",
+    "panel_path": "benchmark/final_comparison/panels/D_BOTH_FAIL_China_Drone_000033.jpg",
+    "yolo_f1": 0.0,
+    "dino_f1": 0.0
+  },
+  {
+    "category": "E_YOLO_FALSE_POSITIVE",
+    "image_id": "China_Drone_000479",
+    "panel_path": "benchmark/final_comparison/panels/E_YOLO_FALSE_POSITIVE_China_Drone_000479.jpg",
+    "yolo_f1": 0.25,
+    "dino_f1": 0.0
+  },
+  {
+    "category": "F_DINO_SAM_FALSE_POSITIVE",
+    "image_id": "China_Drone_000072",
+    "panel_path": "benchmark/final_comparison/panels/F_DINO_SAM_FALSE_POSITIVE_China_Drone_000072.jpg",
+    "yolo_f1": 1.0,
+    "dino_f1": 0.0
+  },
+  {
+    "category": "G_THIN_CRACK_DIFFICULTY",
+    "image_id": "China_Drone_001380",
+    "panel_path": "benchmark/final_comparison/panels/G_THIN_CRACK_DIFFICULTY_China_Drone_001380.jpg",
+    "yolo_f1": 0.0,
+    "dino_f1": 0.0
+  },
+  {
+    "category": "H_POTHOLE_EXAMPLE",
+    "image_id": "China_Drone_000064",
+    "panel_path": "benchmark/final_comparison/panels/H_POTHOLE_EXAMPLE_China_Drone_000064.jpg",
+    "yolo_f1": 1.0,
+    "dino_f1": 0.0
+  },
+  {
+    "category": "I_REPAIR_EXAMPLE",
+    "image_id": "China_Drone_000023",
+    "panel_path": "benchmark/final_comparison/panels/I_REPAIR_EXAMPLE_China_Drone_000023.jpg",
+    "yolo_f1": 1.0,
+    "dino_f1": 0.0
+  }
+]

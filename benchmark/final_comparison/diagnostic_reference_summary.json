@@ -1,0 +1,105 @@
+{
+  "China_Drone_001267.jpg": {
+    "viewpoint": "UAV / nadir",
+    "yolo_count": 2,
+    "yolo_detections": [
+      {
+        "class": "D00",
+        "conf": 0.671,
+        "bbox": [
+          435.2,
+          1.7,
+          463.2,
+          206.0
+        ]
+      },
+      {
+        "class": "D00",
+        "conf": 0.6211,
+        "bbox": [
+          431.9,
+          295.8,
+          457.4,
+          486.0
+        ]
+      }
+    ],
+    "dino_sam_count": 3,
+    "dino_sam_boxes": [
+      [
+        441,
+        25,
+        471,
+        95
+      ],
+      [
+        347,
+        212,
+        471,
+        325
+      ],
+      [
+        94,
+        406,
+        185,
+        470
+      ]
+    ],
+    "notes": "UAV reference with XML annotations"
+  },
+  "original_healthy.jpg": {
+    "viewpoint": "UAV / nadir",
+    "yolo_count": 0,
+    "yolo_detections": [],
+    "dino_sam_count": 0,
+    "dino_sam_boxes": [],
+    "notes": "Healthy negative"
+  },
+  "0454.png": {
+    "viewpoint": "ground-level",
+    "yolo_count": 1,
+    "yolo_detections": [
+      {
+        "class": "D00",
+        "conf": 0.2508,
+        "bbox": [
+          186.5,
+          180.1,
+          311.4,
+          259.7
+        ]
+      }
+    ],
+    "dino_sam_count": 1,
+    "dino_sam_boxes": [
+      [
+        228,
+        36,
+        326,
+        238
+      ]
+    ],
+    "notes": "Pothole-600 cross-domain"
+  },
+  "India_005086.jpg": {
+    "viewpoint": "dashcam",
+    "yolo_count": 0,
+    "yolo_detections": [],
+    "dino_sam_count": 2,
+    "dino_sam_boxes": [
+      [
+        221,
+        252,
+        397,
+        425
+      ],
+      [
+        431,
+        308,
+        574,
+        405
+      ]
+    ],
+    "notes": "India dashcam cross-domain"
+  }
+}

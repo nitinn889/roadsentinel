@@ -1,0 +1,4 @@
+condition_tag,provenance,image_count,gt_boxes,yolo_tp,yolo_fp,yolo_fn,yolo_precision,yolo_recall,yolo_f1,dino_tp,dino_fp,dino_fn,dino_precision,dino_recall,dino_f1
+daylight,VISUAL_LABEL_ONLY,2,3,3,3,0,0.5,1.0,0.6667,0,4,3,0.0,0.0,0.0
+low_light,VISUAL_LABEL_ONLY,2,6,3,0,3,1.0,0.5,0.6667,0,8,6,0.0,0.0,0.0
+shadow,VISUAL_LABEL_ONLY,1,2,2,0,0,1.0,1.0,1.0,0,2,2,0.0,0.0,0.0
