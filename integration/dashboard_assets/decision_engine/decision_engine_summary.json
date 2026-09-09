@@ -1,0 +1,34 @@
+{
+  "phase": 13,
+  "status": "PASS",
+  "engine_name": "RoadSentinel Reliability-Aware Road-Health Decision & Priority Engine",
+  "experiment_a_counts": {
+    "total": 40,
+    "AUTOMATED_ACCEPT": 0,
+    "MONITOR": 21,
+    "REINSPECT": 10,
+    "PRIORITY_REVIEW": 9,
+    "DOMAIN_ESCALATION": 0
+  },
+  "cross_domain_india_protection": {
+    "total_images": 300,
+    "known_yolo_failures": 293,
+    "domain_escalation_quarantined": 300,
+    "unsafe_failures_accepted": 0,
+    "failure_quarantine_efficacy_pct": 100.0
+  },
+  "deterministic_action_tiers": [
+    "DOMAIN_ESCALATION",
+    "REINSPECT",
+    "PRIORITY_REVIEW",
+    "MONITOR",
+    "AUTOMATED_ACCEPT"
+  ],
+  "evidence_streams_separated": [
+    "CURRENT_MODEL_ASSESSMENT",
+    "MODEL_OBSERVED_TEMPORAL_CHANGE",
+    "MODEL_BASED_SCENARIO_FORECAST",
+    "PERCEPTION_RELIABILITY_AND_DOMAIN_GATE"
+  ],
+  "thesis_contribution_decision": "MAJOR_CONTRIBUTION"
+}

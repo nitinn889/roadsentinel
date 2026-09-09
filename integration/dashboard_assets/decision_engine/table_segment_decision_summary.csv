@@ -1,0 +1,5 @@
+segment_id,total_days,automated_accept_count,monitor_count,reinspect_count,priority_review_count,domain_escalation_count,timeline_decisions,segment_characteristic
+SEG_001,10,0,4,3,3,0,"D01:MONI, D02:REIN, D03:REIN, D04:MONI, D05:REIN, D06:PRIO, D07:PRIO, D08:PRIO, D09:MONI, D10:MONI",Environmental Modulation Sequence (Overcast inflation & sunset suppression on Days 06-10)
+SEG_002,10,0,7,2,1,0,"D01:MONI, D02:MONI, D03:MONI, D04:MONI, D05:PRIO, D06:REIN, D07:REIN, D08:MONI, D09:MONI, D10:MONI",Multi-Viewpoint Mixed Capture Sequence (Grazing macro view & distant overlooks)
+SEG_003,10,0,5,5,0,0,"D01:REIN, D02:REIN, D03:REIN, D04:MONI, D05:MONI, D06:REIN, D07:MONI, D08:REIN, D09:MONI, D10:MONI",Pristine Grade A Stability Control (Days 01-07) + SAM 2 Drone Pair (D08-09) + Missing Metadata Diagnostic (D10)
+SEG_004,10,0,5,0,5,0,"D01:MONI, D02:MONI, D03:MONI, D04:PRIO, D05:PRIO, D06:PRIO, D07:PRIO, D08:PRIO, D09:MONI, D10:MONI",Clean Monotonic Progression (Days 01-05) + Heavy Rain / Glare Sequence (Days 06-10)

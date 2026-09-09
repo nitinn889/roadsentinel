@@ -1,0 +1,5 @@
+system_name,total_cross_domain_images,known_ground_truth_failures,automated_accept_count,domain_escalation_count,reinspect_count,priority_review_count,monitor_count,unsafe_failures_accepted,unsafe_failure_rate_among_accepted_pct,failure_quarantine_efficacy_pct
+System_1_Standalone_YOLO,300,293,300,0,0,0,0,293,97.67,0.0
+System_2_Severity_Only,300,293,28,0,0,234,38,28,100.0,90.44
+System_3_Confidence_Reliability_Only,300,293,0,0,64,226,10,0,0.0,100.0
+System_4_Full_RoadSentinel_Domain_Gated,300,293,0,300,0,0,0,0,0.0,100.0

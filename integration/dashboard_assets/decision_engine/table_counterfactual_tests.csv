@@ -1,0 +1,5 @@
+test_id,base_condition,counterfactual_input,high_reliability_decision,low_reliability_decision,policy_verification
+TEST_1_RELIABILITY_MODULATION,"Pristine road (Severity = 0.05, In-Domain)",Reliability = HIGH (0.92) vs. Reliability = LOW (0.35),AUTOMATED_ACCEPT,REINSPECT,PASS (Low reliability correctly revokes automated acceptance and mandates reinspection).
+TEST_2_DOMAIN_SHIFT_MODULATION,"Pristine road (Severity = 0.05, High Reliability)",Domain = IN_DOMAIN (d=0.15) vs. Domain = EXTREME_SHIFT (d=0.85),AUTOMATED_ACCEPT,DOMAIN_ESCALATION,PASS (Extreme domain shift triggers domain escalation before sample acceptance).
+TEST_3_TEMPORAL_GROWTH_MODULATION,"Moderate road (Severity = 0.35, High Reliability)",Temporal Trend = STABLE (delta=0.00) vs. INCREASING (delta=+0.32),MONITOR,PRIORITY_REVIEW,PASS (Temporal growth escalates routine monitoring to urgent priority review).
+TEST_4_SEVERE_DISTRESS_UNRELIABLE,Severe distress (Severity = 0.72),Reliability = HIGH (0.90) vs. Reliability = LOW (0.40),PRIORITY_REVIEW,PRIORITY_REVIEW,PASS (Severe apparent damage retains Priority Review tier regardless of confidence).

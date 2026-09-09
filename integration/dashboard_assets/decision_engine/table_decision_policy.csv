@@ -1,0 +1,9 @@
+rule_id,condition,output_decision,precedence_tier,rationale
+RULE_1_DOMAIN_GATE,raw_domain_distance > 0.4491 (p99 ODD threshold),DOMAIN_ESCALATION,1,Intercepts out-of-distribution visual scenes before perception output can be mistakenly accepted.
+RULE_2_LOW_RELIABILITY_SEVERE,reliability_score < 0.60 AND current_severity > 0.50,PRIORITY_REVIEW,2,High model-derived severity must be prioritized for human inspection even if perceptual confidence is low.
+RULE_3_LOW_RELIABILITY_MODERATE,reliability_score < 0.60 AND current_severity <= 0.50,REINSPECT,2,Perceptual ambiguity requires sensor reinspection before road health can be reliably interpreted.
+RULE_4_HIGH_SEVERITY_CONFIDENT,current_severity > 0.50 AND reliability_band == HIGH,PRIORITY_REVIEW,3,High current severity backed by confident detector agreement signals critical road distress.
+RULE_5_RAPID_TEMPORAL_GROWTH,temporal_trend == INCREASING AND severity_delta > 0.15,PRIORITY_REVIEW,4,Rapid model-observed damage growth across consecutive same-camera inspection states.
+RULE_6_MODERATE_SEVERITY_OR_FORECAST,"current_severity in [0.20, 0.50] OR largest_forecast_delta > 0.20",MONITOR,5,Moderate distress or strong scenario vulnerability requires ongoing surveillance.
+RULE_7_PRISTINE_STABLE_CONFIDENT,current_severity < 0.20 AND temporal_trend == STABLE AND reliability_band == HIGH,AUTOMATED_ACCEPT,6,"Low severity, invariant temporal response, and high perception reliability warrant safe automated acceptance."
+RULE_8_METADATA_DIAGNOSTIC,metadata_status == METADATA_MISSING_DIAGNOSTIC,MONITOR,1,Maintains pipeline execution under fallback parameters while documenting metadata limitation.

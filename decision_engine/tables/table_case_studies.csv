@@ -1,0 +1,7 @@
+case_id,image_id,segment_day,current_severity,reliability_score,temporal_trend,largest_forecast_scenario,decision,decision_rationale
+CASE_1_HIGH_RELIABILITY_PRISTINE,SEG_003_day_01,SEG_003 Day 01,0.2472,0.88,NO_TEMPORAL_CONTEXT,WET_EXPOSURE (+0.0777),MONITOR,Grade A road shoulder patch with high perception reliability; routed to routine monitoring.
+CASE_2_HIGH_SEVERITY_CONFIDENT,SEG_004_day_05,SEG_004 Day 05,0.7302,0.88,INCREASING_MODEL_RESPONSE (+0.4152),WET_EXPOSURE (+0.0312),PRIORITY_REVIEW,Severe breakdown state with persistent defect growth verified by top-down drone inspection.
+CASE_3_RAPID_DETERIORATION_PROGRESSION,SEG_004_day_04,SEG_004 Day 04,0.315,0.88,INCREASING_MODEL_RESPONSE (+0.3150),WET_EXPOSURE (+0.0325),PRIORITY_REVIEW,Sudden onset of distress (+0.3150 severity increase) triggers priority inspection review.
+CASE_4_ENVIRONMENTAL_CONFOUND,SEG_001_day_06,SEG_001 Day 06,0.7141,0.88,MIXED_OR_CONFOUNDED_CHANGE (+0.4709),WET_EXPOSURE (+0.0473),PRIORITY_REVIEW,Overcast cloud cover inflates contrast; decision engine flags high model severity while noting environmental confound.
+CASE_5_CROSS_DOMAIN_INDIA_ESCALATION,India_000005,RDD2022 India Frame 05,0.5854,0.04,NO_TEMPORAL_CONTEXT,N/A (Shifted Domain),DOMAIN_ESCALATION,DINOv2 raw distance (0.8530 > 0.4491) blocks automated acceptance and triggers domain escalation.
+CASE_6_MISSING_METADATA_DIAGNOSTIC,SEG_003_day_10,SEG_003 Day 10,0.2459,0.88,NO_TEMPORAL_CONTEXT,WET_EXPOSURE (+0.0790),MONITOR,Maintains pipeline continuity under fallback parameters while documenting metadata limitation.

@@ -1,0 +1,6 @@
+system_name,evaluated_dataset,automated_accept_count,monitor_count,reinspect_count,priority_review_count,domain_escalation_count,key_behavior
+System_A_Severity_Only,Experiment_A (N=40),9,23,0,8,0,Blindly accepts 16 clean-looking frames regardless of unconfident perception or lighting shifts.
+System_B_Severity_Plus_Forecast,Experiment_A (N=40),0,32,0,8,0,Escalates frames with high wet-exposure forecast deltas to monitor/priority.
+System_C_Severity_Plus_Temporal,Experiment_A (N=40),6,23,0,11,0,Escalates increasing temporal sequences (SEG_004 D04-05) to priority review.
+System_D_Severity_Plus_Reliability,Experiment_A (N=40),2,24,11,3,0,Quarantines 11 low-confidence frames into reinspection tier.
+System_E_Full_Integrated_Framework,Experiment_A (N=40),2,25,10,3,0,"Combines reliability quarantine (11 reinspect), temporal progression (9 priority), and conservative acceptance (1 accept, 19 monitor)."
