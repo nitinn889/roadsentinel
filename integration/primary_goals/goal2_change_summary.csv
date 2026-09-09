@@ -1,0 +1,9 @@
+sequence_id,segment_id,start_day,end_day,camera,states,initial_severity,final_severity,severity_delta,max_severity,min_severity,initial_defect_count,final_defect_count,initial_defect_area,final_defect_area,unique_tracks,matched_events,new_events,not_observed_events,interpretation_type
+SEG_001_D03_D10,SEG_001,3,10,🌄 Highway Curve Vantage Overlook,8,0.0,0.0,0.0,0.7285,0.0,0,0,0.0,0.0,12,10,12,12,ENVIRONMENT_CONFOUNDED
+SEG_002_D01_D02,SEG_002,1,2,🔍 Low-Angle Pothole Inspection (30° Close-Up),2,0.3155,0.3498,0.0343,0.3498,0.3155,2,2,0.001281,0.000254,2,2,2,0,PAIRWISE_CHANGE
+SEG_002_D04_D05,SEG_002,4,5,💧 Waterlogged Pothole Macro View,2,0.3687,0.7078,0.3391,0.7078,0.3687,3,5,0.001065,0.020932,8,0,8,3,PAIRWISE_CHANGE
+SEG_002_D06_D07,SEG_002,6,7,🌄 Highway Curve Vantage Overlook,2,0.3491,0.2551,-0.094,0.3491,0.2551,2,1,0.000221,0.002265,3,0,3,2,PAIRWISE_CHANGE
+SEG_003_D01_D07,SEG_003,1,7,🌄 Highway Curve Vantage Overlook,7,0.2472,0.2459,-0.0013,0.2472,0.2417,1,1,0.002455,0.000979,1,6,1,0,STABILITY_CONTROL
+SEG_003_D08_D09,SEG_003,8,9,🔭 Overhead Drone Survey (SAM 2 Top-Down),2,0.2443,0.2437,-0.0006,0.2443,0.2437,1,1,0.000996,0.000988,1,1,1,0,PAIRWISE_CHANGE
+SEG_004_D01_D05,SEG_004,1,5,🔭 Overhead Drone Survey (SAM 2 Top-Down),5,0.0,0.7302,0.7302,0.7302,0.0,0,4,0.0,0.026687,5,1,5,1,MODEL_OBSERVED_PROGRESSION
+SEG_004_D06_D10,SEG_004,6,10,🌄 Highway Curve Vantage Overlook,5,0.6612,0.0,-0.6612,0.8134,0.0,6,0,0.01049,0.0,16,13,16,16,MODEL_OBSERVED_PROGRESSION
