@@ -1,0 +1,113 @@
+{
+  "perception_pipelines_frozen": true,
+  "status": "PHASE_6_COMPLETE",
+  "headline_comparison": {
+    "delta_precision": 0.6346,
+    "delta_recall": 0.7399,
+    "delta_f1": 0.6837,
+    "delta_mean_iou": 0.1474,
+    "latency_ratio": 72.72,
+    "higher_precision": "YOLOv8n",
+    "higher_recall": "YOLOv8n",
+    "higher_f1": "YOLOv8n",
+    "higher_matched_iou": "YOLOv8n",
+    "faster_model": "YOLOv8n"
+  },
+  "primary_metrics": {
+    "yolo": {
+      "predictions": 874,
+      "tp": 574,
+      "fp": 300,
+      "fn": 168,
+      "precision": 0.6568,
+      "recall": 0.7736,
+      "f1": 0.7104,
+      "mean_matched_iou": 0.8007,
+      "median_matched_iou": 0.8154,
+      "mean_latency_ms": 3.62,
+      "median_latency_ms": 3.51,
+      "std_latency_ms": 1.2,
+      "min_latency_ms": 2.91,
+      "max_latency_ms": 28.83,
+      "fps": 276.33
+    },
+    "dino_sam": {
+      "predictions": 1129,
+      "tp": 25,
+      "fp": 1104,
+      "fn": 717,
+      "precision": 0.0221,
+      "recall": 0.0337,
+      "f1": 0.0267,
+      "mean_matched_iou": 0.6533,
+      "median_matched_iou": 0.648,
+      "mean_latency_ms": 263.15,
+      "median_latency_ms": 250.06,
+      "std_latency_ms": 107.07,
+      "min_latency_ms": 75.59,
+      "max_latency_ms": 657.81,
+      "fps": 3.8
+    }
+  },
+  "secondary_sensitivity_iou_025": {
+    "yolo": {
+      "tp": 610,
+      "fp": 264,
+      "fn": 132,
+      "precision": 0.6979,
+      "recall": 0.8221,
+      "f1": 0.755
+    },
+    "dino_sam": {
+      "tp": 74,
+      "fp": 1055,
+      "fn": 668,
+      "precision": 0.0655,
+      "recall": 0.0997,
+      "f1": 0.0791
+    }
+  },
+  "model_specifications": {
+    "yolo": {
+      "name": "YOLOv8n",
+      "type": "Supervised task-specific object detector",
+      "weights": "yolo/weights/best.pt",
+      "parameters": "3.01M",
+      "gflops": 8.1,
+      "training": "RDD2022 China_Drone 25 epochs",
+      "classes": [
+        "D00",
+        "D10",
+        "D20",
+        "D40",
+        "Repair"
+      ],
+      "inference_resolution": "512x512",
+      "mean_latency_ms": 3.62,
+      "fps": 276.33
+    },
+    "dino_sam": {
+      "name": "DINOv2 + SAM2",
+      "type": "Healthy-reference anomaly localization + prompt-based segmentation",
+      "backbone": "dinov2_vits14",
+      "segmenter": "sam2.1_hiera_small",
+      "memory_bank": "10,000 vectors (60 images)",
+      "output_class": "road_defect",
+      "inference_resolution": "518x518 (patch grid 37x37)",
+      "mean_latency_ms": 263.15,
+      "fps": 3.8
+    }
+  },
+  "figure_assets": {
+    "fig1_precision_recall_f1": "benchmark/final_comparison/figures/fig1_precision_recall_f1.png",
+    "fig2_latency_throughput_log": "benchmark/final_comparison/figures/fig2_latency_throughput_log.png",
+    "fig3_matched_bbox_iou": "benchmark/final_comparison/figures/fig3_matched_bbox_iou.png",
+    "fig4_yolo_class_wise_metrics": "benchmark/final_comparison/figures/fig4_yolo_class_wise_metrics.png",
+    "fig5_dino_failure_mode_breakdown": "benchmark/final_comparison/figures/fig5_dino_failure_mode_breakdown.png",
+    "fig6_iou_sensitivity_comparison": "benchmark/final_comparison/figures/fig6_iou_sensitivity_comparison.png",
+    "fig7_qualitative_panel_montage": "benchmark/final_comparison/figures/fig7_qualitative_panel_montage.png"
+  },
+  "panel_manifest": "benchmark/final_comparison/panel_examples.csv",
+  "research_summary": "benchmark/final_comparison/PERCEPTION_RESEARCH_SUMMARY.md",
+  "methodology": "benchmark/final_comparison/PERCEPTION_METHODOLOGY.md"
+}

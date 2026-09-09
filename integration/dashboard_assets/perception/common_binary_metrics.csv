@@ -1,0 +1,3 @@
+model,num_images,num_gt_boxes,num_predictions,TP,FP,FN,precision,recall,f1,mean_matched_bbox_iou,median_matched_bbox_iou,mean_latency_ms,median_latency_ms,fps,hardware,notes
+YOLOv8n,480,742,874,574,300,168,0.6568,0.7736,0.7104,0.8007,0.8154,3.62,3.51,276.33,NVIDIA GeForce RTX 5060 Laptop GPU,"Supervised detector frozen checkpoint best.pt (conf=0.25, imgsz=512)"
+DINOv2+SAM2,480,742,1129,25,1104,717,0.0221,0.0337,0.0267,0.6533,0.648,263.15,250.06,3.8,NVIDIA GeForce RTX 5060 Laptop GPU,Frozen Marion Day-5 NORMAL pipeline; mask-derived bounding boxes
