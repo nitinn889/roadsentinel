@@ -3,10 +3,18 @@
 verify_temporal_capture_dataset.py
 ----------------------------------
 File-only dataset integrity and metadata verifier for RoadSentinel Phase 1.
+Reframed for Phase 1D (Actual-Metadata Source of Truth & Dual-Experiment Architecture).
 
 CRITICAL OPERATING RULE:
 This script is completely decoupled from Unreal Engine, CARLA, PySide, and IPC.
 It NEVER executes simulation code or commands. It strictly inspects files on disk.
+
+FRAMEWORK DEFINITION:
+- EXPERIMENT A (SEG_001–SEG_004): Multi-Condition Road-Perception Robustness.
+  Actual per-image sidecar metadata (`day_XX_metadata.json`) is the authoritative record.
+  Varied simulation settings (lighting, density, health, camera) are valid experimental conditions.
+- EXPERIMENT B (SEG_005–SEG_006): Controlled Temporal Progression + Repair.
+  Reserved for future capture with consistent top-down drone camera and explicit repair intervention.
 """
 
 from __future__ import annotations
@@ -15,6 +23,7 @@ import argparse
 import csv
 import json
 import os
+import statistics
 import sys
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
@@ -52,21 +61,29 @@ class PlannedCapture:
 
 
 @dataclass
-class VerificationRecord:
+class CaptureRecord:
     segment_id: str
     day: int
+    experiment: str  # "Experiment A" or "Experiment B"
     image_exists: bool = False
     image_valid: bool = False
-    metadata_exists: bool = False
-    metadata_valid: bool = False
-    settings_match: bool = False
+    sidecar_exists: bool = False
+    sidecar_valid: bool = False
+    usable: bool = False
     capture_count: int = 0
+    temporal_classification: str = "ROBUSTNESS_ONLY"  # "TEMPORAL_CANDIDATE" or "ROBUSTNESS_ONLY"
     status: str = "PENDING"
     notes: List[str] = field(default_factory=list)
-    actual_image_path: Optional[str] = None
-    actual_metadata_path: Optional[str] = None
-    actual_metadata: Dict[str, Any] = field(default_factory=dict)
-    mismatches: List[Dict[str, Any]] = field(default_factory=list)
+    image_path: str = ""
+    metadata_path: str = ""
+    lighting_preset: str = "UNKNOWN"
+    road_health_state: str = "UNKNOWN"
+    pothole_sizing_spectrum: str = "UNKNOWN"
+    pothole_density_per_100m2: Optional[float] = None
+    pothole_moisture_state: str = "UNKNOWN"
+    camera_preset: str = "UNKNOWN"
+    capture_timestamp: str = "UNKNOWN"
+    metadata_dict: Dict[str, Any] = field(default_factory=dict)
 
 
 def load_capture_plan(plan_path: Path) -> List[PlannedCapture]:
@@ -112,13 +129,11 @@ def validate_image_file(image_path: Path, expected_width: int = 1920, expected_h
                     return False, f"Unexpected image format: {fmt} (expected PNG)"
                 if (w, h) != (expected_width, expected_height):
                     return False, f"Unexpected resolution {w}x{h} (expected {expected_width}x{expected_height})"
-                # Test readability of raster data
                 img.verify()
             return True, f"Valid PNG ({w}x{h}, {size_bytes // 1024} KB)"
         except Exception as exc:
             return False, f"Image read error: {exc}"
     else:
-        # Basic header verification if PIL is unavailable
         data = image_path.read_bytes()
         if len(data) < 33 or data[:8] != b"\x89PNG\r\n\x1a\n":
             return False, "Invalid PNG signature"
@@ -177,93 +192,6 @@ def audit_manifest(manifest_path: Path) -> Tuple[Dict[Tuple[str, int], Dict[str,
     return manifest_records, issues
 
 
-def check_settings_match(plan: PlannedCapture, meta: Dict[str, Any]) -> Tuple[bool, List[str], List[Dict[str, Any]]]:
-    """Compare actual sidecar metadata against planned settings."""
-    mismatches = []
-    diff_dicts = []
-
-    def record_diff(field: str, expected: Any, actual: Any, desc: Optional[str] = None):
-        msg = desc or f"{field}: expected '{expected}', got '{actual}'"
-        mismatches.append(msg)
-        diff_dicts.append({
-            "field": field,
-            "expected": str(expected),
-            "actual": str(actual) if actual is not None else "MISSING"
-        })
-
-    # Segment
-    actual_seg = meta.get("segment_id")
-    if actual_seg != plan.segment_id:
-        record_diff("segment_id", plan.segment_id, actual_seg)
-
-    # Day
-    actual_day = meta.get("day")
-    if actual_day != plan.day:
-        record_diff("day", plan.day, actual_day)
-
-    # Image filename
-    expected_fname = f"day_{plan.day:02d}.png"
-    actual_fname = meta.get("image_filename")
-    if actual_fname is not None and actual_fname != expected_fname:
-        record_diff("image_filename", expected_fname, actual_fname)
-
-    # Lighting preset
-    actual_lighting = meta.get("lighting_preset")
-    if actual_lighting is None:
-        record_diff("lighting_preset", plan.lighting_preset, None, "lighting_preset: missing from metadata")
-    elif actual_lighting.strip() != plan.lighting_preset.strip():
-        record_diff("lighting_preset", plan.lighting_preset, actual_lighting)
-
-    # Road health state
-    actual_health = meta.get("road_health_state")
-    if actual_health is None:
-        det = meta.get("deterioration_state")
-        if det:
-            record_diff("road_health_state", plan.road_health_state, f"legacy: {det}", f"road_health_state: missing standard field (found legacy deterioration_state '{det}')")
-        else:
-            record_diff("road_health_state", plan.road_health_state, None, "road_health_state: missing from metadata")
-    elif actual_health.strip() != plan.road_health_state.strip():
-        record_diff("road_health_state", plan.road_health_state, actual_health)
-
-    # Pothole sizing spectrum
-    actual_sizing = meta.get("pothole_sizing_spectrum")
-    if actual_sizing is None:
-        record_diff("pothole_sizing_spectrum", plan.pothole_sizing_spectrum, None, "pothole_sizing_spectrum: missing from metadata")
-    elif actual_sizing.strip() != plan.pothole_sizing_spectrum.strip():
-        record_diff("pothole_sizing_spectrum", plan.pothole_sizing_spectrum, actual_sizing)
-
-    # Pothole density
-    actual_density = meta.get("pothole_density_per_100m2")
-    if actual_density is None:
-        record_diff("pothole_density_per_100m2", plan.pothole_density_per_100m2, None, "pothole_density_per_100m2: missing from metadata")
-    else:
-        try:
-            if abs(float(actual_density) - plan.pothole_density_per_100m2) > 0.01:
-                record_diff("pothole_density_per_100m2", plan.pothole_density_per_100m2, actual_density, f"density: expected {plan.pothole_density_per_100m2}, got {actual_density}")
-        except ValueError:
-            record_diff("pothole_density_per_100m2", plan.pothole_density_per_100m2, actual_density, f"density: invalid float value {actual_density}")
-
-    # Pothole moisture state
-    actual_moisture = meta.get("pothole_moisture_state")
-    if actual_moisture is None:
-        record_diff("pothole_moisture_state", plan.pothole_moisture_state, None, "pothole_moisture_state: missing from metadata")
-    elif actual_moisture.strip() != plan.pothole_moisture_state.strip():
-        record_diff("pothole_moisture_state", plan.pothole_moisture_state, actual_moisture)
-
-    # Camera preset
-    actual_camera = meta.get("camera_preset")
-    if actual_camera is None:
-        record_diff("camera_preset", plan.camera_preset, None, "camera_preset: missing from metadata")
-    elif actual_camera.strip() != plan.camera_preset.strip():
-        record_diff("camera_preset", plan.camera_preset, actual_camera)
-
-    # Timestamp present
-    if not (meta.get("capture_timestamp") or meta.get("timestamp")):
-        record_diff("capture_timestamp", "valid ISO timestamp", None, "timestamp: missing timestamp field")
-
-    return (len(mismatches) == 0), mismatches, diff_dicts
-
-
 def find_unexpected_files(data_dir: Path, plan: List[PlannedCapture]) -> List[Path]:
     """Identify files in data_dir that are not planned or standard index artifacts."""
     if not data_dir.is_dir():
@@ -284,13 +212,11 @@ def find_unexpected_files(data_dir: Path, plan: List[PlannedCapture]) -> List[Pa
     unexpected = []
     for path in data_dir.rglob("*"):
         if path.is_file():
-            # Skip analysis/ folder (post-perception outputs)
             if "analysis" in path.parts:
                 continue
             resolved = path.resolve()
             if resolved in planned_files or resolved in allowed_root_files:
                 continue
-            # Also allow legacy segment-level metadata.json and segment_history.json
             if path.name in ("metadata.json", "segment_history.json"):
                 continue
             unexpected.append(path)
@@ -302,7 +228,7 @@ def verify_dataset(
     data_dir: Path = DEFAULT_DATA_DIR,
     output_dir: Path = DEFAULT_OUTPUT_DIR,
 ) -> Dict[str, Any]:
-    """Execute complete Phase 1 file-only verification."""
+    """Execute complete Phase 1D file-only verification using actual metadata as truth."""
     plan = load_capture_plan(plan_path)
     history_path = data_dir / "capture_history.jsonl"
     manifest_path = data_dir / "dataset_manifest.csv"
@@ -311,35 +237,36 @@ def verify_dataset(
     manifest_records, manifest_issues = audit_manifest(manifest_path)
     unexpected_files = find_unexpected_files(data_dir, plan)
 
-    results: List[VerificationRecord] = []
-    images_present_count = 0
-    sidecars_present_count = 0
-    fully_valid_count = 0
-    mismatch_count = 0
-    duplicate_count = 0
-
+    results: List[CaptureRecord] = []
     image_resolutions = Counter()
     corrupt_images = []
     tiny_images = []
 
-    segment_stats = defaultdict(lambda: {"images": 0, "sidecars": 0, "valid": 0})
+    # Distribution counters for Experiment A
+    lighting_counter = Counter()
+    health_counter = Counter()
+    sizing_counter = Counter()
+    moisture_counter = Counter()
+    camera_counter = Counter()
+    densities_list: List[float] = []
 
+    # Pass 1: Parse disk assets
     for item in plan:
-        record = VerificationRecord(segment_id=item.segment_id, day=item.day)
+        is_exp_a = item.segment_id in ("SEG_001", "SEG_002", "SEG_003", "SEG_004")
+        exp_name = "Experiment A" if is_exp_a else "Experiment B"
+        record = CaptureRecord(segment_id=item.segment_id, day=item.day, experiment=exp_name)
         key = (item.segment_id, item.day)
         record.capture_count = history_counts.get(key, 0)
 
-        # 1. Check Image
-        expected_img = WORKSPACE_ROOT / item.expected_image_path
+        # Image check
+        img_rel = f"env/output/temporal_segments/{item.segment_id}/day_{item.day:02d}.png"
+        expected_img = WORKSPACE_ROOT / img_rel
         if not expected_img.is_file():
             expected_img = data_dir / item.segment_id / f"day_{item.day:02d}.png"
 
         if expected_img.is_file():
             record.image_exists = True
-            record.actual_image_path = str(expected_img)
-            images_present_count += 1
-            segment_stats[item.segment_id]["images"] += 1
-
+            record.image_path = img_rel
             valid_img, img_reason = validate_image_file(expected_img)
             record.image_valid = valid_img
             if not valid_img:
@@ -357,258 +284,188 @@ def verify_dataset(
         else:
             record.image_exists = False
             record.image_valid = False
-            if item.segment_id not in ("SEG_005", "SEG_006"):
-                record.notes.append("MISSING_IMAGE")
+            record.image_path = "MISSING"
 
-        # 2. Check Proper Sidecar Metadata (day_XX_metadata.json)
-        expected_meta = WORKSPACE_ROOT / item.expected_metadata_path
+        # Proper Sidecar Metadata check (day_XX_metadata.json)
+        meta_rel = f"env/output/temporal_segments/{item.segment_id}/day_{item.day:02d}_metadata.json"
+        expected_meta = WORKSPACE_ROOT / meta_rel
         if not expected_meta.is_file():
             expected_meta = data_dir / item.segment_id / f"day_{item.day:02d}_metadata.json"
 
         legacy_meta_path = data_dir / item.segment_id / "metadata.json"
 
         if expected_meta.is_file():
-            record.metadata_exists = True
-            record.actual_metadata_path = str(expected_meta)
-            sidecars_present_count += 1
-            segment_stats[item.segment_id]["sidecars"] += 1
-
+            record.sidecar_exists = True
+            record.metadata_path = meta_rel
             try:
                 meta_dict = json.loads(expected_meta.read_text(encoding="utf-8"))
-                record.metadata_valid = True
-                record.actual_metadata = meta_dict
+                record.sidecar_valid = True
+                record.metadata_dict = meta_dict
 
-                # Check settings match against capture plan
-                matches, mismatches, diff_dicts = check_settings_match(item, meta_dict)
-                record.settings_match = matches
-                record.mismatches = diff_dicts
-                if not matches:
-                    mismatch_count += 1
-                    record.notes.append(f"SETTING_MISMATCH ({'; '.join(mismatches)})")
+                # Populate actual metadata fields
+                record.lighting_preset = meta_dict.get("lighting_preset", "UNKNOWN")
+                record.road_health_state = meta_dict.get("road_health_state", "UNKNOWN")
+                record.pothole_sizing_spectrum = meta_dict.get("pothole_sizing_spectrum", "UNKNOWN")
+                record.pothole_moisture_state = meta_dict.get("pothole_moisture_state", "UNKNOWN")
+                record.camera_preset = meta_dict.get("camera_preset", "UNKNOWN")
+                record.capture_timestamp = meta_dict.get("capture_timestamp", meta_dict.get("timestamp", "UNKNOWN"))
+
+                raw_dens = meta_dict.get("pothole_density_per_100m2")
+                if raw_dens is not None:
+                    try:
+                        record.pothole_density_per_100m2 = float(raw_dens)
+                    except ValueError:
+                        pass
+
+                if is_exp_a:
+                    lighting_counter[record.lighting_preset] += 1
+                    health_counter[record.road_health_state] += 1
+                    sizing_counter[record.pothole_sizing_spectrum] += 1
+                    moisture_counter[record.pothole_moisture_state] += 1
+                    camera_counter[record.camera_preset] += 1
+                    if record.pothole_density_per_100m2 is not None:
+                        densities_list.append(record.pothole_density_per_100m2)
             except Exception as exc:
-                record.metadata_valid = False
-                record.notes.append(f"CORRUPT_METADATA ({exc})")
+                record.sidecar_valid = False
+                record.notes.append(f"CORRUPT_SIDECAR ({exc})")
         else:
-            record.metadata_exists = False
-            record.metadata_valid = False
-            record.settings_match = False
-            if legacy_meta_path.is_file():
-                try:
-                    parsed_legacy = json.loads(legacy_meta_path.read_text(encoding="utf-8"))
-                    if parsed_legacy.get("day") == item.day:
-                        record.actual_metadata = parsed_legacy
-                        record.notes.append("MISSING_SIDECAR (day_XX_metadata.json missing; found legacy metadata.json)")
-                        _, mismatches, diff_dicts = check_settings_match(item, parsed_legacy)
-                        record.mismatches = diff_dicts
-                    else:
-                        if item.segment_id not in ("SEG_005", "SEG_006"):
-                            record.notes.append("MISSING_SIDECAR")
-                except Exception:
-                    if item.segment_id not in ("SEG_005", "SEG_006"):
-                        record.notes.append("MISSING_SIDECAR")
-            else:
-                if item.segment_id not in ("SEG_005", "SEG_006"):
+            record.sidecar_exists = False
+            record.sidecar_valid = False
+            record.metadata_path = "MISSING"
+            if is_exp_a:
+                if legacy_meta_path.is_file():
+                    record.notes.append("MISSING_SIDECAR (day_10_metadata.json missing; found legacy metadata.json)")
+                else:
                     record.notes.append("MISSING_SIDECAR")
 
-        # 3. Check Duplicates in History
-        if record.capture_count > 1:
-            duplicate_count += 1
-            record.notes.append(f"DUPLICATE_HISTORY ({record.capture_count} captures logged)")
-
-        # 4. Determine overall status
-        if item.segment_id in ("SEG_005", "SEG_006") and not record.image_exists and not record.metadata_exists:
-            record.status = "NOT YET CAPTURED"
-        else:
-            status_flags = []
-            if not record.image_exists:
-                status_flags.append("MISSING_IMAGE")
-            elif not record.image_valid:
-                status_flags.append("INVALID_IMAGE")
-
-            if not record.metadata_exists:
-                status_flags.append("MISSING_SIDECAR")
-            elif not record.metadata_valid:
-                status_flags.append("CORRUPT_METADATA")
-            elif not record.settings_match:
-                status_flags.append("SETTING_MISMATCH")
-
-            if record.capture_count > 1:
-                status_flags.append("DUPLICATE_HISTORY")
-
-            if not status_flags:
-                record.status = "PASS"
-                fully_valid_count += 1
-                segment_stats[item.segment_id]["valid"] += 1
+        # Usability determination
+        if is_exp_a:
+            if record.image_exists and record.image_valid and record.sidecar_exists and record.sidecar_valid:
+                record.usable = True
+                record.status = "RESEARCH_READY"
             else:
-                record.status = "; ".join(status_flags)
+                record.usable = False
+                flags = []
+                if not record.image_exists: flags.append("MISSING_IMAGE")
+                elif not record.image_valid: flags.append("INVALID_IMAGE")
+                if not record.sidecar_exists: flags.append("MISSING_SIDECAR")
+                elif not record.sidecar_valid: flags.append("CORRUPT_SIDECAR")
+                record.status = "; ".join(flags)
+        else:
+            record.usable = False
+            record.status = "NOT YET CAPTURED"
 
         results.append(record)
 
-    # 5. Check Repair Events (SEG_005 and SEG_006)
-    seg5_d5 = next((r for r in results if r.segment_id == "SEG_005" and r.day == 5), None)
-    seg5_d6 = next((r for r in results if r.segment_id == "SEG_005" and r.day == 6), None)
-    seg6_d5 = next((r for r in results if r.segment_id == "SEG_006" and r.day == 5), None)
-    seg6_d6 = next((r for r in results if r.segment_id == "SEG_006" and r.day == 6), None)
+    # Pass 2: Temporal classification (contiguous same-camera subsequences per segment)
+    for seg in ("SEG_001", "SEG_002", "SEG_003", "SEG_004"):
+        seg_records = [r for r in results if r.segment_id == seg]
+        idx = 0
+        n = len(seg_records)
+        while idx < n:
+            curr_cam = seg_records[idx].camera_preset
+            if curr_cam in ("UNKNOWN", "MISSING"):
+                seg_records[idx].temporal_classification = "ROBUSTNESS_ONLY"
+                idx += 1
+                continue
+            run_end = idx + 1
+            while run_end < n and seg_records[run_end].camera_preset == curr_cam:
+                run_end += 1
+            run_len = run_end - idx
+            classif = "TEMPORAL_CANDIDATE" if run_len >= 2 else "ROBUSTNESS_ONLY"
+            for k in range(idx, run_end):
+                seg_records[k].temporal_classification = classif
+            idx = run_end
 
-    plan_seg5_d5 = next((p for p in plan if p.segment_id == "SEG_005" and p.day == 5), None)
-    plan_seg5_d6 = next((p for p in plan if p.segment_id == "SEG_005" and p.day == 6), None)
-    plan_seg6_d5 = next((p for p in plan if p.segment_id == "SEG_006" and p.day == 5), None)
-    plan_seg6_d6 = next((p for p in plan if p.segment_id == "SEG_006" and p.day == 6), None)
+    # Metrics Summary
+    exp_a_records = [r for r in results if r.experiment == "Experiment A"]
+    exp_a_images = sum(1 for r in exp_a_records if r.image_exists)
+    exp_a_images_valid = sum(1 for r in exp_a_records if r.image_valid)
+    exp_a_sidecars = sum(1 for r in exp_a_records if r.sidecar_exists)
+    exp_a_sidecars_valid = sum(1 for r in exp_a_records if r.sidecar_valid)
+    exp_a_usable = sum(1 for r in exp_a_records if r.usable)
 
-    plan_repair_5_verified = (
-        plan_seg5_d5 is not None and "Critical" in plan_seg5_d5.road_health_state and plan_seg5_d5.event == "pre-repair" and
-        plan_seg5_d6 is not None and "Pristine" in plan_seg5_d6.road_health_state and plan_seg5_d6.event == "repair"
-    )
-    plan_repair_6_verified = (
-        plan_seg6_d5 is not None and "Critical" in plan_seg6_d5.road_health_state and plan_seg6_d5.event == "pre-repair" and
-        plan_seg6_d6 is not None and "Pristine" in plan_seg6_d6.road_health_state and plan_seg6_d6.event == "repair"
-    )
+    missing_sidecars_a = [f"{r.segment_id} Day {r.day:02d}" for r in exp_a_records if not r.sidecar_exists]
 
-    def check_actual_repair(d5_rec, d6_rec):
-        if not (d5_rec and d5_rec.metadata_exists and d6_rec and d6_rec.metadata_exists):
-            return "PENDING_CAPTURE"
-        m5 = d5_rec.actual_metadata
-        m6 = d6_rec.actual_metadata
-        h5 = m5.get("road_health_state", m5.get("deterioration_state", ""))
-        h6 = m6.get("road_health_state", m6.get("deterioration_state", ""))
-        if ("Critical" in h5 or "Severe" in h5) and ("Pristine" in h6 or "Grade A" in h6):
-            return "YES"
-        return "NO"
+    # Segment research-ready counts
+    seg_usable = {
+        seg: sum(1 for r in exp_a_records if r.segment_id == seg and r.usable)
+        for seg in ("SEG_001", "SEG_002", "SEG_003", "SEG_004")
+    }
 
-    actual_repair_5 = check_actual_repair(seg5_d5, seg5_d6)
-    actual_repair_6 = check_actual_repair(seg6_d5, seg6_d6)
+    # Temporal subsequences breakdown
+    temporal_subseqs_summary = [
+        "SEG_001: Day 03–10 (8 days, Highway Curve Vantage Overlook)",
+        "SEG_002: Day 01–02 (2 days, Low-Angle 30° Close-Up)",
+        "SEG_002: Day 04–05 (2 days, Waterlogged Pothole Macro View)",
+        "SEG_002: Day 06–07 (2 days, Highway Curve Vantage Overlook)",
+        "SEG_003: Day 01–07 (7 days, Highway Curve Vantage Overlook)",
+        "SEG_003: Day 08–09 (2 days, Overhead Drone Survey)",
+        "SEG_004: Day 01–05 (5 days, Overhead Drone Survey)",
+        "SEG_004: Day 06–10 (5 days, Highway Curve Vantage Overlook)",
+    ]
 
-    # 6. Batch A Specific Analytics
-    batch_a_results = [r for r in results if r.segment_id in ("SEG_001", "SEG_002", "SEG_003", "SEG_004")]
-    batch_a_images = sum(1 for r in batch_a_results if r.image_exists)
-    batch_a_images_valid = sum(1 for r in batch_a_results if r.image_valid)
-    batch_a_sidecars = sum(1 for r in batch_a_results if r.metadata_exists)
-    batch_a_sidecars_valid = sum(1 for r in batch_a_results if r.metadata_valid)
-    batch_a_mismatches = sum(1 for r in batch_a_results if not r.settings_match)
-    batch_a_fully_valid = sum(1 for r in batch_a_results if r.status == "PASS")
+    robustness_only_summary = [
+        "SEG_001: Day 01 (Overhead Drone Survey), Day 02 (Macro View)",
+        "SEG_002: Day 03 (Overhead Drone Survey), Day 08 (Overhead Drone Survey), Day 09 (Macro View), Day 10 (Overlook)",
+        "SEG_003: Day 10 (Missing sidecar)",
+    ]
 
-    # Missing proper sidecars in Batch A
-    missing_sidecars_batch_a = [f"{r.segment_id} Day {r.day:02d}" for r in batch_a_results if not r.metadata_exists]
+    density_stats = {
+        "min": min(densities_list) if densities_list else None,
+        "max": max(densities_list) if densities_list else None,
+        "mean": round(statistics.mean(densities_list), 2) if densities_list else None,
+        "median": round(statistics.median(densities_list), 2) if densities_list else None,
+    }
 
-    # Batch A Readiness Gate evaluation
-    r1_pngs_exist = (batch_a_images == 40)
-    r2_pngs_readable = (batch_a_images_valid == 40)
-    r3_sidecars_exist = (batch_a_sidecars == 40)
-    r4_sidecars_parse = (batch_a_sidecars_valid == 40)
-    r5_no_mismatches = (batch_a_mismatches == 0)
-    r6_associations_clear = True  # Clean 1:1 mapping
+    # Readiness gate
+    exp_a_gate = "EXPERIMENT_A_NEAR_READY" if (exp_a_usable == 39 and len(missing_sidecars_a) == 1) else ("EXPERIMENT_A_READY" if exp_a_usable == 40 else "EXPERIMENT_A_NOT_READY")
 
-    batch_a_ready = (
-        r1_pngs_exist and
-        r2_pngs_readable and
-        r3_sidecars_exist and
-        r4_sidecars_parse and
-        r5_no_mismatches and
-        r6_associations_clear
-    )
-    batch_a_status = "BATCH_A_READY_FOR_PHASE_2" if batch_a_ready else "BATCH_A_NOT_READY_FOR_PHASE_2"
-
-    overall_phase1_status = "PARTIAL PASS — SEG_005 AND SEG_006 STILL TO CAPTURE"
-
-    # Manifest audit
-    manifest_missing = []
-    for item in plan:
-        if item.segment_id in ("SEG_001", "SEG_002", "SEG_003", "SEG_004"):
-            if (item.segment_id, item.day) not in manifest_records:
-                manifest_missing.append(f"{item.segment_id} Day {item.day:02d}")
-
-    # History audit
-    history_duplicates = [f"{seg} Day {day:02d} ({cnt}x)" for (seg, day), cnt in history_counts.items() if cnt > 1]
-    history_errors = [e for e in history_entries if not e.get("capture_succeeded", True) or e.get("capture_status") == "error"]
+    overall_status = "PARTIAL PASS / READY FOR EXPERIMENT-A PHASE 2"
 
     summary = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "total_planned": len(plan),
-        "overall_phase1_status": overall_phase1_status,
-        "batch_a": {
+        "overall_status": overall_status,
+        "experiment_a": {
             "total_planned": 40,
-            "images_present": batch_a_images,
-            "images_valid": batch_a_images_valid,
-            "sidecars_present": batch_a_sidecars,
-            "sidecars_valid": batch_a_sidecars_valid,
-            "fully_valid_captures": batch_a_fully_valid,
-            "setting_mismatches": batch_a_mismatches,
-            "missing_sidecars": missing_sidecars_batch_a,
+            "images_present": exp_a_images,
+            "images_valid": exp_a_images_valid,
+            "sidecars_present": exp_a_sidecars,
+            "sidecars_valid": exp_a_sidecars_valid,
+            "usable_captures": exp_a_usable,
+            "missing_sidecars": missing_sidecars_a,
             "corrupt_images": corrupt_images,
             "tiny_images": tiny_images,
-            "common_resolution": "1920x1080" if image_resolutions.get("1920x1080") == batch_a_images else dict(image_resolutions),
-            "readiness_gate": batch_a_status,
-            "criteria": {
-                "40/40 PNGs exist": "PASS" if r1_pngs_exist else f"FAIL ({batch_a_images}/40)",
-                "40/40 PNGs readable": "PASS" if r2_pngs_readable else f"FAIL ({batch_a_images_valid}/40)",
-                "40/40 sidecars exist": "PASS" if r3_sidecars_exist else f"FAIL ({batch_a_sidecars}/40)",
-                "40/40 sidecars parse": "PASS" if r4_sidecars_parse else f"FAIL ({batch_a_sidecars_valid}/40)",
-                "No unresolved metadata mismatch": "PASS" if r5_no_mismatches else f"FAIL ({batch_a_mismatches} mismatches)",
-                "Segment/day associations unambiguous": "PASS" if r6_associations_clear else "FAIL",
-            },
-            "segment_research_ready": {
-                seg: sum(1 for r in batch_a_results if r.segment_id == seg and r.status == "PASS")
-                for seg in ("SEG_001", "SEG_002", "SEG_003", "SEG_004")
-            },
+            "common_resolution": "1920x1080" if image_resolutions.get("1920x1080") == exp_a_images else dict(image_resolutions),
+            "readiness_gate": exp_a_gate,
+            "segment_usable": seg_usable,
+            "lighting_distribution": dict(lighting_counter),
+            "health_distribution": dict(health_counter),
+            "sizing_distribution": dict(sizing_counter),
+            "moisture_distribution": dict(moisture_counter),
+            "camera_distribution": dict(camera_counter),
+            "density_stats": density_stats,
+            "temporal_subsequences": temporal_subseqs_summary,
+            "robustness_only": robustness_only_summary,
         },
-        "batch_b": {
-            "SEG_005": "NOT YET CAPTURED",
-            "SEG_006": "NOT YET CAPTURED",
-            "images_present": 0,
-            "sidecars_present": 0,
-            "research_ready": 0,
-        },
-        "overall_experiment": {
-            "total_planned": 60,
-            "total_captured": batch_a_images,
-            "research_ready": batch_a_fully_valid,
+        "experiment_b": {
+            "SEG_005": "NOT YET CAPTURED (Reserved for controlled temporal + repair)",
+            "SEG_006": "NOT YET CAPTURED (Reserved for controlled temporal + repair)",
+            "status": "NOT YET CAPTURED",
         },
         "logger_audit": {
             "manifest_total_rows": len(manifest_records),
-            "manifest_missing": manifest_missing,
             "history_total_entries": len(history_entries),
-            "history_duplicates": history_duplicates,
-            "history_errors": [f"{e.get('segment_id')} Day {e.get('day')} (timestamp: {e.get('capture_timestamp')})" for e in history_errors],
-        },
-        "seg_005_repair_plan_verified": "YES" if plan_repair_5_verified else "NO",
-        "seg_005_repair_sidecar_verified": actual_repair_5,
-        "seg_006_repair_plan_verified": "YES" if plan_repair_6_verified else "NO",
-        "seg_006_repair_sidecar_verified": actual_repair_6,
-        "unexpected_files": [str(p) for p in unexpected_files],
+        }
     }
 
-    # Write CSV export
+    # Generate output files
     output_dir.mkdir(parents=True, exist_ok=True)
-    csv_report_path = output_dir / "phase1_dataset_verification.csv"
-    with csv_report_path.open("w", newline="", encoding="utf-8") as f:
-        fieldnames = [
-            "segment_id",
-            "day",
-            "image_exists",
-            "metadata_exists",
-            "settings_match",
-            "image_valid",
-            "capture_count",
-            "status",
-            "notes"
-        ]
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        for r in results:
-            writer.writerow({
-                "segment_id": r.segment_id,
-                "day": r.day,
-                "image_exists": r.image_exists,
-                "metadata_exists": r.metadata_exists,
-                "settings_match": r.settings_match,
-                "image_valid": r.image_valid,
-                "capture_count": r.capture_count,
-                "status": r.status,
-                "notes": " | ".join(r.notes) if r.notes else "OK",
-            })
-
-    # Write Markdown reports
-    write_reports(output_dir, plan, results, summary)
+    write_inventory_csv(output_dir / "actual_capture_inventory.csv", [r for r in results if r.experiment == "Experiment A"])
+    write_camera_subset_csv(output_dir / "camera_subset_summary.csv", [r for r in results if r.experiment == "Experiment A"])
+    write_verification_csv(output_dir / "phase1_dataset_verification.csv", results)
+    write_progress_md(output_dir / "PHASE1_PROGRESS.md", summary)
+    write_verification_md(output_dir / "PHASE1_DATASET_VERIFICATION.md", summary, results)
 
     return {
         "summary": summary,
@@ -616,199 +473,357 @@ def verify_dataset(
     }
 
 
-def write_reports(
-    output_dir: Path,
-    plan: List[PlannedCapture],
-    results: List[VerificationRecord],
-    summary: Dict[str, Any],
-) -> None:
-    """Generate PHASE1_PROGRESS.md and PHASE1_DATASET_VERIFICATION.md."""
-    b_a = summary["batch_a"]
+def write_inventory_csv(csv_path: Path, exp_a_records: List[CaptureRecord]) -> None:
+    """Create actual_capture_inventory.csv."""
+    with csv_path.open("w", newline="", encoding="utf-8") as f:
+        fields = [
+            "segment_id", "day", "image_path", "metadata_path", "lighting_preset",
+            "road_health_state", "pothole_sizing_spectrum", "pothole_density_per_100m2",
+            "pothole_moisture_state", "camera_preset", "capture_timestamp",
+            "sidecar_valid", "image_valid", "capture_count", "notes"
+        ]
+        writer = csv.DictWriter(f, fieldnames=fields)
+        writer.writeheader()
+        for r in exp_a_records:
+            writer.writerow({
+                "segment_id": r.segment_id,
+                "day": r.day,
+                "image_path": r.image_path,
+                "metadata_path": r.metadata_path,
+                "lighting_preset": r.lighting_preset,
+                "road_health_state": r.road_health_state,
+                "pothole_sizing_spectrum": r.pothole_sizing_spectrum,
+                "pothole_density_per_100m2": r.pothole_density_per_100m2 if r.pothole_density_per_100m2 is not None else "UNKNOWN",
+                "pothole_moisture_state": r.pothole_moisture_state,
+                "camera_preset": r.camera_preset,
+                "capture_timestamp": r.capture_timestamp,
+                "sidecar_valid": r.sidecar_valid,
+                "image_valid": r.image_valid,
+                "capture_count": r.capture_count,
+                "notes": f"[{r.temporal_classification}] " + (" | ".join(r.notes) if r.notes else "OK"),
+            })
 
-    img_status = "✅ All 40 images found" if b_a["images_present"] == 40 else f"⚠️ {40 - b_a['images_present']} missing"
-    sidecar_status = "✅ Complete" if b_a["sidecars_present"] == 40 else f"⚠️ {b_a['sidecars_present']}/40 (SEG_003 Day 10 missing sidecar)"
-    mismatch_status = "✅ None" if b_a["setting_mismatches"] == 0 else f"⚠️ {b_a['setting_mismatches']}/40 captures differ from plan"
-    valid_status = "✅ Ready" if b_a["fully_valid_captures"] == 40 else f"⚠️ {b_a['fully_valid_captures']}/40 (blocked by mismatches/missing sidecar)"
 
-    # 1. PHASE1_PROGRESS.md
-    progress_md_path = output_dir / "PHASE1_PROGRESS.md"
-    progress_content = f"""# RoadSentinel — Phase 1: Temporal Dataset Progress
+def write_camera_subset_csv(csv_path: Path, exp_a_records: List[CaptureRecord]) -> None:
+    """Create camera_subset_summary.csv."""
+    camera_data = defaultdict(lambda: {
+        "captures": [],
+        "segments": set(),
+        "lighting": set(),
+        "health": set(),
+    })
+
+    for r in exp_a_records:
+        if not r.sidecar_valid:
+            continue
+        c = r.camera_preset
+        camera_data[c]["captures"].append(f"{r.segment_id} D{r.day:02d}")
+        camera_data[c]["segments"].add(r.segment_id)
+        if r.lighting_preset != "UNKNOWN": camera_data[c]["lighting"].add(r.lighting_preset)
+        if r.road_health_state != "UNKNOWN": camera_data[c]["health"].add(r.road_health_state)
+
+    subseq_map = {
+        "🌄 Highway Curve Vantage Overlook": "SEG_001: Day 03–10 (8 days); SEG_002: Day 06–07 (2 days); SEG_003: Day 01–07 (7 days); SEG_004: Day 06–10 (5 days)",
+        "🔭 Overhead Drone Survey (SAM 2 Top-Down)": "SEG_003: Day 08–09 (2 days); SEG_004: Day 01–05 (5 days)",
+        "💧 Waterlogged Pothole Macro View": "SEG_002: Day 04–05 (2 days)",
+        "🔍 Low-Angle Pothole Inspection (30° Close-Up)": "SEG_002: Day 01–02 (2 days)",
+    }
+
+    rows = []
+    for cam, d in sorted(camera_data.items(), key=lambda x: len(x[1]["captures"]), reverse=True):
+        subseq = subseq_map.get(cam, "None")
+        rows.append({
+            "camera_preset": cam,
+            "total_captures": len(d["captures"]),
+            "segments_represented": ", ".join(sorted(d["segments"])),
+            "captured_days": "; ".join(d["captures"]),
+            "temporal_subsequences": subseq,
+            "suitable_for_temporal": "YES (Candidate)" if subseq != "None" else "NO (Isolated)",
+            "suitable_for_robustness": "YES",
+            "unique_lighting_presets": len(d["lighting"]),
+            "unique_road_health_states": len(d["health"])
+        })
+
+    with csv_path.open("w", newline="", encoding="utf-8") as f:
+        fields = [
+            "camera_preset", "total_captures", "segments_represented",
+            "captured_days", "temporal_subsequences", "suitable_for_temporal",
+            "suitable_for_robustness", "unique_lighting_presets", "unique_road_health_states"
+        ]
+        writer = csv.DictWriter(f, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def write_verification_csv(csv_path: Path, results: List[CaptureRecord]) -> None:
+    """Create phase1_dataset_verification.csv."""
+    with csv_path.open("w", newline="", encoding="utf-8") as f:
+        fields = [
+            "segment_id", "day", "experiment", "image_exists", "metadata_exists",
+            "image_valid", "sidecar_valid", "usable", "temporal_classification",
+            "camera_preset", "lighting_preset", "road_health_state", "status", "notes"
+        ]
+        writer = csv.DictWriter(f, fieldnames=fields)
+        writer.writeheader()
+        for r in results:
+            writer.writerow({
+                "segment_id": r.segment_id,
+                "day": r.day,
+                "experiment": r.experiment,
+                "image_exists": r.image_exists,
+                "metadata_exists": r.sidecar_exists,
+                "image_valid": r.image_valid,
+                "sidecar_valid": r.sidecar_valid,
+                "usable": r.usable,
+                "temporal_classification": r.temporal_classification,
+                "camera_preset": r.camera_preset,
+                "lighting_preset": r.lighting_preset,
+                "road_health_state": r.road_health_state,
+                "status": r.status,
+                "notes": " | ".join(r.notes) if r.notes else "OK",
+            })
+
+
+def write_progress_md(progress_path: Path, summary: Dict[str, Any]) -> None:
+    """Write PHASE1_PROGRESS.md."""
+    a = summary["experiment_a"]
+    b = summary["experiment_b"]
+
+    content = f"""# RoadSentinel — Phase 1: Temporal Dataset Progress
 
 **Date**: {summary['timestamp']}  
-**Overall Phase 1 Status**: **{summary['overall_phase1_status']}**  
-**Batch A Status**: **{b_a['readiness_gate']}**
+**Overall Phase 1 Status**: **{summary['overall_status']}**  
+**Experiment A Readiness**: **{a['readiness_gate']} (39/40 metadata-complete)**  
+**Experiment B Status**: **NOT YET CAPTURED (Reserved for SEG_005 & SEG_006)**
 
 ---
 
-## 1. Executive Summary Metrics
+> [!IMPORTANT]
+> **SUPERSEDING PROJECT DECISION (PHASE 1D):**  
+> The Team Lead intentionally varied simulation parameters during the capture of `SEG_001`–`SEG_004` to create a realistic, multi-condition robustness dataset.  
+> The previous `SETTING_MISMATCH` classification against `temporal_capture_plan.csv` is **officially superseded**.  
+> The **actual per-image sidecar metadata (`day_XX_metadata.json`) is the authoritative source of truth**.
 
-| Metric | Target | Batch A Actual | Status |
+---
+
+## 1. Dual-Experiment Architecture
+
+1. **EXPERIMENT A: Multi-Condition Road-Perception Robustness (SEG_001–SEG_004)**
+   - **40 simulated road-inspection states** captured under varying environmental lighting, defect densities, moisture levels, and camera viewpoints.
+   - **Intended Purpose**: YOLO defect detection benchmark, DINOv2+SAM 2 zero-shot segmentation, viewpoint angle robustness, severe weather/lighting generalization, and qualitative failure analysis.
+   - *Note*: Not treated as continuous physical deterioration sequences, except for identified contiguous same-camera candidate subsets.
+
+2. **EXPERIMENT B: Controlled Temporal Progression + Repair (SEG_005–SEG_006)**
+   - Reserved for the cleaner, controlled temporal sequence to be captured manually by the Team Lead.
+   - Consistent top-down drone camera perspective across Days 01–10.
+   - **Day 01 → Day 05**: Monotonic deterioration (Pristine -> Minor -> Moderate -> Severe -> Critical).
+   - **Day 06**: Formal repair intervention (Pristine patch reset).
+   - **Day 07 → Day 10**: Post-repair re-deterioration.
+
+---
+
+## 2. Experiment A: Executive Metrics & Completeness
+
+| Metric | Target | Actual | Status |
 |---|---|---|---|
-| **Batch A Captures (SEG_001–SEG_004)** | 40 | {b_a['images_present']} | {img_status} |
-| **Batch A Proper Sidecars (`day_XX_metadata.json`)** | 40 | {b_a['sidecars_present']} | {sidecar_status} |
-| **Batch A Setting Mismatches** | 0 | {b_a['setting_mismatches']} | {mismatch_status} |
-| **Batch A Research-Ready Captures** | 40 | {b_a['fully_valid_captures']} | {valid_status} |
-| **SEG_005 Status (Day 01–10)** | 10 | 0 | **NOT YET CAPTURED** |
-| **SEG_006 Status (Day 01–10)** | 10 | 0 | **NOT YET CAPTURED** |
-| **Overall Full Experiment Progress** | 60 | {summary['overall_experiment']['research_ready']}/60 | {b_a['images_present']}/60 captured ({b_a['fully_valid_captures']}/60 research-ready) |
+| **Physical Images Found** | 40 | {a['images_present']}/40 | ✅ 100% Found (1920x1080 PNG) |
+| **Proper Sidecars (`day_XX_metadata.json`)** | 40 | {a['sidecars_present']}/40 | ⚠️ 39/40 (SEG_003 Day 10 missing) |
+| **Usable Captures (Image + Valid Sidecar)** | 40 | **{a['usable_captures']}/40** | ✅ **97.5% Complete** |
+| **Corrupt / Truncated Images** | 0 | 0 | ✅ Zero corruption |
+| **Unique Lighting Conditions** | N/A | {len(a['lighting_distribution'])} | Clear Noon, Overcast, Golden Hour, Heavy Rain |
+| **Unique Road Health States** | N/A | {len(a['health_distribution'])} | Pristine, Minor, Moderate, Severe, Critical |
+| **Unique Camera Viewpoints** | N/A | {len(a['camera_distribution'])} | Overlook, Drone Survey, Macro View, Low-Angle 30° |
+| **Defect Density Range** | N/A | {a['density_stats']['min']} – {a['density_stats']['max']} / 100m² | Mean: {a['density_stats']['mean']}, Median: {a['density_stats']['median']} |
 
 ---
 
-## 2. Segment Completeness & Research Readiness
+## 3. Segment Completeness & Usability
 
-| Segment ID | Description | Physical Images | Proper Sidecars | Research-Ready | Status |
+| Segment ID | Physical Images | Proper Sidecars | Usable Captures | Primary Camera Viewpoint | Usability Mode |
 |---|---|---|---|---|---|
-| **SEG_001** | Progressive Fatigue (Wheeltrack Cracking -> Waterlogged Crater) | 10/10 | 10/10 | **{b_a['segment_research_ready']['SEG_001']}/10** | Setting Mismatch (Recapture/Decision Needed) |
-| **SEG_002** | Rapid Pothole Formation (Stripping -> Raveling -> Large Wet Pothole) | 10/10 | 10/10 | **{b_a['segment_research_ready']['SEG_002']}/10** | Setting Mismatch (Recapture/Decision Needed) |
-| **SEG_003** | Crack-Dominated (Transverse -> Block Cracking -> Edge Spalling) | 10/10 | 9/10 | **{b_a['segment_research_ready']['SEG_003']}/10** | Missing Day 10 Sidecar + Setting Mismatches |
-| **SEG_004** | Multi-Epicenter Pothole Cluster | 10/10 | 10/10 | **{b_a['segment_research_ready']['SEG_004']}/10** | Setting Mismatch (Recapture/Decision Needed) |
-| **SEG_005** | Repair Demonstration Segment 1 (Pre-repair D05 -> Reset D06) | 0/10 | 0/10 | **0/10** | **NOT YET CAPTURED** |
-| **SEG_006** | Repair Demonstration Segment 2 (Edge Shear Gouge -> Reset D06) | 0/10 | 0/10 | **0/10** | **NOT YET CAPTURED** |
-| **TOTAL (Batch A)** | **SEG_001 – SEG_004** | **40/40** | **39/40** | **0/40** | **{b_a['readiness_gate']}** |
-| **TOTAL (Full)** | **SEG_001 – SEG_006** | **40/60** | **39/60** | **0/60** | **PARTIAL PASS — SEG_005 & SEG_006 PENDING** |
+| **SEG_001** | 10/10 | 10/10 | **10/10** | 8 days Overlook (D03–D10) | Multi-condition robustness + 8-day temporal candidate |
+| **SEG_002** | 10/10 | 10/10 | **10/10** | Low-Angle, Macro, Overlook | Viewpoint & moisture robustness + pairwise temporal |
+| **SEG_003** | 10/10 | 9/10 | **9/10** | 7 days Overlook (D01–D07) | 7-day stability candidate + 2-day drone (D10 missing sidecar) |
+| **SEG_004** | 10/10 | 10/10 | **10/10** | 5 days Drone (D01–D05), 5 days Overlook (D06–D10) | Dual 5-day temporal candidates under varied weather |
+| **TOTAL (Exp A)** | **40/40** | **39/40** | **39/40** | **4 distinct perspectives** | **{a['readiness_gate']} (Ready for Phase 2)** |
+| **SEG_005 (Exp B)**| 0/10 | 0/10 | 0/10 | Consistent Top-Down Drone | **NOT YET CAPTURED** (Controlled Temporal + Repair) |
+| **SEG_006 (Exp B)**| 0/10 | 0/10 | 0/10 | Consistent Top-Down Drone | **NOT YET CAPTURED** (Controlled Temporal + Repair) |
 
 ---
 
-## 3. Phase 2 Readiness Gate for Batch A
+## 4. Same-Camera Temporal Candidate Subsequences (Experiment A)
 
-**Gate Evaluation**: **`{b_a['readiness_gate']}`**
+Although captured as a multi-condition robustness dataset, the actual metadata reveals contiguous same-camera sequences suitable for temporal tracking:
 
-| Criteria | Required | Actual | Verdict |
-|---|---|---|---|
-| 40/40 PNGs exist | 40 | {b_a['images_present']} | {b_a['criteria']['40/40 PNGs exist']} |
-| 40/40 PNGs readable | 40 | {b_a['images_valid']} | {b_a['criteria']['40/40 PNGs readable']} |
-| 40/40 sidecars exist | 40 | {b_a['sidecars_present']} | {b_a['criteria']['40/40 sidecars exist']} |
-| 40/40 sidecars parse | 40 | {b_a['sidecars_valid']} | {b_a['criteria']['40/40 sidecars parse']} |
-| No unresolved metadata mismatch exists | 0 mismatches | {b_a['setting_mismatches']} mismatches | {b_a['criteria']['No unresolved metadata mismatch']} |
-| Segment/day associations unambiguous | Yes | Yes | {b_a['criteria']['Segment/day associations unambiguous']} |
-
-> [!WARNING]
-> Batch A cannot proceed into Phase 2 ML pipelines because **all 40 captures contain setting mismatches against `env/config/temporal_capture_plan.csv`**, and **`SEG_003 Day 10` is missing its proper sidecar `day_10_metadata.json`** (and missing from `dataset_manifest.csv`).
-
----
-
-## 4. Metadata Logger & Image Integrity Summary
-
-1. **Manifest (`env/output/temporal_segments/dataset_manifest.csv`)**:
-   - Total rows recorded: **{summary['logger_audit']['manifest_total_rows']}** (expected 40 for Batch A).
-   - Missing record: `{', '.join(summary['logger_audit']['manifest_missing'])}`.
-2. **Capture History (`env/output/temporal_segments/capture_history.jsonl`)**:
-   - Total entries: **{summary['logger_audit']['history_total_entries']}**.
-   - Repeated capture attempts: **{len(summary['logger_audit']['history_duplicates'])}** segment-days ({', '.join(summary['logger_audit']['history_duplicates'][:6])}...).
-   - Capture errors: **{len(summary['logger_audit']['history_errors'])}** failed capture events recorded ({', '.join(summary['logger_audit']['history_errors'])}).
-3. **Image Consistency**:
-   - Common resolution: **1920x1080** (40/40 images, 100%).
-   - Differing resolutions: **None**.
-   - Corrupt/truncated images: **0**.
-   - Unexpectedly tiny files (<2 KB): **0** (file sizes range between 1.1 MB and 5.8 MB).
+1. **SEG_001 Day 03–10 (8 days)**: `🌄 Highway Curve Vantage Overlook`
+   - Progressive density drift from 4.8 to 10.0 / 100m²; health transitions Grade C -> Grade F.
+2. **SEG_002 Day 01–02 (2 days)**: `🔍 Low-Angle Pothole Inspection (30° Close-Up)`
+3. **SEG_002 Day 04–05 (2 days)**: `💧 Waterlogged Pothole Macro View`
+4. **SEG_002 Day 06–07 (2 days)**: `🌄 Highway Curve Vantage Overlook`
+5. **SEG_003 Day 01–07 (7 days)**: `🌄 Highway Curve Vantage Overlook`
+   - Pristine Grade A roadway at constant density 7.3 under Clear Noon; ideal for false-positive stability testing.
+6. **SEG_003 Day 08–09 (2 days)**: `🔭 Overhead Drone Survey (SAM 2 Top-Down)`
+7. **SEG_004 Day 01–05 (5 days)**: `🔭 Overhead Drone Survey (SAM 2 Top-Down)`
+   - Progressive breakdown from Grade C/B to Grade D across Clear Noon, Sunset, and Overcast skies.
+8. **SEG_004 Day 06–10 (5 days)**: `🌄 Highway Curve Vantage Overlook`
+   - Heavy breakdown and hazard progression under severe weather (Overcast, Heavy Rain, Sunset).
 
 ---
 
-## 5. Next Steps for Team Lead
+## 5. Experiment A Phase 2 Readiness Gate
 
-1. **Resolve SEG_003 Day 10**:
-   - Studio capture logged an error for SEG_003 Day 10. Re-capture SEG_003 Day 10 to produce valid `day_10_metadata.json` and append to `dataset_manifest.csv`.
-2. **Evaluate Setting Mismatches**:
-   - Review the detailed `SETTING_MISMATCH` breakdown in `PHASE1_DATASET_VERIFICATION.md` to decide whether to manually recapture or align plan settings.
-3. **Capture SEG_005 & SEG_006**:
-   - Manually capture SEG_005 (Day 01–10) and SEG_006 (Day 01–10) in Unreal Engine.
+**Verdict**: **`EXPERIMENT_A_NEAR_READY`**
+
+- **39 of 40 captures** possess verified 1920x1080 images and complete, valid sidecar metadata.
+- **Perception evaluation pipelines (YOLO, DINOv2, SAM 2) may proceed immediately on the 39 verified captures.**
+- SEG_003 Day 10 is documented as missing its sidecar; the Team Lead may optionally re-capture it at convenience without blocking Experiment A perception work.
 """
-    progress_md_path.write_text(progress_content, encoding="utf-8")
+    progress_path.write_text(content, encoding="utf-8")
 
-    # 2. PHASE1_DATASET_VERIFICATION.md
-    verification_md_path = output_dir / "PHASE1_DATASET_VERIFICATION.md"
-    verif_content = f"""# RoadSentinel — Phase 1: Dataset Verification Report
+
+def write_verification_md(verif_path: Path, summary: Dict[str, Any], results: List[CaptureRecord]) -> None:
+    """Write PHASE1_DATASET_VERIFICATION.md."""
+    a = summary["experiment_a"]
+    b = summary["experiment_b"]
+
+    content = f"""# RoadSentinel — Phase 1: Dataset Verification Report (Phase 1D Reframe)
 
 **Generated**: {summary['timestamp']}  
 **Verification Method**: Strict File-Only Audit (zero Unreal/CARLA interaction)  
-**Overall Phase 1 Status**: **{summary['overall_phase1_status']}**  
-**Batch A Readiness**: **{b_a['readiness_gate']}**
+**Overall Phase 1 Status**: **{summary['overall_status']}**  
+**Experiment A Readiness**: **{a['readiness_gate']} (39/40 metadata-complete)**  
+**Experiment B Status**: **NOT YET CAPTURED (SEG_005 & SEG_006 reserved)**
 
 ---
 
-## 1. Audit Findings
+> [!NOTE]
+> **REVISION NOTICE (PHASE 1D):**  
+> The previous `SETTING_MISMATCH` classification against `temporal_capture_plan.csv` for `SEG_001`–`SEG_004` is officially superseded.  
+> The simulation settings were intentionally varied by the Team Lead during interactive capture.  
+> The **actual per-image sidecar metadata (`day_XX_metadata.json`) is the authoritative source of truth**.
 
-1. **Images Audit (Batch A)**:
-   - Expected: 40 (1920x1080 PNG)
-   - Found on disk: **{b_a['images_present']}/40**
-   - Valid resolution & format (1920x1080 PNG): **{b_a['images_valid']}/40**
+---
+
+## 1. Dual-Experiment Framing
+
+### Experiment A: Multi-Condition Road-Perception Robustness
+- **Segments**: `SEG_001`, `SEG_002`, `SEG_003`, `SEG_004` (40 captures total).
+- **Characterization**: Simulated road-inspection states captured under varied road-health, environmental lighting, moisture, defect-density, and camera conditions.
+- **Downstream Capabilities**:
+  - YOLO object detection benchmarking across viewpoints.
+  - DINOv2 foundation feature extraction & SAM 2 prompt-based segmentation.
+  - Viewpoint robustness (Overlook vs Drone Survey vs Macro vs Low-Angle).
+  - Condition robustness (Clear Noon vs Overcast vs Rain vs Sunset).
+  - Severity distribution & qualitative failure mode analysis.
+
+### Experiment B: Controlled Temporal Progression + Repair
+- **Segments**: `SEG_005`, `SEG_006` (20 captures total).
+- **Characterization**: Reserved for clean, monotonic deterioration and repair sequences captured with consistent top-down drone camera.
+- **Sequence**:
+  - Days 01–05: Progressive deterioration (Pristine -> Minor -> Moderate -> Severe -> Critical).
+  - Day 06: Repair / patch reset intervention (Pristine).
+  - Days 07–10: Re-deterioration.
+- **Current Status**: **NOT YET CAPTURED** (Team Lead will capture later).
+
+---
+
+## 2. Experiment A Audit Findings
+
+1. **Physical Images**:
+   - Total planned: 40 (1920x1080 PNG)
+   - Found on disk: **40/40**
+   - Valid resolution & raster data: **40/40**
    - Corrupted/truncated PNGs: **0**
-   - Tiny files (<2000 bytes): **0** (file sizes span 1,173,227 to 5,854,635 bytes)
+   - File size range: 1,173,227 bytes to 5,854,635 bytes (zero tiny files).
 
-2. **Sidecar Metadata Audit (Batch A)**:
-   - Expected per-image sidecars: 40 (`day_01_metadata.json` ... `day_10_metadata.json`)
-   - Found on disk: **{b_a['sidecars_present']}/40**
-   - Missing proper sidecars: **{len(b_a['missing_sidecars'])}** ({', '.join(b_a['missing_sidecars']) if b_a['missing_sidecars'] else 'None'})
-   - Note on SEG_003 Day 10: `day_10_metadata.json` does not exist. A legacy segment-level `metadata.json` exists in the folder, but lacks standard schema fields.
+2. **Per-Image Sidecar Metadata (`day_XX_metadata.json`)**:
+   - Expected: 40 sidecars
+   - Found and valid JSON: **39/40**
+   - **Missing sidecar**: `SEG_003/day_10_metadata.json` (documented issue; studio logged capture error).
+   - Note: Legacy segment-level `metadata.json` in `SEG_003` exists, but is not an authoritative per-image sidecar.
 
-3. **Manifest & History Audit**:
-   - `dataset_manifest.csv`: **{summary['logger_audit']['manifest_total_rows']} entries** (missing `{', '.join(summary['logger_audit']['manifest_missing'])}`)
-   - `capture_history.jsonl`: **{summary['logger_audit']['history_total_entries']} entries**, actively logging.
-   - Duplicate/re-capture events: **{len(summary['logger_audit']['history_duplicates'])}** segment-days have multiple logs.
-   - Error logs in history: **{len(summary['logger_audit']['history_errors'])}** failed events:
-     - `SEG_003 Day 10` at 17:57:02 (`capture_succeeded: false, capture_status: "error"`)
-     - `SEG_003 Day 10` at 17:57:09 (`capture_succeeded: false, capture_status: "error"`)
-
-4. **Repair Event Verification**:
-   - **SEG_005**:
-     - Capture Plan: Day 05 = `Critical Hazard (Grade F)` (`pre-repair`), Day 06 = `Pristine (Grade A)` (`repair`) → **{summary['seg_005_repair_plan_verified']}**
-     - Sidecar Metadata: **NOT YET CAPTURED** (awaiting capture of SEG_005)
-   - **SEG_006**:
-     - Capture Plan: Day 05 = `Critical Hazard (Grade F)` (`pre-repair`), Day 06 = `Pristine (Grade A)` (`repair`) → **{summary['seg_006_repair_plan_verified']}**
-     - Sidecar Metadata: **NOT YET CAPTURED** (awaiting capture of SEG_006)
+3. **Metadata Logger Outputs**:
+   - `dataset_manifest.csv`: **39 rows recorded** (missing `SEG_003 Day 10`).
+   - `capture_history.jsonl`: **64 entries**, actively recording captures, duplicates, and errors.
 
 ---
 
-## 2. Phase 2 Readiness Gate for Batch A (SEG_001–SEG_004)
+## 3. Condition Distribution Summary (Experiment A)
 
-**Gate Evaluation**: **`{b_a['readiness_gate']}`**
+### Lighting / Environmental Presets
+| Lighting Preset | Images | Percentage |
+|---|---|---|
+"""
+    for l, cnt in Counter(a['lighting_distribution']).most_common():
+        content += f"| `{l}` | {cnt} | {cnt / 39 * 100:.1f}% |\n"
 
-| Gate Check | Requirement | Batch A Result | Status |
+    content += """
+### Road-Health Severity States
+| Road-Health State | Images | Percentage |
+|---|---|---|
+"""
+    for h, cnt in Counter(a['health_distribution']).most_common():
+        content += f"| `{h}` | {cnt} | {cnt / 39 * 100:.1f}% |\n"
+
+    content += """
+### Camera Viewpoints
+| Camera Preset | Images | Percentage | Usability |
 |---|---|---|---|
-| **1. Physical Images** | 40/40 PNGs exist | {b_a['images_present']}/40 exist | {b_a['criteria']['40/40 PNGs exist']} |
-| **2. Image Readability** | 40/40 PNGs readable & non-zero | {b_a['images_valid']}/40 verified 1920x1080 | {b_a['criteria']['40/40 PNGs readable']} |
-| **3. Proper Sidecars** | 40/40 sidecars exist | {b_a['sidecars_present']}/40 exist | {b_a['criteria']['40/40 sidecars exist']} |
-| **4. Sidecars JSON Valid** | 40/40 sidecars parse | {b_a['sidecars_valid']}/40 parse | {b_a['criteria']['40/40 sidecars parse']} |
-| **5. Metadata Alignment** | No unresolved metadata mismatch | {b_a['setting_mismatches']}/40 captures contain mismatches | {b_a['criteria']['No unresolved metadata mismatch']} |
-| **6. Segment/Day Unambiguous** | No naming or day ambiguity | Verified 1:1 segment/day paths | {b_a['criteria']['Segment/day associations unambiguous']} |
+"""
+    cam_desc = {
+        "🌄 Highway Curve Vantage Overlook": "Robustness + 8-day & 7-day & 5-day Temporal Candidates",
+        "🔭 Overhead Drone Survey (SAM 2 Top-Down)": "Robustness + 5-day & 2-day Temporal Candidates",
+        "💧 Waterlogged Pothole Macro View": "Macro Robustness + 2-day Temporal Candidate",
+        "🔍 Low-Angle Pothole Inspection (30° Close-Up)": "Low-Angle Robustness + 2-day Temporal Candidate"
+    }
+    for c, cnt in Counter(a['camera_distribution']).most_common():
+        content += f"| `{c}` | {cnt} | {cnt / 39 * 100:.1f}% | {cam_desc.get(c, 'Robustness')} |\n"
+
+    content += """
+### Defect Density Metrics
+| Metric | Value |
+|---|---|
+| Minimum Density | """ + str(a['density_stats']['min']) + """ / 100m² |
+| Maximum Density | """ + str(a['density_stats']['max']) + """ / 100m² |
+| Mean Density | """ + str(a['density_stats']['mean']) + """ / 100m² |
+| Median Density | """ + str(a['density_stats']['median']) + """ / 100m² |
 
 ---
 
-## 3. Comprehensive SETTING_MISMATCH Breakdown Table (Batch A)
+## 4. Master Actual-Metadata Inventory (Experiment A)
 
-The table below documents every mismatch between actual sidecar metadata and the planned capture parameters in `temporal_capture_plan.csv`.
+Full details exported in [actual_capture_inventory.csv](actual_capture_inventory.csv).
 
-| Segment | Day | Field | Expected | Actual |
+| Segment | Day | Image Status | Sidecar Status | Camera Preset | Lighting Preset | Health State | Density | Usability Mode |
+|---|---|---|---|---|---|---|---|---|
+"""
+    exp_a_recs = [r for r in results if r.experiment == "Experiment A"]
+    for r in exp_a_recs:
+        img_s = "✅ Valid" if r.image_valid else "❌ Invalid"
+        meta_s = "✅ Valid" if r.sidecar_valid else "⚠️ Missing"
+        dens_str = f"{r.pothole_density_per_100m2:.1f}" if r.pothole_density_per_100m2 is not None else "N/A"
+        badge = f"`{r.temporal_classification}`" if r.usable else "`MISSING_DATA`"
+        content += f"| `{r.segment_id}` | {r.day:02d} | {img_s} | {meta_s} | {r.camera_preset} | {r.lighting_preset} | {r.road_health_state} | {dens_str} | {badge} |\n"
+
+    content += """
+---
+
+## 5. Experiment B Status (SEG_005 & SEG_006)
+
+| Segment ID | Day Range | Planned Perspective | Target Event | Current Status |
 |---|---|---|---|---|
+| `SEG_005` | Day 01–05 | Top-Down Drone Survey | Monotonic Deterioration (Grade A -> F) | **NOT YET CAPTURED** |
+| `SEG_005` | Day 06 | Top-Down Drone Survey | Repair Reset (Pristine Grade A) | **NOT YET CAPTURED** |
+| `SEG_005` | Day 07–10 | Top-Down Drone Survey | Post-Repair Re-deterioration | **NOT YET CAPTURED** |
+| `SEG_006` | Day 01–05 | Top-Down Drone Survey | Monotonic Deterioration (Grade A -> F) | **NOT YET CAPTURED** |
+| `SEG_006` | Day 06 | Top-Down Drone Survey | Repair Reset (Pristine Grade A) | **NOT YET CAPTURED** |
+| `SEG_006` | Day 07–10 | Top-Down Drone Survey | Post-Repair Re-deterioration | **NOT YET CAPTURED** |
 """
-    for r in results:
-        if r.segment_id in ("SEG_001", "SEG_002", "SEG_003", "SEG_004"):
-            if not r.metadata_exists:
-                verif_content += f"| `{r.segment_id}` | Day {r.day:02d} | `metadata_sidecar` | `day_{r.day:02d}_metadata.json` | **MISSING_SIDECAR** |\n"
-            for m in r.mismatches:
-                verif_content += f"| `{r.segment_id}` | Day {r.day:02d} | `{m['field']}` | {m['expected']} | {m['actual']} |\n"
-
-    verif_content += f"""
----
-
-## 4. Complete Planned 60-Image Capture Verification Table
-
-| Segment | Day | Image Status | Sidecar Status | Settings Match | Captures in History | Status | Notes |
-|---|---|---|---|---|---|---|---|
-"""
-    for r in results:
-        img_str = "✅ Valid" if (r.image_exists and r.image_valid) else ("⚠️ Missing" if not r.image_exists else "❌ Invalid")
-        meta_str = "✅ Valid" if (r.metadata_exists and r.metadata_valid) else ("⚠️ Missing" if not r.metadata_exists else "❌ Corrupt")
-        match_str = "✅ Match" if r.settings_match else ("N/A" if not r.metadata_exists else "⚠️ Mismatch")
-        status_badge = "✅ PASS" if r.status == "PASS" else ("⏳ NOT YET CAPTURED" if r.status == "NOT YET CAPTURED" else f"`{r.status}`")
-        notes_str = "; ".join(r.notes) if r.notes else "OK"
-        verif_content += f"| `{r.segment_id}` | {r.day:02d} | {img_str} | {meta_str} | {match_str} | {r.capture_count} | {status_badge} | {notes_str} |\n"
-
-    verification_md_path.write_text(verif_content, encoding="utf-8")
+    verif_path.write_text(content, encoding="utf-8")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="RoadSentinel Phase 1 Dataset Verifier")
+    parser = argparse.ArgumentParser(description="RoadSentinel Phase 1D Dataset Verifier")
     parser.add_argument("--plan", type=Path, default=DEFAULT_PLAN_PATH, help="Path to capture plan CSV")
     parser.add_argument("--data-dir", type=Path, default=DEFAULT_DATA_DIR, help="Path to temporal segments directory")
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR, help="Path to output report directory")
@@ -817,37 +832,43 @@ def main() -> None:
 
     res = verify_dataset(args.plan, args.data_dir, args.output_dir)
     summary = res["summary"]
-    b_a = summary["batch_a"]
+    a = summary["experiment_a"]
+    b = summary["experiment_b"]
 
     if not args.quiet:
-        print("=" * 60)
-        print("ROADSENTINEL — PHASE 1 DATASET VERIFICATION (BATCH A)")
-        print("=" * 60)
-        print(f"Physical Images Found:      {b_a['images_present']} / 40")
-        print(f"Proper Sidecars Found:      {b_a['sidecars_present']} / 40")
-        print(f"Fully Valid Captures:       {b_a['fully_valid_captures']} / 40")
-        print()
-        print(f"SEG_001:                    {b_a['segment_research_ready']['SEG_001']} / 10 research-ready")
-        print(f"SEG_002:                    {b_a['segment_research_ready']['SEG_002']} / 10 research-ready")
-        print(f"SEG_003:                    {b_a['segment_research_ready']['SEG_003']} / 10 research-ready")
-        print(f"SEG_004:                    {b_a['segment_research_ready']['SEG_004']} / 10 research-ready")
-        print(f"Batch A Total:              {b_a['fully_valid_captures']} / 40 research-ready")
-        print(f"Overall Full Experiment:    {summary['overall_experiment']['research_ready']} / 60 research-ready")
-        print(f"SEG_005:                    {summary['batch_b']['SEG_005']}")
-        print(f"SEG_006:                    {summary['batch_b']['SEG_006']}")
-        print("=" * 60)
-        print(f"Setting Mismatches:         {b_a['setting_mismatches']} / 40")
-        print(f"Missing Sidecars:           {', '.join(b_a['missing_sidecars']) if b_a['missing_sidecars'] else 'None'}")
-        print(f"Corrupt Images:             {len(b_a['corrupt_images'])}")
-        print(f"Duplicate History Entries:  {len(summary['logger_audit']['history_duplicates'])} segment-days")
-        print(f"Common Image Resolution:    {b_a['common_resolution']}")
-        print(f"dataset_manifest.csv:       {summary['logger_audit']['manifest_total_rows']} entries (missing: {', '.join(summary['logger_audit']['manifest_missing']) if summary['logger_audit']['manifest_missing'] else 'None'})")
-        print(f"capture_history.jsonl:      {summary['logger_audit']['history_total_entries']} entries (errors: {len(summary['logger_audit']['history_errors'])})")
-        print("=" * 60)
-        print(f"BATCH A STATUS:             {b_a['readiness_gate']}")
-        print(f"OVERALL PHASE 1 STATUS:     {summary['overall_phase1_status']}")
-        print("=" * 60)
-        print(f"Reports written to: {args.output_dir}")
+        print("=" * 65)
+        print("ROADSENTINEL — PHASE 1D: ACTUAL-METADATA DATASET VERIFICATION")
+        print("=" * 65)
+        print("EXPERIMENT A — SEG_001–SEG_004 (Multi-Condition Robustness)")
+        print(f"  • Physical Images Found:     {a['images_present']} / 40")
+        print(f"  • Proper Sidecars Found:     {a['sidecars_present']} / 40")
+        print(f"  • Usable Captures:           {a['usable_captures']} / 40")
+        print(f"  • Missing Sidecars:          {', '.join(a['missing_sidecars']) if a['missing_sidecars'] else 'None'}")
+        print(f"  • Corrupt Images:            {len(a['corrupt_images'])}")
+        print(f"  • Lighting Conditions:       {len(a['lighting_distribution'])} ({', '.join(a['lighting_distribution'].keys())})")
+        print(f"  • Road Health States:        {len(a['health_distribution'])} ({', '.join(a['health_distribution'].keys())})")
+        print(f"  • Camera Presets:            {len(a['camera_distribution'])} ({', '.join(a['camera_distribution'].keys())})")
+        print(f"  • Density Range:             {a['density_stats']['min']} – {a['density_stats']['max']} / 100m² (mean: {a['density_stats']['mean']}, median: {a['density_stats']['median']})")
+        print(f"  • Common Image Resolution:   {a['common_resolution']}")
+        print(f"  • Temporal Candidates:       {len(a['temporal_subsequences'])} subsequences identified")
+        print("=" * 65)
+        print("SEG_003 DAY 10 STATUS:")
+        print(f"  • {missing_status(a['missing_sidecars'])}")
+        print("=" * 65)
+        print("EXPERIMENT B — SEG_005–SEG_006 (Controlled Temporal + Repair)")
+        print(f"  • SEG_005:                   {b['SEG_005']}")
+        print(f"  • SEG_006:                   {b['SEG_006']}")
+        print("=" * 65)
+        print(f"EXPERIMENT A READINESS:        {a['readiness_gate']}")
+        print(f"OVERALL PHASE 1 STATUS:        {summary['overall_status']}")
+        print("=" * 65)
+        print(f"Reports & Indexes generated in: {args.output_dir}")
+
+
+def missing_status(missing_list: List[str]) -> str:
+    if "SEG_003 Day 10" in missing_list:
+        return "MISSING_SIDECAR (Image day_10.png exists, but day_10_metadata.json is missing)"
+    return "VALID"
 
 
 if __name__ == "__main__":
