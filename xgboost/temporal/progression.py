@@ -25,6 +25,8 @@ def build_daily_summary(records: list[DailyRecord]) -> list[dict[str, Any]]:
     for item in records:
         record = item.record
         row = {"segment_id": record["segment_id"], "day": record["day"], "original_filename": record["original_filename"], "condition": record["condition"], "water_flag": record["water_flag"]}
+        if "intervention" in record:
+            row["intervention"] = record["intervention"]
         for name in MEASURES:
             row[name] = record[name]
             row[f"{name}_delta"] = _delta(record[name], previous[name]) if previous else None
@@ -79,4 +81,12 @@ def progression_summary(records: list[DailyRecord], tracks: dict[str, Any], even
     first, last = records[0].record, records[-1].record
     def change(name: str) -> float | None: return _delta(last[name], first[name])
     water_days = [item.day for item in records if item.record["water_flag"] is True]
-    return {"segment_id": first["segment_id"], "first_day": first["day"], "last_day": last["day"], "days_available": [item.day for item in records], "missing_days": missing_days(records), "severity_start": first["current_severity"], "severity_end": last["current_severity"], "severity_delta": change("current_severity"), "max_severity": max((float(x.record["current_severity"]) for x in records if x.record["current_severity"] is not None), default=None), "defect_area_start": first["defect_area_ratio"], "defect_area_end": last["defect_area_ratio"], "defect_area_delta": change("defect_area_ratio"), "crack_area_start": first["crack_area_ratio"], "crack_area_end": last["crack_area_ratio"], "crack_area_delta": change("crack_area_ratio"), "defect_count_start": first["defect_count"], "defect_count_end": last["defect_count"], "water_first_seen_day": water_days[0] if water_days else None, "num_tracks": len(tracks), "num_new_defects": sum(event["event"] == "NEW_DEFECT" for event in events), "summary_status": "OBSERVED TEMPORAL CHANGE"}
+    interventions = [
+        {"day": item.day, "intervention": item.record["intervention"]}
+        for item in records if "intervention" in item.record and item.record["intervention"] is not None
+    ]
+    res = {"segment_id": first["segment_id"], "first_day": first["day"], "last_day": last["day"], "days_available": [item.day for item in records], "missing_days": missing_days(records), "severity_start": first["current_severity"], "severity_end": last["current_severity"], "severity_delta": change("current_severity"), "max_severity": max((float(x.record["current_severity"]) for x in records if x.record["current_severity"] is not None), default=None), "defect_area_start": first["defect_area_ratio"], "defect_area_end": last["defect_area_ratio"], "defect_area_delta": change("defect_area_ratio"), "crack_area_start": first["crack_area_ratio"], "crack_area_end": last["crack_area_ratio"], "crack_area_delta": change("crack_area_ratio"), "defect_count_start": first["defect_count"], "defect_count_end": last["defect_count"], "water_first_seen_day": water_days[0] if water_days else None, "num_tracks": len(tracks), "num_new_defects": sum(event["event"] == "NEW_DEFECT" for event in events), "summary_status": "OBSERVED TEMPORAL CHANGE"}
+    if interventions:
+        res["interventions"] = interventions
+    return res
+

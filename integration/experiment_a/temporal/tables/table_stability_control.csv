@@ -1,0 +1,15 @@
+metric,value,notes
+Evaluation States,7 continuous days (Day 01 to Day 07),Same physical camera & road scene
+Simulation Ground Truth,"Pristine (Grade A), Defect Density = 7.3 / 100m²",No true physical damage simulated
+Environmental Condition,Clear Noon (70° Sun),Constant direct illumination
+Camera Viewpoint,🌄 Highway Curve Vantage Overlook,Fixed extrinsic vantage
+Mean Model Severity,0.2444,Systematic baseline response
+Severity Standard Deviation,0.0017,Dispersion over 7 days
+"Severity Range [Min, Max]","[0.2417, 0.2472]",Total spread = 0.0055
+Coefficient of Variation (CV),0.68%,Sub-1% variation over 7 states
+Defect Count Invariant,Exactly 1 defect per day across all 7 days,100% count consistency
+Persistent Systematic Tracks,1 / 1 (DEFECT_001),Same boundary candidate tracked across all 7 days
+Maximum Track Length,7 states,Full-duration persistence
+Adjacent Mask-IoU Mean,0.8331,IoU across adjacent inspection cycles
+Adjacent Mask-IoU Range,"[0.4651, 0.9551]",Peaks at 0.9551 on Day 5->6
+Interpretation,SPATIALLY STABLE SYSTEMATIC FALSE-POSITIVE CANDIDATE,"Confirms model repeatability, not physical damage"
