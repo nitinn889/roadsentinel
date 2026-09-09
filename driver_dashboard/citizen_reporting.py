@@ -559,16 +559,19 @@ def analyze_citizen_report(
 def save_citizen_report(
     raw_image_bytes: bytes,
     analysis_result: Dict[str, Any],
+    reports_dir: Optional[Path] = None,
 ) -> str:
     """Persist citizen report, raw image, annotated overlay, and manifest record locally.
 
     Returns:
         Generated unique report ID, e.g. "RS-CR-0001"
     """
-    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    target_dir = Path(reports_dir) if reports_dir is not None else REPORTS_DIR
+    target_dir.mkdir(parents=True, exist_ok=True)
+    manifest_json_path = target_dir / "reports_manifest.json"
 
     # Determine unique sequential ID
-    existing_reports = load_all_reports()
+    existing_reports = load_all_reports(reports_dir=target_dir)
     seq = len(existing_reports) + 1
     report_id = f"RS-CR-{seq:04d}"
 
@@ -579,14 +582,14 @@ def save_citizen_report(
     metadata_filename = f"{report_id}.json"
 
     # Save raw image
-    (REPORTS_DIR / raw_img_filename).write_bytes(raw_image_bytes)
+    (target_dir / raw_img_filename).write_bytes(raw_image_bytes)
 
     # Save annotated overlay if present, else copy raw
     annotated_bytes = analysis_result.get("annotated_image_bytes")
     if annotated_bytes:
-        (REPORTS_DIR / annotated_img_filename).write_bytes(annotated_bytes)
+        (target_dir / annotated_img_filename).write_bytes(annotated_bytes)
     else:
-        (REPORTS_DIR / annotated_img_filename).write_bytes(raw_image_bytes)
+        (target_dir / annotated_img_filename).write_bytes(raw_image_bytes)
 
     # Construct metadata record
     record = {
@@ -616,34 +619,35 @@ def save_citizen_report(
     }
 
     # Save individual JSON
-    with open(REPORTS_DIR / metadata_filename, "w", encoding="utf-8") as f:
+    with open(target_dir / metadata_filename, "w", encoding="utf-8") as f:
         json.dump(record, f, indent=2)
 
     # Append/Update summary manifest JSON
     existing_reports.append(record)
-    with open(REPORTS_MANIFEST_JSON, "w", encoding="utf-8") as f:
+    with open(manifest_json_path, "w", encoding="utf-8") as f:
         json.dump(existing_reports, f, indent=2)
 
     # Update summary CSV
-    update_manifest_csv(existing_reports)
+    update_manifest_csv(existing_reports, reports_dir=target_dir)
 
-    log.info("Saved citizen report %s to %s", report_id, REPORTS_DIR)
+    log.info("Saved citizen report %s to %s", report_id, target_dir)
     return report_id
 
 
-def load_all_reports() -> List[Dict[str, Any]]:
+def load_all_reports(reports_dir: Optional[Path] = None) -> List[Dict[str, Any]]:
     """Load all stored citizen reports from the local manifest."""
-    if not REPORTS_MANIFEST_JSON.exists():
+    target_json = (Path(reports_dir) if reports_dir is not None else REPORTS_DIR) / "reports_manifest.json"
+    if not target_json.exists():
         return []
     try:
-        with open(REPORTS_MANIFEST_JSON, "r", encoding="utf-8") as f:
+        with open(target_json, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
         log.error("Failed to read reports manifest: %s", e)
         return []
 
 
-def update_manifest_csv(reports: List[Dict[str, Any]]) -> None:
+def update_manifest_csv(reports: List[Dict[str, Any]], reports_dir: Optional[Path] = None) -> None:
     """Save reports summary manifest as CSV."""
     if not reports:
         return
@@ -663,8 +667,10 @@ def update_manifest_csv(reports: List[Dict[str, Any]]) -> None:
         "decision_reason",
     ]
 
-    with open(REPORTS_MANIFEST_CSV, "w", newline="", encoding="utf-8") as f:
+    target_csv = (Path(reports_dir) if reports_dir is not None else REPORTS_DIR) / "reports_manifest.csv"
+    with open(target_csv, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
         writer.writeheader()
         for r in reports:
             writer.writerow(r)
+

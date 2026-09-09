@@ -17,9 +17,11 @@ Launch command:
 
 from __future__ import annotations
 
+import io
 import sys
 import time
 from pathlib import Path
+from PIL import Image
 import pydeck as pdk
 import streamlit as st
 
@@ -69,6 +71,34 @@ from citizen_reporting import (
 def get_ai_pipeline() -> CitizenReportingPipeline:
     """Load and cache YOLO, DINOv2, and SAM2 models once in memory."""
     return CitizenReportingPipeline()
+
+
+def safe_render_image(image_source: Any, caption: str = "") -> None:
+    """Safely render an image in Streamlit, catching corrupted or invalid formats without crashing."""
+    if image_source is None:
+        st.caption("No image data available.")
+        return
+
+    try:
+        if isinstance(image_source, (str, Path)):
+            p = Path(image_source)
+            if not p.exists():
+                st.warning(f"⚠️ Image file not found on disk: `{p.name}`")
+                return
+            with Image.open(p) as img:
+                img.load()
+                st.image(img, caption=caption if caption else None, use_container_width=True)
+        elif isinstance(image_source, (bytes, bytearray)):
+            if len(image_source) == 0:
+                st.caption("Empty image data.")
+                return
+            with Image.open(io.BytesIO(image_source)) as img:
+                img.load()
+                st.image(img, caption=caption if caption else None, use_container_width=True)
+        else:
+            st.image(image_source, caption=caption if caption else None, use_container_width=True)
+    except Exception as err:
+        st.warning(f"⚠️ Image preview unavailable ({type(err).__name__}: {err})")
 
 
 def init_session_state():
@@ -247,11 +277,11 @@ def render_citizen_reporting_tab(pipeline: CitizenReportingPipeline, curr_lat: f
         with img_col1:
             st.markdown(f"**Original Uploaded Image** (`{st.session_state.citizen_image_name or 'photo'}`)")
             if st.session_state.citizen_image_bytes:
-                st.image(st.session_state.citizen_image_bytes, use_container_width=True)
+                safe_render_image(st.session_state.citizen_image_bytes)
         with img_col2:
             st.markdown("**AI Perception Overlay (YOLO Bounding Box + SAM2 Defect Mask)**")
             if res.get("annotated_image_bytes"):
-                st.image(res["annotated_image_bytes"], use_container_width=True)
+                safe_render_image(res["annotated_image_bytes"])
             else:
                 st.caption("No defect overlay generated.")
 
@@ -350,12 +380,10 @@ def render_citizen_reports_history_tab():
             v_col1, v_col2 = st.columns(2)
             with v_col1:
                 raw_path = REPORTS_DIR / chosen_record.get("raw_image_path", "")
-                if raw_path.exists():
-                    st.image(str(raw_path), caption=f"Raw Upload ({chosen_id})", use_container_width=True)
+                safe_render_image(raw_path, caption=f"Raw Upload ({chosen_id})")
             with v_col2:
                 ann_path = REPORTS_DIR / chosen_record.get("annotated_image_path", "")
-                if ann_path.exists():
-                    st.image(str(ann_path), caption=f"AI Annotated Overlay ({chosen_id})", use_container_width=True)
+                safe_render_image(ann_path, caption=f"AI Annotated Overlay ({chosen_id})")
 
             with st.expander("📄 Full JSON Metadata Record"):
                 st.json(chosen_record)

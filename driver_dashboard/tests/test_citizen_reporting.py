@@ -140,7 +140,11 @@ class TestCitizenReporting(unittest.TestCase):
 
     def test_report_persistence_and_reload(self):
         """Test saving a report locally, generating sequential ID, and reloading from manifest."""
-        # Create a mock report analysis
+        import cv2
+
+        # Create valid dummy JPEG bytes so saved files are fully identifiable images
+        valid_bytes = cv2.imencode(".jpg", np.zeros((64, 64, 3), dtype=np.uint8))[1].tobytes()
+
         mock_analysis = {
             "status": STATUS_VERIFIED,
             "decision_reason": "Unit test verified defect",
@@ -158,26 +162,84 @@ class TestCitizenReporting(unittest.TestCase):
             "has_sam2_mask": True,
             "mask_area_ratio": 0.045,
             "gps_info": evaluate_report_gps(8.8932, 76.6141),
-            "annotated_image_bytes": b"mock_annotated_jpeg_data",
+            "annotated_image_bytes": valid_bytes,
         }
 
-        raw_bytes = b"mock_raw_jpeg_data"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            temp_reports_dir = Path(tmpdir)
 
-        # Save report
-        report_id = save_citizen_report(raw_bytes, mock_analysis)
-        self.assertTrue(report_id.startswith("RS-CR-"))
+            # Save report into isolated temporary directory
+            report_id = save_citizen_report(valid_bytes, mock_analysis, reports_dir=temp_reports_dir)
+            self.assertTrue(report_id.startswith("RS-CR-"))
+            self.assertEqual(report_id, "RS-CR-0001")
 
-        # Reload reports manifest
-        all_reports = load_all_reports()
-        self.assertGreaterEqual(len(all_reports), 1)
+            # Verify files were created
+            raw_file = temp_reports_dir / f"{report_id}_raw.jpg"
+            ann_file = temp_reports_dir / f"{report_id}_annotated.jpg"
+            meta_file = temp_reports_dir / f"{report_id}.json"
+            self.assertTrue(raw_file.exists())
+            self.assertTrue(ann_file.exists())
+            self.assertTrue(meta_file.exists())
 
-        saved_item = next((r for r in all_reports if r["report_id"] == report_id), None)
-        self.assertIsNotNone(saved_item)
-        self.assertEqual(saved_item["status"], STATUS_VERIFIED)
-        self.assertEqual(saved_item["defect_type"], "Pothole")
-        self.assertEqual(saved_item["geofence_status"], "ON_ROADSENTINEL_ROUTE")
-        self.assertEqual(saved_item["nearest_segment"], "SEG_001")
+            # Verify saved images are valid decodable images
+            with Image.open(raw_file) as img:
+                img.verify()
+            with Image.open(ann_file) as img:
+                img.verify()
+
+            # Reload reports manifest from temporary directory
+            all_reports = load_all_reports(reports_dir=temp_reports_dir)
+            self.assertEqual(len(all_reports), 1)
+
+            saved_item = all_reports[0]
+            self.assertEqual(saved_item["report_id"], report_id)
+            self.assertEqual(saved_item["status"], STATUS_VERIFIED)
+            self.assertEqual(saved_item["defect_type"], "Pothole")
+            self.assertEqual(saved_item["geofence_status"], "ON_ROADSENTINEL_ROUTE")
+            self.assertEqual(saved_item["nearest_segment"], "SEG_001")
+
+
+
+class TestSafeImageRendering(unittest.TestCase):
+    """Test defensive handling of corrupted, empty, or missing images."""
+
+    def test_safe_render_handles_corrupt_and_missing_inputs(self):
+        """Ensure safe_render_image does not raise unhandled exceptions on invalid data."""
+        from app import safe_render_image
+        import tempfile
+
+        # 1. Test with None
+        try:
+            safe_render_image(None)
+        except Exception as e:
+            self.fail(f"safe_render_image raised unexpectedly on None: {e}")
+
+        # 2. Test with empty bytes
+        try:
+            safe_render_image(b"")
+        except Exception as e:
+            self.fail(f"safe_render_image raised unexpectedly on empty bytes: {e}")
+
+        # 3. Test with non-existent file
+        try:
+            safe_render_image(Path("/tmp/nonexistent_image_12345.jpg"))
+        except Exception as e:
+            self.fail(f"safe_render_image raised unexpectedly on missing file: {e}")
+
+        # 4. Test with corrupted file containing text bytes
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tf:
+            tf.write(b"mock_raw_jpeg_data")
+            tf_path = Path(tf.name)
+
+        try:
+            safe_render_image(tf_path)
+        except Exception as e:
+            self.fail(f"safe_render_image raised unexpectedly on corrupt file: {e}")
+        finally:
+            if tf_path.exists():
+                tf_path.unlink()
 
 
 if __name__ == "__main__":
     unittest.main()
+
