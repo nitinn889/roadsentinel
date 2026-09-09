@@ -1,0 +1,143 @@
+{
+  "sequence_id": "SEG_002_D01_D02",
+  "segment_id": "SEG_002",
+  "camera_preset": "\ud83d\udd0d Low-Angle Pothole Inspection (30\u00b0 Close-Up)",
+  "tracks": [
+    {
+      "track_id": "DEFECT_001",
+      "first_seen_day": 1,
+      "last_seen_day": 2,
+      "days_seen": [
+        1,
+        2
+      ],
+      "bbox_history": [
+        {
+          "day": 1,
+          "bbox": [
+            992,
+            651,
+            1042,
+            711
+          ]
+        },
+        {
+          "day": 2,
+          "bbox": [
+            997,
+            668,
+            1032,
+            705
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 1,
+          "centroid_x": 1013.4296841194288,
+          "centroid_y": 680.1864993509304
+        },
+        {
+          "day": 2,
+          "centroid_x": 1019.6511627906976,
+          "centroid_y": 680.9709302325581
+        }
+      ],
+      "area_history": [
+        {
+          "day": 1,
+          "area_ratio": 0.0011144868827160494
+        },
+        {
+          "day": 2,
+          "area_ratio": 8.294753086419753e-05
+        }
+      ],
+      "type_history": [
+        {
+          "day": 1,
+          "defect_type": "road_defect"
+        },
+        {
+          "day": 2,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": [
+        {
+          "day": 2,
+          "method": "bbox_iou",
+          "confidence": 0.4317
+        }
+      ]
+    },
+    {
+      "track_id": "DEFECT_002",
+      "first_seen_day": 1,
+      "last_seen_day": 2,
+      "days_seen": [
+        1,
+        2
+      ],
+      "bbox_history": [
+        {
+          "day": 1,
+          "bbox": [
+            1238,
+            673,
+            1303,
+            700
+          ]
+        },
+        {
+          "day": 2,
+          "bbox": [
+            1238,
+            672,
+            1303,
+            700
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 1,
+          "centroid_x": 1269.5028901734104,
+          "centroid_y": 687.7138728323699
+        },
+        {
+          "day": 2,
+          "centroid_x": 1269.9577464788733,
+          "centroid_y": 687.6338028169014
+        }
+      ],
+      "area_history": [
+        {
+          "day": 1,
+          "area_ratio": 0.00016685956790123458
+        },
+        {
+          "day": 2,
+          "area_ratio": 0.00017119984567901236
+        }
+      ],
+      "type_history": [
+        {
+          "day": 1,
+          "defect_type": "road_defect"
+        },
+        {
+          "day": 2,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": [
+        {
+          "day": 2,
+          "method": "mask_iou",
+          "confidence": 0.9691
+        }
+      ]
+    }
+  ]
+}

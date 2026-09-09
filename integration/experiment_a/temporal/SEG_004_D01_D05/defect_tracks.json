@@ -1,0 +1,231 @@
+{
+  "sequence_id": "SEG_004_D01_D05",
+  "segment_id": "SEG_004",
+  "camera_preset": "\ud83d\udd2d Overhead Drone Survey (SAM 2 Top-Down)",
+  "tracks": [
+    {
+      "track_id": "DEFECT_001",
+      "first_seen_day": 4,
+      "last_seen_day": 5,
+      "days_seen": [
+        4,
+        5
+      ],
+      "bbox_history": [
+        {
+          "day": 4,
+          "bbox": [
+            992,
+            655,
+            1041,
+            709
+          ]
+        },
+        {
+          "day": 5,
+          "bbox": [
+            992,
+            645,
+            1032,
+            731
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 4,
+          "centroid_x": 1013.3741967375186,
+          "centroid_y": 681.006920415225
+        },
+        {
+          "day": 5,
+          "centroid_x": 1010.533151326053,
+          "centroid_y": 686.5039001560062
+        }
+      ],
+      "area_history": [
+        {
+          "day": 4,
+          "area_ratio": 0.0009755979938271605
+        },
+        {
+          "day": 5,
+          "area_ratio": 0.001236496913580247
+        }
+      ],
+      "type_history": [
+        {
+          "day": 4,
+          "defect_type": "road_defect"
+        },
+        {
+          "day": 5,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": [
+        {
+          "day": 5,
+          "method": "mask_iou",
+          "confidence": 0.5661
+        }
+      ]
+    },
+    {
+      "track_id": "DEFECT_002",
+      "first_seen_day": 4,
+      "last_seen_day": 4,
+      "days_seen": [
+        4
+      ],
+      "bbox_history": [
+        {
+          "day": 4,
+          "bbox": [
+            1238,
+            672,
+            1303,
+            700
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 4,
+          "centroid_x": 1269.9566395663956,
+          "centroid_y": 687.3279132791328
+        }
+      ],
+      "area_history": [
+        {
+          "day": 4,
+          "area_ratio": 0.0001779513888888889
+        }
+      ],
+      "type_history": [
+        {
+          "day": 4,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": []
+    },
+    {
+      "track_id": "DEFECT_003",
+      "first_seen_day": 5,
+      "last_seen_day": 5,
+      "days_seen": [
+        5
+      ],
+      "bbox_history": [
+        {
+          "day": 5,
+          "bbox": [
+            992,
+            754,
+            1064,
+            898
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 5,
+          "centroid_x": 1025.5266355140186,
+          "centroid_y": 821.6327102803739
+        }
+      ],
+      "area_history": [
+        {
+          "day": 5,
+          "area_ratio": 0.004128086419753086
+        }
+      ],
+      "type_history": [
+        {
+          "day": 5,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": []
+    },
+    {
+      "track_id": "DEFECT_004",
+      "first_seen_day": 5,
+      "last_seen_day": 5,
+      "days_seen": [
+        5
+      ],
+      "bbox_history": [
+        {
+          "day": 5,
+          "bbox": [
+            991,
+            24,
+            1324,
+            641
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 5,
+          "centroid_x": 1039.400956494909,
+          "centroid_y": 295.97711611642495
+        }
+      ],
+      "area_history": [
+        {
+          "day": 5,
+          "area_ratio": 0.018755787037037036
+        }
+      ],
+      "type_history": [
+        {
+          "day": 5,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": []
+    },
+    {
+      "track_id": "DEFECT_005",
+      "first_seen_day": 5,
+      "last_seen_day": 5,
+      "days_seen": [
+        5
+      ],
+      "bbox_history": [
+        {
+          "day": 5,
+          "bbox": [
+            993,
+            927,
+            1039,
+            1076
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 5,
+          "centroid_x": 1012.2008266015405,
+          "centroid_y": 1001.7249671238023
+        }
+      ],
+      "area_history": [
+        {
+          "day": 5,
+          "area_ratio": 0.0025670331790123456
+        }
+      ],
+      "type_history": [
+        {
+          "day": 5,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": []
+    }
+  ]
+}

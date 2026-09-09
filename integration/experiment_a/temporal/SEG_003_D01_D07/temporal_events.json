@@ -1,0 +1,63 @@
+{
+  "sequence_id": "SEG_003_D01_D07",
+  "segment_id": "SEG_003",
+  "camera_preset": "\ud83c\udf04 Highway Curve Vantage Overlook",
+  "events": [
+    {
+      "day": 1,
+      "track_id": "DEFECT_001",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 2,
+      "track_id": "DEFECT_001",
+      "event": "OBSERVED_AREA_DECREASED",
+      "matching_method": "bbox_iou",
+      "matching_confidence": 0.4651,
+      "area_delta": -0.0013806905864197532
+    },
+    {
+      "day": 3,
+      "track_id": "DEFECT_001",
+      "event": "OBSERVED_AREA_DECREASED",
+      "matching_method": "mask_iou",
+      "matching_confidence": 0.847,
+      "area_delta": -0.00015625000000000003
+    },
+    {
+      "day": 4,
+      "track_id": "DEFECT_001",
+      "event": "OBSERVED_AREA_INCREASED",
+      "matching_method": "mask_iou",
+      "matching_confidence": 0.93,
+      "area_delta": 3.9062500000000035e-05
+    },
+    {
+      "day": 5,
+      "track_id": "DEFECT_001",
+      "event": "OBSERVED_AREA_INCREASED",
+      "matching_method": "mask_iou",
+      "matching_confidence": 0.9143,
+      "area_delta": 8.969907407407397e-05
+    },
+    {
+      "day": 6,
+      "track_id": "DEFECT_001",
+      "event": "OBSERVED_AREA_INCREASED",
+      "matching_method": "mask_iou",
+      "matching_confidence": 0.9551,
+      "area_delta": 2.8452932098765567e-05
+    },
+    {
+      "day": 7,
+      "track_id": "DEFECT_001",
+      "event": "OBSERVED_AREA_DECREASED",
+      "matching_method": "mask_iou",
+      "matching_confidence": 0.887,
+      "area_delta": -9.596836419753095e-05
+    }
+  ]
+}

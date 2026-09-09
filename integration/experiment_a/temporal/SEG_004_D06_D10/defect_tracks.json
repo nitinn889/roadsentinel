@@ -1,0 +1,1006 @@
+{
+  "sequence_id": "SEG_004_D06_D10",
+  "segment_id": "SEG_004",
+  "camera_preset": "\ud83c\udf04 Highway Curve Vantage Overlook",
+  "tracks": [
+    {
+      "track_id": "DEFECT_001",
+      "first_seen_day": 6,
+      "last_seen_day": 8,
+      "days_seen": [
+        6,
+        7,
+        8
+      ],
+      "bbox_history": [
+        {
+          "day": 6,
+          "bbox": [
+            996,
+            824,
+            1060,
+            880
+          ]
+        },
+        {
+          "day": 7,
+          "bbox": [
+            993,
+            810,
+            1083,
+            866
+          ]
+        },
+        {
+          "day": 8,
+          "bbox": [
+            993,
+            811,
+            1081,
+            865
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 6,
+          "centroid_x": 1029.2452749140894,
+          "centroid_y": 850.5025773195877
+        },
+        {
+          "day": 7,
+          "centroid_x": 1038.958225889634,
+          "centroid_y": 839.6624548736462
+        },
+        {
+          "day": 8,
+          "centroid_x": 1037.559198542805,
+          "centroid_y": 838.39968774395
+        }
+      ],
+      "area_history": [
+        {
+          "day": 6,
+          "area_ratio": 0.0011226851851851851
+        },
+        {
+          "day": 7,
+          "area_ratio": 0.0018701774691358025
+        },
+        {
+          "day": 8,
+          "area_ratio": 0.0018532986111111111
+        }
+      ],
+      "type_history": [
+        {
+          "day": 6,
+          "defect_type": "road_defect"
+        },
+        {
+          "day": 7,
+          "defect_type": "road_defect"
+        },
+        {
+          "day": 8,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": [
+        {
+          "day": 7,
+          "method": "bbox_iou",
+          "confidence": 0.4528
+        },
+        {
+          "day": 8,
+          "method": "mask_iou",
+          "confidence": 0.9269
+        }
+      ]
+    },
+    {
+      "track_id": "DEFECT_002",
+      "first_seen_day": 6,
+      "last_seen_day": 8,
+      "days_seen": [
+        6,
+        7,
+        8
+      ],
+      "bbox_history": [
+        {
+          "day": 6,
+          "bbox": [
+            1256,
+            823,
+            1295,
+            897
+          ]
+        },
+        {
+          "day": 7,
+          "bbox": [
+            1239,
+            819,
+            1303,
+            874
+          ]
+        },
+        {
+          "day": 8,
+          "bbox": [
+            1241,
+            818,
+            1303,
+            872
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 6,
+          "centroid_x": 1275.527421236873,
+          "centroid_y": 857.2829638273046
+        },
+        {
+          "day": 7,
+          "centroid_x": 1271.4725,
+          "centroid_y": 844.3242857142857
+        },
+        {
+          "day": 8,
+          "centroid_x": 1272.6510093167701,
+          "centroid_y": 842.6999223602485
+        }
+      ],
+      "area_history": [
+        {
+          "day": 6,
+          "area_ratio": 0.0008265817901234567
+        },
+        {
+          "day": 7,
+          "area_ratio": 0.0013503086419753086
+        },
+        {
+          "day": 8,
+          "area_ratio": 0.001242283950617284
+        }
+      ],
+      "type_history": [
+        {
+          "day": 6,
+          "defect_type": "road_defect"
+        },
+        {
+          "day": 7,
+          "defect_type": "road_defect"
+        },
+        {
+          "day": 8,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": [
+        {
+          "day": 7,
+          "method": "bbox_iou",
+          "confidence": 0.4503
+        },
+        {
+          "day": 8,
+          "method": "mask_iou",
+          "confidence": 0.8896
+        }
+      ]
+    },
+    {
+      "track_id": "DEFECT_003",
+      "first_seen_day": 6,
+      "last_seen_day": 6,
+      "days_seen": [
+        6
+      ],
+      "bbox_history": [
+        {
+          "day": 6,
+          "bbox": [
+            991,
+            486,
+            1075,
+            563
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 6,
+          "centroid_x": 1030.9685981308412,
+          "centroid_y": 525.2682242990654
+        }
+      ],
+      "area_history": [
+        {
+          "day": 6,
+          "area_ratio": 0.002580054012345679
+        }
+      ],
+      "type_history": [
+        {
+          "day": 6,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": []
+    },
+    {
+      "track_id": "DEFECT_004",
+      "first_seen_day": 6,
+      "last_seen_day": 6,
+      "days_seen": [
+        6
+      ],
+      "bbox_history": [
+        {
+          "day": 6,
+          "bbox": [
+            991,
+            96,
+            1033,
+            231
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 6,
+          "centroid_x": 1009.9633774160733,
+          "centroid_y": 163.63682604272634
+        }
+      ],
+      "area_history": [
+        {
+          "day": 6,
+          "area_ratio": 0.0023702739197530866
+        }
+      ],
+      "type_history": [
+        {
+          "day": 6,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": []
+    },
+    {
+      "track_id": "DEFECT_005",
+      "first_seen_day": 6,
+      "last_seen_day": 6,
+      "days_seen": [
+        6
+      ],
+      "bbox_history": [
+        {
+          "day": 6,
+          "bbox": [
+            991,
+            2,
+            1084,
+            90
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 6,
+          "centroid_x": 1028.3304641350212,
+          "centroid_y": 43.69181434599156
+        }
+      ],
+      "area_history": [
+        {
+          "day": 6,
+          "area_ratio": 0.002857349537037037
+        }
+      ],
+      "type_history": [
+        {
+          "day": 6,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": []
+    },
+    {
+      "track_id": "DEFECT_006",
+      "first_seen_day": 6,
+      "last_seen_day": 6,
+      "days_seen": [
+        6
+      ],
+      "bbox_history": [
+        {
+          "day": 6,
+          "bbox": [
+            993,
+            1028,
+            1035,
+            1078
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 6,
+          "centroid_x": 1011.7113740959895,
+          "centroid_y": 1052.972386587771
+        }
+      ],
+      "area_history": [
+        {
+          "day": 6,
+          "area_ratio": 0.0007335069444444444
+        }
+      ],
+      "type_history": [
+        {
+          "day": 6,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": []
+    },
+    {
+      "track_id": "DEFECT_007",
+      "first_seen_day": 7,
+      "last_seen_day": 8,
+      "days_seen": [
+        7,
+        8
+      ],
+      "bbox_history": [
+        {
+          "day": 7,
+          "bbox": [
+            1722,
+            486,
+            1784,
+            544
+          ]
+        },
+        {
+          "day": 8,
+          "bbox": [
+            1721,
+            487,
+            1782,
+            543
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 7,
+          "centroid_x": 1752.5192104335565,
+          "centroid_y": 513.0021149101163
+        },
+        {
+          "day": 8,
+          "centroid_x": 1750.5430327868853,
+          "centroid_y": 511.9938524590164
+        }
+      ],
+      "area_history": [
+        {
+          "day": 7,
+          "area_ratio": 0.0013681520061728394
+        },
+        {
+          "day": 8,
+          "area_ratio": 0.0011766975308641976
+        }
+      ],
+      "type_history": [
+        {
+          "day": 7,
+          "defect_type": "road_defect"
+        },
+        {
+          "day": 8,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": [
+        {
+          "day": 8,
+          "method": "mask_iou",
+          "confidence": 0.8516
+        }
+      ]
+    },
+    {
+      "track_id": "DEFECT_008",
+      "first_seen_day": 7,
+      "last_seen_day": 7,
+      "days_seen": [
+        7
+      ],
+      "bbox_history": [
+        {
+          "day": 7,
+          "bbox": [
+            1437,
+            231,
+            1529,
+            275
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 7,
+          "centroid_x": 1482.3380573798825,
+          "centroid_y": 250.76771517455927
+        }
+      ],
+      "area_history": [
+        {
+          "day": 7,
+          "area_ratio": 0.0013951581790123456
+        }
+      ],
+      "type_history": [
+        {
+          "day": 7,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": []
+    },
+    {
+      "track_id": "DEFECT_009",
+      "first_seen_day": 7,
+      "last_seen_day": 8,
+      "days_seen": [
+        7,
+        8
+      ],
+      "bbox_history": [
+        {
+          "day": 7,
+          "bbox": [
+            1724,
+            183,
+            1767,
+            273
+          ]
+        },
+        {
+          "day": 8,
+          "bbox": [
+            1727,
+            183,
+            1764,
+            264
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 7,
+          "centroid_x": 1744.8546824542518,
+          "centroid_y": 227.9339791890922
+        },
+        {
+          "day": 8,
+          "centroid_x": 1745.3399585921325,
+          "centroid_y": 224.63561076604555
+        }
+      ],
+      "area_history": [
+        {
+          "day": 7,
+          "area_ratio": 0.001344039351851852
+        },
+        {
+          "day": 8,
+          "area_ratio": 0.0011646412037037038
+        }
+      ],
+      "type_history": [
+        {
+          "day": 7,
+          "defect_type": "road_defect"
+        },
+        {
+          "day": 8,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": [
+        {
+          "day": 8,
+          "method": "mask_iou",
+          "confidence": 0.8645
+        }
+      ]
+    },
+    {
+      "track_id": "DEFECT_010",
+      "first_seen_day": 7,
+      "last_seen_day": 8,
+      "days_seen": [
+        7,
+        8
+      ],
+      "bbox_history": [
+        {
+          "day": 7,
+          "bbox": [
+            999,
+            208,
+            1075,
+            275
+          ]
+        },
+        {
+          "day": 8,
+          "bbox": [
+            1000,
+            213,
+            1073,
+            274
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 7,
+          "centroid_x": 1035.5292278085158,
+          "centroid_y": 240.99591051238875
+        },
+        {
+          "day": 8,
+          "centroid_x": 1035.8043538164784,
+          "centroid_y": 241.57288509231194
+        }
+      ],
+      "area_history": [
+        {
+          "day": 7,
+          "area_ratio": 0.002004726080246914
+        },
+        {
+          "day": 8,
+          "area_ratio": 0.001750096450617284
+        }
+      ],
+      "type_history": [
+        {
+          "day": 7,
+          "defect_type": "road_defect"
+        },
+        {
+          "day": 8,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": [
+        {
+          "day": 8,
+          "method": "mask_iou",
+          "confidence": 0.873
+        }
+      ]
+    },
+    {
+      "track_id": "DEFECT_011",
+      "first_seen_day": 7,
+      "last_seen_day": 8,
+      "days_seen": [
+        7,
+        8
+      ],
+      "bbox_history": [
+        {
+          "day": 7,
+          "bbox": [
+            1004,
+            534,
+            1064,
+            552
+          ]
+        },
+        {
+          "day": 8,
+          "bbox": [
+            1005,
+            529,
+            1064,
+            551
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 7,
+          "centroid_x": 1029.9591240875911,
+          "centroid_y": 540.0846715328468
+        },
+        {
+          "day": 8,
+          "centroid_x": 1032.2736686390533,
+          "centroid_y": 539.4704142011834
+        }
+      ],
+      "area_history": [
+        {
+          "day": 7,
+          "area_ratio": 0.0003303433641975309
+        },
+        {
+          "day": 8,
+          "area_ratio": 0.0003260030864197531
+        }
+      ],
+      "type_history": [
+        {
+          "day": 7,
+          "defect_type": "road_defect"
+        },
+        {
+          "day": 8,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": [
+        {
+          "day": 8,
+          "method": "mask_iou",
+          "confidence": 0.8903
+        }
+      ]
+    },
+    {
+      "track_id": "DEFECT_012",
+      "first_seen_day": 7,
+      "last_seen_day": 8,
+      "days_seen": [
+        7,
+        8
+      ],
+      "bbox_history": [
+        {
+          "day": 7,
+          "bbox": [
+            1404,
+            819,
+            1581,
+            859
+          ]
+        },
+        {
+          "day": 8,
+          "bbox": [
+            1416,
+            819,
+            1553,
+            855
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 7,
+          "centroid_x": 1492.43444422271,
+          "centroid_y": 838.1049690680503
+        },
+        {
+          "day": 8,
+          "centroid_x": 1484.3612239371785,
+          "centroid_y": 836.559978337395
+        }
+      ],
+      "area_history": [
+        {
+          "day": 7,
+          "area_ratio": 0.0024165702160493826
+        },
+        {
+          "day": 8,
+          "area_ratio": 0.001780960648148148
+        }
+      ],
+      "type_history": [
+        {
+          "day": 7,
+          "defect_type": "road_defect"
+        },
+        {
+          "day": 8,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": [
+        {
+          "day": 8,
+          "method": "mask_iou",
+          "confidence": 0.7174
+        }
+      ]
+    },
+    {
+      "track_id": "DEFECT_013",
+      "first_seen_day": 7,
+      "last_seen_day": 8,
+      "days_seen": [
+        7,
+        8
+      ],
+      "bbox_history": [
+        {
+          "day": 7,
+          "bbox": [
+            1395,
+            517,
+            1617,
+            562
+          ]
+        },
+        {
+          "day": 8,
+          "bbox": [
+            1396,
+            520,
+            1615,
+            561
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 7,
+          "centroid_x": 1503.7223508230452,
+          "centroid_y": 537.8456790123457
+        },
+        {
+          "day": 8,
+          "centroid_x": 1501.8435734463276,
+          "centroid_y": 538.5425494350283
+        }
+      ],
+      "area_history": [
+        {
+          "day": 7,
+          "area_ratio": 0.00375
+        },
+        {
+          "day": 8,
+          "area_ratio": 0.0027314814814814814
+        }
+      ],
+      "type_history": [
+        {
+          "day": 7,
+          "defect_type": "road_defect"
+        },
+        {
+          "day": 8,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": [
+        {
+          "day": 8,
+          "method": "mask_iou",
+          "confidence": 0.7284
+        }
+      ]
+    },
+    {
+      "track_id": "DEFECT_014",
+      "first_seen_day": 7,
+      "last_seen_day": 8,
+      "days_seen": [
+        7,
+        8
+      ],
+      "bbox_history": [
+        {
+          "day": 7,
+          "bbox": [
+            1223,
+            7,
+            1321,
+            31
+          ]
+        },
+        {
+          "day": 8,
+          "bbox": [
+            1224,
+            7,
+            1316,
+            31
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 7,
+          "centroid_x": 1274.95703125,
+          "centroid_y": 17.4234375
+        },
+        {
+          "day": 8,
+          "centroid_x": 1274.2264302981466,
+          "centroid_y": 17.447219983883965
+        }
+      ],
+      "area_history": [
+        {
+          "day": 7,
+          "area_ratio": 0.0006172839506172839
+        },
+        {
+          "day": 8,
+          "area_ratio": 0.0005984760802469136
+        }
+      ],
+      "type_history": [
+        {
+          "day": 7,
+          "defect_type": "road_defect"
+        },
+        {
+          "day": 8,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": [
+        {
+          "day": 8,
+          "method": "mask_iou",
+          "confidence": 0.9333
+        }
+      ]
+    },
+    {
+      "track_id": "DEFECT_015",
+      "first_seen_day": 7,
+      "last_seen_day": 8,
+      "days_seen": [
+        7,
+        8
+      ],
+      "bbox_history": [
+        {
+          "day": 7,
+          "bbox": [
+            1398,
+            6,
+            1581,
+            39
+          ]
+        },
+        {
+          "day": 8,
+          "bbox": [
+            1406,
+            6,
+            1572,
+            39
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 7,
+          "centroid_x": 1493.017889815003,
+          "centroid_y": 20.57105102663143
+        },
+        {
+          "day": 8,
+          "centroid_x": 1489.4024064171124,
+          "centroid_y": 20.796345811051694
+        }
+      ],
+      "area_history": [
+        {
+          "day": 7,
+          "area_ratio": 0.0023722029320987653
+        },
+        {
+          "day": 8,
+          "area_ratio": 0.0021643518518518518
+        }
+      ],
+      "type_history": [
+        {
+          "day": 7,
+          "defect_type": "road_defect"
+        },
+        {
+          "day": 8,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": [
+        {
+          "day": 8,
+          "method": "mask_iou",
+          "confidence": 0.8878
+        }
+      ]
+    },
+    {
+      "track_id": "DEFECT_016",
+      "first_seen_day": 7,
+      "last_seen_day": 8,
+      "days_seen": [
+        7,
+        8
+      ],
+      "bbox_history": [
+        {
+          "day": 7,
+          "bbox": [
+            991,
+            919,
+            1046,
+            1078
+          ]
+        },
+        {
+          "day": 8,
+          "bbox": [
+            991,
+            921,
+            1042,
+            1078
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 7,
+          "centroid_x": 1016.5847158719791,
+          "centroid_y": 999.7595035924232
+        },
+        {
+          "day": 8,
+          "centroid_x": 1015.4495476687543,
+          "centroid_y": 1001.4114126652748
+        }
+      ],
+      "area_history": [
+        {
+          "day": 7,
+          "area_ratio": 0.00369164737654321
+        },
+        {
+          "day": 8,
+          "area_ratio": 0.003464988425925926
+        }
+      ],
+      "type_history": [
+        {
+          "day": 7,
+          "defect_type": "road_defect"
+        },
+        {
+          "day": 8,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": [
+        {
+          "day": 8,
+          "method": "mask_iou",
+          "confidence": 0.9378
+        }
+      ]
+    }
+  ]
+}

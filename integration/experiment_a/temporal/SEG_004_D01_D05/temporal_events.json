@@ -1,0 +1,63 @@
+{
+  "sequence_id": "SEG_004_D01_D05",
+  "segment_id": "SEG_004",
+  "camera_preset": "\ud83d\udd2d Overhead Drone Survey (SAM 2 Top-Down)",
+  "events": [
+    {
+      "day": 4,
+      "track_id": "DEFECT_001",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 4,
+      "track_id": "DEFECT_002",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 5,
+      "track_id": "DEFECT_003",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 5,
+      "track_id": "DEFECT_004",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 5,
+      "track_id": "DEFECT_001",
+      "event": "OBSERVED_AREA_INCREASED",
+      "matching_method": "mask_iou",
+      "matching_confidence": 0.5661,
+      "area_delta": 0.0002608989197530865
+    },
+    {
+      "day": 5,
+      "track_id": "DEFECT_005",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 5,
+      "track_id": "DEFECT_002",
+      "event": "NOT_OBSERVED",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    }
+  ]
+}

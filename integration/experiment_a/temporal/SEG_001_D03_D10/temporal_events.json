@@ -1,0 +1,279 @@
+{
+  "sequence_id": "SEG_001_D03_D10",
+  "segment_id": "SEG_001",
+  "camera_preset": "\ud83c\udf04 Highway Curve Vantage Overlook",
+  "events": [
+    {
+      "day": 5,
+      "track_id": "DEFECT_001",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 6,
+      "track_id": "DEFECT_001",
+      "event": "OBSERVED_AREA_INCREASED",
+      "matching_method": "mask_iou",
+      "matching_confidence": 0.5919,
+      "area_delta": 9.548611111111129e-05
+    },
+    {
+      "day": 6,
+      "track_id": "DEFECT_002",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 6,
+      "track_id": "DEFECT_003",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 6,
+      "track_id": "DEFECT_004",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 6,
+      "track_id": "DEFECT_005",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 6,
+      "track_id": "DEFECT_006",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 6,
+      "track_id": "DEFECT_007",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 6,
+      "track_id": "DEFECT_008",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 7,
+      "track_id": "DEFECT_002",
+      "event": "OBSERVED_AREA_INCREASED",
+      "matching_method": "mask_iou",
+      "matching_confidence": 0.6688,
+      "area_delta": 0.0005690586419753087
+    },
+    {
+      "day": 7,
+      "track_id": "DEFECT_003",
+      "event": "OBSERVED_AREA_INCREASED",
+      "matching_method": "mask_iou",
+      "matching_confidence": 0.7418,
+      "area_delta": 0.0007971643518518519
+    },
+    {
+      "day": 7,
+      "track_id": "DEFECT_001",
+      "event": "OBSERVED_AREA_INCREASED",
+      "matching_method": "mask_iou",
+      "matching_confidence": 0.6224,
+      "area_delta": 0.0006587577160493826
+    },
+    {
+      "day": 7,
+      "track_id": "DEFECT_006",
+      "event": "OBSERVED_AREA_DECREASED",
+      "matching_method": "mask_iou",
+      "matching_confidence": 0.8222,
+      "area_delta": -4.967206790123385e-05
+    },
+    {
+      "day": 7,
+      "track_id": "DEFECT_004",
+      "event": "OBSERVED_AREA_INCREASED",
+      "matching_method": "mask_iou",
+      "matching_confidence": 0.6893,
+      "area_delta": 0.001283757716049383
+    },
+    {
+      "day": 7,
+      "track_id": "DEFECT_005",
+      "event": "NOT_OBSERVED",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 7,
+      "track_id": "DEFECT_007",
+      "event": "NOT_OBSERVED",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 7,
+      "track_id": "DEFECT_008",
+      "event": "NOT_OBSERVED",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 8,
+      "track_id": "DEFECT_006",
+      "event": "OBSERVED_AREA_INCREASED",
+      "matching_method": "bbox_iou",
+      "matching_confidence": 0.497,
+      "area_delta": 0.01476707175925926
+    },
+    {
+      "day": 8,
+      "track_id": "DEFECT_003",
+      "event": "OBSERVED_AREA_DECREASED",
+      "matching_method": "mask_iou",
+      "matching_confidence": 0.8029,
+      "area_delta": -8.198302469135778e-05
+    },
+    {
+      "day": 8,
+      "track_id": "DEFECT_009",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 8,
+      "track_id": "DEFECT_010",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 8,
+      "track_id": "DEFECT_011",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 8,
+      "track_id": "DEFECT_002",
+      "event": "OBSERVED_AREA_DECREASED",
+      "matching_method": "bbox_iou",
+      "matching_confidence": 0.4994,
+      "area_delta": -0.0006148726851851853
+    },
+    {
+      "day": 8,
+      "track_id": "DEFECT_012",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 8,
+      "track_id": "DEFECT_001",
+      "event": "NOT_OBSERVED",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 8,
+      "track_id": "DEFECT_004",
+      "event": "NOT_OBSERVED",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 9,
+      "track_id": "DEFECT_010",
+      "event": "OBSERVED_AREA_INCREASED",
+      "matching_method": "bbox_iou",
+      "matching_confidence": 0.442,
+      "area_delta": 0.0009837962962962964
+    },
+    {
+      "day": 9,
+      "track_id": "DEFECT_006",
+      "event": "NOT_OBSERVED",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 9,
+      "track_id": "DEFECT_003",
+      "event": "NOT_OBSERVED",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 9,
+      "track_id": "DEFECT_009",
+      "event": "NOT_OBSERVED",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 9,
+      "track_id": "DEFECT_011",
+      "event": "NOT_OBSERVED",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 9,
+      "track_id": "DEFECT_002",
+      "event": "NOT_OBSERVED",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 9,
+      "track_id": "DEFECT_012",
+      "event": "NOT_OBSERVED",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 10,
+      "track_id": "DEFECT_010",
+      "event": "NOT_OBSERVED",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    }
+  ]
+}

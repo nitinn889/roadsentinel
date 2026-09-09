@@ -1,0 +1,215 @@
+{
+  "sequence_id": "SEG_003_D01_D07",
+  "segment_id": "SEG_003",
+  "camera_preset": "\ud83c\udf04 Highway Curve Vantage Overlook",
+  "tracks": [
+    {
+      "track_id": "DEFECT_001",
+      "first_seen_day": 1,
+      "last_seen_day": 7,
+      "days_seen": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "bbox_history": [
+        {
+          "day": 1,
+          "bbox": [
+            991,
+            620,
+            1040,
+            746
+          ]
+        },
+        {
+          "day": 2,
+          "bbox": [
+            992,
+            650,
+            1042,
+            711
+          ]
+        },
+        {
+          "day": 3,
+          "bbox": [
+            992,
+            656,
+            1041,
+            711
+          ]
+        },
+        {
+          "day": 4,
+          "bbox": [
+            992,
+            655,
+            1042,
+            709
+          ]
+        },
+        {
+          "day": 5,
+          "bbox": [
+            992,
+            655,
+            1043,
+            711
+          ]
+        },
+        {
+          "day": 6,
+          "bbox": [
+            992,
+            651,
+            1043,
+            711
+          ]
+        },
+        {
+          "day": 7,
+          "bbox": [
+            992,
+            658,
+            1043,
+            711
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 1,
+          "centroid_x": 1013.4648330058939,
+          "centroid_y": 678.2956777996071
+        },
+        {
+          "day": 2,
+          "centroid_x": 1013.0327795240233,
+          "centroid_y": 679.4274809160305
+        },
+        {
+          "day": 3,
+          "centroid_x": 1013.0683131897005,
+          "centroid_y": 682.496584340515
+        },
+        {
+          "day": 4,
+          "centroid_x": 1013.5977822580645,
+          "centroid_y": 681.2358870967741
+        },
+        {
+          "day": 5,
+          "centroid_x": 1014.2327188940092,
+          "centroid_y": 681.2529953917051
+        },
+        {
+          "day": 6,
+          "centroid_x": 1013.9201435621355,
+          "centroid_y": 680.4015253476896
+        },
+        {
+          "day": 7,
+          "centroid_x": 1014.6807881773399,
+          "centroid_y": 682.6862068965518
+        }
+      ],
+      "area_history": [
+        {
+          "day": 1,
+          "area_ratio": 0.0024546682098765434
+        },
+        {
+          "day": 2,
+          "area_ratio": 0.0010739776234567901
+        },
+        {
+          "day": 3,
+          "area_ratio": 0.0009177276234567901
+        },
+        {
+          "day": 4,
+          "area_ratio": 0.0009567901234567902
+        },
+        {
+          "day": 5,
+          "area_ratio": 0.0010464891975308641
+        },
+        {
+          "day": 6,
+          "area_ratio": 0.0010749421296296297
+        },
+        {
+          "day": 7,
+          "area_ratio": 0.0009789737654320987
+        }
+      ],
+      "type_history": [
+        {
+          "day": 1,
+          "defect_type": "road_defect"
+        },
+        {
+          "day": 2,
+          "defect_type": "road_defect"
+        },
+        {
+          "day": 3,
+          "defect_type": "road_defect"
+        },
+        {
+          "day": 4,
+          "defect_type": "road_defect"
+        },
+        {
+          "day": 5,
+          "defect_type": "road_defect"
+        },
+        {
+          "day": 6,
+          "defect_type": "road_defect"
+        },
+        {
+          "day": 7,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": [
+        {
+          "day": 2,
+          "method": "bbox_iou",
+          "confidence": 0.4651
+        },
+        {
+          "day": 3,
+          "method": "mask_iou",
+          "confidence": 0.847
+        },
+        {
+          "day": 4,
+          "method": "mask_iou",
+          "confidence": 0.93
+        },
+        {
+          "day": 5,
+          "method": "mask_iou",
+          "confidence": 0.9143
+        },
+        {
+          "day": 6,
+          "method": "mask_iou",
+          "confidence": 0.9551
+        },
+        {
+          "day": 7,
+          "method": "mask_iou",
+          "confidence": 0.887
+        }
+      ]
+    }
+  ]
+}

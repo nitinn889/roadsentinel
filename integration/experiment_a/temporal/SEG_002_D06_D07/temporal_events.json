@@ -1,0 +1,47 @@
+{
+  "sequence_id": "SEG_002_D06_D07",
+  "segment_id": "SEG_002",
+  "camera_preset": "\ud83c\udf04 Highway Curve Vantage Overlook",
+  "events": [
+    {
+      "day": 6,
+      "track_id": "DEFECT_001",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 6,
+      "track_id": "DEFECT_002",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 7,
+      "track_id": "DEFECT_003",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 7,
+      "track_id": "DEFECT_001",
+      "event": "NOT_OBSERVED",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 7,
+      "track_id": "DEFECT_002",
+      "event": "NOT_OBSERVED",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    }
+  ]
+}

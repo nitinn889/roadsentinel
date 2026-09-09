@@ -1,0 +1,3 @@
+segment_id,day,original_filename,condition,water_flag,current_severity,current_severity_delta,current_severity_change_from_day1,crack_area_ratio,crack_area_ratio_delta,crack_area_ratio_change_from_day1,defect_area_ratio,defect_area_ratio_delta,defect_area_ratio_change_from_day1,defect_count,defect_count_delta,defect_count_change_from_day1,surface_anomaly_score,surface_anomaly_score_delta,surface_anomaly_score_change_from_day1
+SEG_002,6,day_06.png,,False,0.3491,,0.0,0.0,,0.0,0.00022135416666666666,,0.0,2,,0.0,0.269,,0.0
+SEG_002,7,day_07.png,,False,0.2551,-0.09400000000000003,-0.09400000000000003,0.0,0.0,0.0,0.0022646604938271605,0.002043306327160494,0.002043306327160494,1,-1.0,-1.0,0.2662,-0.0028000000000000247,-0.0028000000000000247

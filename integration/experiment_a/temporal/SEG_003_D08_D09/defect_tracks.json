@@ -1,0 +1,75 @@
+{
+  "sequence_id": "SEG_003_D08_D09",
+  "segment_id": "SEG_003",
+  "camera_preset": "\ud83d\udd2d Overhead Drone Survey (SAM 2 Top-Down)",
+  "tracks": [
+    {
+      "track_id": "DEFECT_001",
+      "first_seen_day": 8,
+      "last_seen_day": 9,
+      "days_seen": [
+        8,
+        9
+      ],
+      "bbox_history": [
+        {
+          "day": 8,
+          "bbox": [
+            992,
+            655,
+            1040,
+            711
+          ]
+        },
+        {
+          "day": 9,
+          "bbox": [
+            992,
+            655,
+            1041,
+            711
+          ]
+        }
+      ],
+      "centroid_history": [
+        {
+          "day": 8,
+          "centroid_x": 1012.9888619854721,
+          "centroid_y": 681.5714285714286
+        },
+        {
+          "day": 9,
+          "centroid_x": 1013.0966325036603,
+          "centroid_y": 681.7359687652513
+        }
+      ],
+      "area_history": [
+        {
+          "day": 8,
+          "area_ratio": 0.00099585262345679
+        },
+        {
+          "day": 9,
+          "area_ratio": 0.000988136574074074
+        }
+      ],
+      "type_history": [
+        {
+          "day": 8,
+          "defect_type": "road_defect"
+        },
+        {
+          "day": 9,
+          "defect_type": "road_defect"
+        }
+      ],
+      "matching_history": [
+        {
+          "day": 9,
+          "method": "mask_iou",
+          "confidence": 0.9884
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "sequence_id": "SEG_002_D01_D02",
+  "segment_id": "SEG_002",
+  "camera_preset": "\ud83d\udd0d Low-Angle Pothole Inspection (30\u00b0 Close-Up)",
+  "events": [
+    {
+      "day": 1,
+      "track_id": "DEFECT_001",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 1,
+      "track_id": "DEFECT_002",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 2,
+      "track_id": "DEFECT_001",
+      "event": "OBSERVED_AREA_DECREASED",
+      "matching_method": "bbox_iou",
+      "matching_confidence": 0.4317,
+      "area_delta": -0.0010315393518518518
+    },
+    {
+      "day": 2,
+      "track_id": "DEFECT_002",
+      "event": "OBSERVED_AREA_INCREASED",
+      "matching_method": "mask_iou",
+      "matching_confidence": 0.9691,
+      "area_delta": 4.340277777777779e-06
+    }
+  ]
+}

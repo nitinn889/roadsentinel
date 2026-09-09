@@ -1,0 +1,95 @@
+{
+  "sequence_id": "SEG_002_D04_D05",
+  "segment_id": "SEG_002",
+  "camera_preset": "\ud83d\udca7 Waterlogged Pothole Macro View",
+  "events": [
+    {
+      "day": 4,
+      "track_id": "DEFECT_001",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 4,
+      "track_id": "DEFECT_002",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 4,
+      "track_id": "DEFECT_003",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 5,
+      "track_id": "DEFECT_004",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 5,
+      "track_id": "DEFECT_005",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 5,
+      "track_id": "DEFECT_006",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 5,
+      "track_id": "DEFECT_007",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 5,
+      "track_id": "DEFECT_008",
+      "event": "NEW_DEFECT",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 5,
+      "track_id": "DEFECT_001",
+      "event": "NOT_OBSERVED",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 5,
+      "track_id": "DEFECT_002",
+      "event": "NOT_OBSERVED",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    },
+    {
+      "day": 5,
+      "track_id": "DEFECT_003",
+      "event": "NOT_OBSERVED",
+      "matching_method": null,
+      "matching_confidence": null,
+      "area_delta": null
+    }
+  ]
+}
