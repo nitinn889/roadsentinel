@@ -680,8 +680,52 @@ def main():
         if not geofence_res["is_on_route"]:
             st.warning(f"⚠️ OUTSIDE MONITORED ROUTE corridor ({geofence_res['distance_m']:.1f}m from nearest waypoint). Hazard alerts and health look-ahead are paused outside the 50m road corridor.")
 
-        # PyDeck Interactive Route Map
-        st.markdown("#### 🗺️ Continuous 2.4 km Road Corridor Map")
+        # PyDeck Interactive Route Map with OpenStreetMap Base Layer
+        st.markdown("#### 🗺️ Continuous 2.4 km Road Corridor Map (OpenStreetMap)")
+
+        map_ctrl_col1, map_ctrl_col2 = st.columns([3, 1])
+        with map_ctrl_col1:
+            map_layer_style = st.selectbox(
+                "Map Base Layer",
+                [
+                    "OpenStreetMap (Standard Street Map)",
+                    "OpenStreetMap (Direct OSM Raster Tiles)",
+                    "OpenStreetMap (Light Positron)",
+                    "Dark Corridor (Carto Dark)",
+                ],
+                index=0,
+                key="map_base_layer_select",
+                help="Choose base street map layer. Default is OpenStreetMap standard road network.",
+            )
+        with map_ctrl_col2:
+            auto_center = st.checkbox(
+                "Center on Vehicle",
+                value=True,
+                key="map_follow_vehicle",
+                help="Automatically center and pan the map with the simulated vehicle",
+            )
+
+        # Configure base map provider and style
+        base_tiles_layer = None
+        if map_layer_style == "OpenStreetMap (Standard Street Map)":
+            deck_provider = "carto"
+            deck_map_style = pdk.map_styles.CARTO_ROAD
+        elif map_layer_style == "OpenStreetMap (Direct OSM Raster Tiles)":
+            deck_provider = None
+            deck_map_style = None
+            base_tiles_layer = pdk.Layer(
+                "TileLayer",
+                data="https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                min_zoom=0,
+                max_zoom=19,
+                tile_size=256,
+            )
+        elif map_layer_style == "OpenStreetMap (Light Positron)":
+            deck_provider = "carto"
+            deck_map_style = pdk.map_styles.CARTO_LIGHT
+        else:  # Dark Corridor
+            deck_provider = "carto"
+            deck_map_style = pdk.map_styles.CARTO_DARK
 
         route_coords = [[wp["longitude"], wp["latitude"]] for wp in waypoints]
         path_data = [{"path": route_coords, "name": "RoadSentinel Corridor"}]
@@ -694,80 +738,163 @@ def main():
                 "latitude": b_lat,
                 "longitude": b_lon,
                 "name": f"{seg_name} ({b_start:.0f}m)",
+                "tooltip_title": f"🚩 Milestone: {seg_name}",
+                "tooltip_desc": f"Corridor Boundary: {b_start:.0f}m – {b_end:.0f}m\nGPS: {b_lat:.5f}, {b_lon:.5f}",
             })
+
+        # Vehicle styling based on active alert status
+        if alert_obj:
+            if alert_obj.get("level") == ALERT_LEVEL_URGENT:
+                v_color = [239, 68, 68, 255]       # Bright Red
+                halo_color = [239, 68, 68, 70]
+            elif alert_obj.get("level") == ALERT_LEVEL_WARNING:
+                v_color = [249, 115, 22, 255]      # Bright Orange
+                halo_color = [249, 115, 22, 70]
+            else:
+                v_color = [234, 179, 8, 255]       # Yellow Advisory
+                halo_color = [234, 179, 8, 70]
+        else:
+            v_color = [16, 185, 129, 255]          # Emerald Green Clear
+            halo_color = [16, 185, 129, 60]
 
         vehicle_data = [{
             "latitude": curr_lat,
             "longitude": curr_lon,
             "speed": curr_speed_kmh,
             "segment": curr_seg,
+            "vehicle_color": v_color,
+            "halo_color": halo_color,
+            "tooltip_title": f"🚗 Vehicle Position ({curr_seg})",
+            "tooltip_desc": f"Speed: {curr_speed_kmh:.1f} km/h | Road Progress: {curr_dist_m:.0f}m / {TOTAL_ROAD_LENGTH_M:.0f}m\nGPS: {curr_lat:.5f}, {curr_lon:.5f}",
         }]
 
         hazard_data = []
         for h in hazards_for_day:
             is_nearest = nearest_hazard and (h["hazard_id"] == nearest_hazard["hazard_id"])
+            dist_to_h = haversine_distance(curr_lat, curr_lon, h["latitude"], h["longitude"])
             hazard_data.append({
                 "latitude": h["latitude"],
                 "longitude": h["longitude"],
                 "hazard_id": h["hazard_id"],
                 "hazard_type": h["hazard_type"],
                 "is_nearest": is_nearest,
-                "color": [239, 68, 68, 255] if is_nearest else [245, 158, 11, 200],
-                "radius": 15 if is_nearest else 10,
+                "color": [239, 68, 68, 255] if is_nearest else [245, 158, 11, 220],
+                "radius": 16 if is_nearest else 11,
+                "tooltip_title": f"⚠️ Hazard: {h['hazard_type']} ({h['hazard_id']})",
+                "tooltip_desc": f"Severity: {h.get('severity', 0.0):.2f} | Segment: {h.get('segment_id', 'N/A')}\nApprox. Distance: {dist_to_h:.0f}m",
             })
 
+        if auto_center:
+            center_lat, center_lon = curr_lat, curr_lon
+            map_zoom = 14.8
+        else:
+            mid_wp = waypoints[len(waypoints) // 2]
+            center_lat, center_lon = mid_wp["latitude"], mid_wp["longitude"]
+            map_zoom = 13.8
+
         view_state = pdk.ViewState(
-            latitude=curr_lat,
-            longitude=curr_lon,
-            zoom=14.5,
-            pitch=35,
+            latitude=center_lat,
+            longitude=center_lon,
+            zoom=map_zoom,
+            pitch=25,
         )
 
-        layers = [
-            pdk.Layer(
-                "PathLayer",
-                data=path_data,
-                get_path="path",
-                get_color=[59, 130, 246, 200],
-                width_min_pixels=5,
-                rounded=True,
-            ),
-            pdk.Layer(
-                "ScatterplotLayer",
-                data=vehicle_data,
-                get_position=["longitude", "latitude"],
-                get_color=[250, 204, 21, 255],
-                get_radius=20,
-                radius_min_pixels=8,
-                pickable=True,
-            ),
-            pdk.Layer(
-                "ScatterplotLayer",
-                data=hazard_data,
-                get_position=["longitude", "latitude"],
-                get_color="color",
-                get_radius="radius",
-                radius_min_pixels=6,
-                pickable=True,
-            ),
-            pdk.Layer(
-                "ScatterplotLayer",
-                data=boundary_pts,
-                get_position=["longitude", "latitude"],
-                get_color=[148, 163, 184, 180],
-                get_radius=8,
-                radius_min_pixels=4,
-                pickable=True,
-            ),
-        ]
+        # 50m corridor buffer visualization
+        corridor_buffer_layer = pdk.Layer(
+            "PathLayer",
+            data=path_data,
+            get_path="path",
+            get_color=[59, 130, 246, 50],
+            width_scale=20,
+            width_min_pixels=16,
+            rounded=True,
+        )
+
+        # Route centerline
+        route_centerline_layer = pdk.Layer(
+            "PathLayer",
+            data=path_data,
+            get_path="path",
+            get_color=[37, 99, 235, 220],
+            width_scale=4,
+            width_min_pixels=5,
+            rounded=True,
+        )
+
+        # Moving vehicle halo and core
+        vehicle_halo_layer = pdk.Layer(
+            "ScatterplotLayer",
+            data=vehicle_data,
+            get_position=["longitude", "latitude"],
+            get_color="halo_color",
+            get_radius=32,
+            radius_min_pixels=14,
+            pickable=False,
+        )
+
+        vehicle_core_layer = pdk.Layer(
+            "ScatterplotLayer",
+            data=vehicle_data,
+            get_position=["longitude", "latitude"],
+            get_color="vehicle_color",
+            get_radius=18,
+            radius_min_pixels=8,
+            pickable=True,
+        )
+
+        hazard_layer = pdk.Layer(
+            "ScatterplotLayer",
+            data=hazard_data,
+            get_position=["longitude", "latitude"],
+            get_color="color",
+            get_radius="radius",
+            radius_min_pixels=7,
+            pickable=True,
+        )
+
+        boundary_layer = pdk.Layer(
+            "ScatterplotLayer",
+            data=boundary_pts,
+            get_position=["longitude", "latitude"],
+            get_color=[100, 116, 139, 200],
+            get_radius=10,
+            radius_min_pixels=5,
+            pickable=True,
+        )
+
+        layers = []
+        if base_tiles_layer:
+            layers.append(base_tiles_layer)
+        layers.extend([
+            corridor_buffer_layer,
+            route_centerline_layer,
+            boundary_layer,
+            hazard_layer,
+            vehicle_halo_layer,
+            vehicle_core_layer,
+        ])
 
         deck = pdk.Deck(
             layers=layers,
             initial_view_state=view_state,
-            tooltip={"text": "{hazard_type}\n{hazard_id}"},
-            map_style="mapbox://styles/mapbox/dark-v10",
+            map_provider=deck_provider,
+            map_style=deck_map_style,
+            tooltip={
+                "html": "<b>{tooltip_title}</b><br/>{tooltip_desc}",
+                "style": {
+                    "backgroundColor": "#0f172a",
+                    "color": "#f8fafc",
+                    "fontSize": "12px",
+                    "padding": "8px 12px",
+                    "borderRadius": "6px",
+                    "border": "1px solid #334155",
+                },
+            },
         )
         st.pydeck_chart(deck, use_container_width=True)
+
+        st.caption("🗺️ **Map Legend**: 🟦 2.4 km Monitored Corridor (50m Buffer) | 🟢 Vehicle (Clear) / 🔴 (Alert) | 🟠 Hazards Ahead | 🚩 Segment Boundary (400m intervals)")
+
 
         st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
