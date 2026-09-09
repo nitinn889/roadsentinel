@@ -660,12 +660,12 @@ def main():
 
         # Segment Boundary Points for Map
         boundary_pts = []
-        for s_idx, (b_start, b_end) in enumerate(SEGMENT_BOUNDARIES):
+        for s_idx, (seg_name, (b_start, b_end)) in enumerate(SEGMENT_BOUNDARIES.items()):
             b_lat, b_lon = get_gps_at_distance(b_start, waypoints)
             boundary_pts.append({
                 "latitude": b_lat,
                 "longitude": b_lon,
-                "name": f"{SEGMENT_NAMES[s_idx]} ({b_start:.0f}m)",
+                "name": f"{seg_name} ({b_start:.0f}m)",
             })
 
         vehicle_data = [{
@@ -748,7 +748,7 @@ def main():
         strip_cols = st.columns(6)
 
         for idx, seg_name in enumerate(SEGMENT_NAMES):
-            b_start, b_end = SEGMENT_BOUNDARIES[idx]
+            b_start, b_end = SEGMENT_BOUNDARIES[seg_name]
             is_active_seg = (curr_seg == seg_name)
 
             seg_hazards = [h for h in hazards_for_day if h["segment_id"] == seg_name]
