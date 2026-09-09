@@ -1,0 +1,1448 @@
+[
+  {
+    "distance_m": 0.0,
+    "latitude": 8.8932,
+    "longitude": 76.6141,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 10.0,
+    "latitude": 8.893264,
+    "longitude": 76.614164,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 20.0,
+    "latitude": 8.893327,
+    "longitude": 76.614229,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 30.0,
+    "latitude": 8.89339,
+    "longitude": 76.614294,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 40.0,
+    "latitude": 8.893454,
+    "longitude": 76.614358,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 50.0,
+    "latitude": 8.893517,
+    "longitude": 76.614423,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 60.0,
+    "latitude": 8.89358,
+    "longitude": 76.614488,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 70.0,
+    "latitude": 8.893643,
+    "longitude": 76.614553,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 80.0,
+    "latitude": 8.893706,
+    "longitude": 76.614618,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 90.0,
+    "latitude": 8.893769,
+    "longitude": 76.614683,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 100.0,
+    "latitude": 8.893831,
+    "longitude": 76.614748,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 110.0,
+    "latitude": 8.893894,
+    "longitude": 76.614814,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 120.0,
+    "latitude": 8.893956,
+    "longitude": 76.614879,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 130.0,
+    "latitude": 8.894019,
+    "longitude": 76.614945,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 140.0,
+    "latitude": 8.894081,
+    "longitude": 76.61501,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 150.0,
+    "latitude": 8.894143,
+    "longitude": 76.615076,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 160.0,
+    "latitude": 8.894206,
+    "longitude": 76.615142,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 170.0,
+    "latitude": 8.894268,
+    "longitude": 76.615208,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 180.0,
+    "latitude": 8.89433,
+    "longitude": 76.615274,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 190.0,
+    "latitude": 8.894391,
+    "longitude": 76.61534,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 200.0,
+    "latitude": 8.894453,
+    "longitude": 76.615406,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 210.0,
+    "latitude": 8.894515,
+    "longitude": 76.615472,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 220.0,
+    "latitude": 8.894576,
+    "longitude": 76.615539,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 230.0,
+    "latitude": 8.894638,
+    "longitude": 76.615605,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 240.0,
+    "latitude": 8.894699,
+    "longitude": 76.615672,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 250.0,
+    "latitude": 8.894761,
+    "longitude": 76.615738,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 260.0,
+    "latitude": 8.894822,
+    "longitude": 76.615805,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 270.0,
+    "latitude": 8.894883,
+    "longitude": 76.615872,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 280.0,
+    "latitude": 8.894944,
+    "longitude": 76.615939,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 290.0,
+    "latitude": 8.895005,
+    "longitude": 76.616006,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 300.0,
+    "latitude": 8.895066,
+    "longitude": 76.616073,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 310.0,
+    "latitude": 8.895126,
+    "longitude": 76.61614,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 320.0,
+    "latitude": 8.895187,
+    "longitude": 76.616207,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 330.0,
+    "latitude": 8.895248,
+    "longitude": 76.616274,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 340.0,
+    "latitude": 8.895308,
+    "longitude": 76.616342,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 350.0,
+    "latitude": 8.895368,
+    "longitude": 76.616409,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 360.0,
+    "latitude": 8.895429,
+    "longitude": 76.616477,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 370.0,
+    "latitude": 8.895489,
+    "longitude": 76.616545,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 380.0,
+    "latitude": 8.895549,
+    "longitude": 76.616613,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 390.0,
+    "latitude": 8.895609,
+    "longitude": 76.61668,
+    "segment_id": "SEG_001"
+  },
+  {
+    "distance_m": 400.0,
+    "latitude": 8.895669,
+    "longitude": 76.616748,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 410.0,
+    "latitude": 8.895728,
+    "longitude": 76.616817,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 420.0,
+    "latitude": 8.895788,
+    "longitude": 76.616885,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 430.0,
+    "latitude": 8.895848,
+    "longitude": 76.616953,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 440.0,
+    "latitude": 8.895907,
+    "longitude": 76.617021,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 450.0,
+    "latitude": 8.895966,
+    "longitude": 76.61709,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 460.0,
+    "latitude": 8.896026,
+    "longitude": 76.617158,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 470.0,
+    "latitude": 8.896085,
+    "longitude": 76.617227,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 480.0,
+    "latitude": 8.896144,
+    "longitude": 76.617296,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 490.0,
+    "latitude": 8.896203,
+    "longitude": 76.617364,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 500.0,
+    "latitude": 8.896262,
+    "longitude": 76.617433,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 510.0,
+    "latitude": 8.896321,
+    "longitude": 76.617502,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 520.0,
+    "latitude": 8.896379,
+    "longitude": 76.617571,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 530.0,
+    "latitude": 8.896438,
+    "longitude": 76.61764,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 540.0,
+    "latitude": 8.896496,
+    "longitude": 76.61771,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 550.0,
+    "latitude": 8.896555,
+    "longitude": 76.617779,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 560.0,
+    "latitude": 8.896613,
+    "longitude": 76.617848,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 570.0,
+    "latitude": 8.896671,
+    "longitude": 76.617918,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 580.0,
+    "latitude": 8.896729,
+    "longitude": 76.617987,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 590.0,
+    "latitude": 8.896788,
+    "longitude": 76.618057,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 600.0,
+    "latitude": 8.896845,
+    "longitude": 76.618127,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 610.0,
+    "latitude": 8.896903,
+    "longitude": 76.618197,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 620.0,
+    "latitude": 8.896961,
+    "longitude": 76.618267,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 630.0,
+    "latitude": 8.897019,
+    "longitude": 76.618337,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 640.0,
+    "latitude": 8.897076,
+    "longitude": 76.618407,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 650.0,
+    "latitude": 8.897134,
+    "longitude": 76.618477,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 660.0,
+    "latitude": 8.897191,
+    "longitude": 76.618547,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 670.0,
+    "latitude": 8.897248,
+    "longitude": 76.618617,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 680.0,
+    "latitude": 8.897305,
+    "longitude": 76.618688,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 690.0,
+    "latitude": 8.897362,
+    "longitude": 76.618758,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 700.0,
+    "latitude": 8.897419,
+    "longitude": 76.618829,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 710.0,
+    "latitude": 8.897476,
+    "longitude": 76.6189,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 720.0,
+    "latitude": 8.897533,
+    "longitude": 76.618971,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 730.0,
+    "latitude": 8.897589,
+    "longitude": 76.619041,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 740.0,
+    "latitude": 8.897646,
+    "longitude": 76.619112,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 750.0,
+    "latitude": 8.897702,
+    "longitude": 76.619183,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 760.0,
+    "latitude": 8.897759,
+    "longitude": 76.619255,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 770.0,
+    "latitude": 8.897815,
+    "longitude": 76.619326,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 780.0,
+    "latitude": 8.897871,
+    "longitude": 76.619397,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 790.0,
+    "latitude": 8.897927,
+    "longitude": 76.619469,
+    "segment_id": "SEG_002"
+  },
+  {
+    "distance_m": 800.0,
+    "latitude": 8.897983,
+    "longitude": 76.61954,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 810.0,
+    "latitude": 8.898039,
+    "longitude": 76.619612,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 820.0,
+    "latitude": 8.898094,
+    "longitude": 76.619683,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 830.0,
+    "latitude": 8.89815,
+    "longitude": 76.619755,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 840.0,
+    "latitude": 8.898206,
+    "longitude": 76.619827,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 850.0,
+    "latitude": 8.898261,
+    "longitude": 76.619899,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 860.0,
+    "latitude": 8.898316,
+    "longitude": 76.619971,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 870.0,
+    "latitude": 8.898372,
+    "longitude": 76.620043,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 880.0,
+    "latitude": 8.898427,
+    "longitude": 76.620115,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 890.0,
+    "latitude": 8.898482,
+    "longitude": 76.620187,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 900.0,
+    "latitude": 8.898537,
+    "longitude": 76.620259,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 910.0,
+    "latitude": 8.898591,
+    "longitude": 76.620332,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 920.0,
+    "latitude": 8.898646,
+    "longitude": 76.620404,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 930.0,
+    "latitude": 8.898701,
+    "longitude": 76.620477,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 940.0,
+    "latitude": 8.898755,
+    "longitude": 76.62055,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 950.0,
+    "latitude": 8.89881,
+    "longitude": 76.620622,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 960.0,
+    "latitude": 8.898864,
+    "longitude": 76.620695,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 970.0,
+    "latitude": 8.898918,
+    "longitude": 76.620768,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 980.0,
+    "latitude": 8.898972,
+    "longitude": 76.620841,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 990.0,
+    "latitude": 8.899026,
+    "longitude": 76.620914,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 1000.0,
+    "latitude": 8.89908,
+    "longitude": 76.620987,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 1010.0,
+    "latitude": 8.899134,
+    "longitude": 76.621061,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 1020.0,
+    "latitude": 8.899188,
+    "longitude": 76.621134,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 1030.0,
+    "latitude": 8.899241,
+    "longitude": 76.621207,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 1040.0,
+    "latitude": 8.899295,
+    "longitude": 76.621281,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 1050.0,
+    "latitude": 8.899348,
+    "longitude": 76.621354,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 1060.0,
+    "latitude": 8.899402,
+    "longitude": 76.621428,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 1070.0,
+    "latitude": 8.899455,
+    "longitude": 76.621502,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 1080.0,
+    "latitude": 8.899508,
+    "longitude": 76.621576,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 1090.0,
+    "latitude": 8.899561,
+    "longitude": 76.621649,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 1100.0,
+    "latitude": 8.899614,
+    "longitude": 76.621723,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 1110.0,
+    "latitude": 8.899666,
+    "longitude": 76.621798,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 1120.0,
+    "latitude": 8.899719,
+    "longitude": 76.621872,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 1130.0,
+    "latitude": 8.899772,
+    "longitude": 76.621946,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 1140.0,
+    "latitude": 8.899824,
+    "longitude": 76.62202,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 1150.0,
+    "latitude": 8.899877,
+    "longitude": 76.622095,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 1160.0,
+    "latitude": 8.899929,
+    "longitude": 76.622169,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 1170.0,
+    "latitude": 8.899981,
+    "longitude": 76.622244,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 1180.0,
+    "latitude": 8.900033,
+    "longitude": 76.622318,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 1190.0,
+    "latitude": 8.900085,
+    "longitude": 76.622393,
+    "segment_id": "SEG_003"
+  },
+  {
+    "distance_m": 1200.0,
+    "latitude": 8.900137,
+    "longitude": 76.622468,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1210.0,
+    "latitude": 8.900189,
+    "longitude": 76.622543,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1220.0,
+    "latitude": 8.90024,
+    "longitude": 76.622618,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1230.0,
+    "latitude": 8.900292,
+    "longitude": 76.622693,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1240.0,
+    "latitude": 8.900343,
+    "longitude": 76.622768,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1250.0,
+    "latitude": 8.900394,
+    "longitude": 76.622843,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1260.0,
+    "latitude": 8.900446,
+    "longitude": 76.622918,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1270.0,
+    "latitude": 8.900497,
+    "longitude": 76.622994,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1280.0,
+    "latitude": 8.900548,
+    "longitude": 76.623069,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1290.0,
+    "latitude": 8.900599,
+    "longitude": 76.623145,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1300.0,
+    "latitude": 8.90065,
+    "longitude": 76.62322,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1310.0,
+    "latitude": 8.9007,
+    "longitude": 76.623296,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1320.0,
+    "latitude": 8.900751,
+    "longitude": 76.623372,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1330.0,
+    "latitude": 8.900801,
+    "longitude": 76.623447,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1340.0,
+    "latitude": 8.900852,
+    "longitude": 76.623523,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1350.0,
+    "latitude": 8.900902,
+    "longitude": 76.623599,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1360.0,
+    "latitude": 8.900952,
+    "longitude": 76.623675,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1370.0,
+    "latitude": 8.901002,
+    "longitude": 76.623752,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1380.0,
+    "latitude": 8.901052,
+    "longitude": 76.623828,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1390.0,
+    "latitude": 8.901102,
+    "longitude": 76.623904,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1400.0,
+    "latitude": 8.901152,
+    "longitude": 76.623981,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1410.0,
+    "latitude": 8.901201,
+    "longitude": 76.624057,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1420.0,
+    "latitude": 8.901251,
+    "longitude": 76.624134,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1430.0,
+    "latitude": 8.9013,
+    "longitude": 76.62421,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1440.0,
+    "latitude": 8.90135,
+    "longitude": 76.624287,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1450.0,
+    "latitude": 8.901399,
+    "longitude": 76.624364,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1460.0,
+    "latitude": 8.901448,
+    "longitude": 76.624441,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1470.0,
+    "latitude": 8.901497,
+    "longitude": 76.624517,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1480.0,
+    "latitude": 8.901546,
+    "longitude": 76.624595,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1490.0,
+    "latitude": 8.901595,
+    "longitude": 76.624672,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1500.0,
+    "latitude": 8.901643,
+    "longitude": 76.624749,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1510.0,
+    "latitude": 8.901692,
+    "longitude": 76.624826,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1520.0,
+    "latitude": 8.901741,
+    "longitude": 76.624903,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1530.0,
+    "latitude": 8.901789,
+    "longitude": 76.624981,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1540.0,
+    "latitude": 8.901837,
+    "longitude": 76.625058,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1550.0,
+    "latitude": 8.901885,
+    "longitude": 76.625136,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1560.0,
+    "latitude": 8.901933,
+    "longitude": 76.625213,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1570.0,
+    "latitude": 8.901981,
+    "longitude": 76.625291,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1580.0,
+    "latitude": 8.902029,
+    "longitude": 76.625369,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1590.0,
+    "latitude": 8.902077,
+    "longitude": 76.625447,
+    "segment_id": "SEG_004"
+  },
+  {
+    "distance_m": 1600.0,
+    "latitude": 8.902124,
+    "longitude": 76.625525,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1610.0,
+    "latitude": 8.902172,
+    "longitude": 76.625603,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1620.0,
+    "latitude": 8.902219,
+    "longitude": 76.625681,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1630.0,
+    "latitude": 8.902267,
+    "longitude": 76.625759,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1640.0,
+    "latitude": 8.902314,
+    "longitude": 76.625837,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1650.0,
+    "latitude": 8.902361,
+    "longitude": 76.625916,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1660.0,
+    "latitude": 8.902408,
+    "longitude": 76.625994,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1670.0,
+    "latitude": 8.902455,
+    "longitude": 76.626072,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1680.0,
+    "latitude": 8.902502,
+    "longitude": 76.626151,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1690.0,
+    "latitude": 8.902548,
+    "longitude": 76.62623,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1700.0,
+    "latitude": 8.902595,
+    "longitude": 76.626308,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1710.0,
+    "latitude": 8.902641,
+    "longitude": 76.626387,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1720.0,
+    "latitude": 8.902688,
+    "longitude": 76.626466,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1730.0,
+    "latitude": 8.902734,
+    "longitude": 76.626545,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1740.0,
+    "latitude": 8.90278,
+    "longitude": 76.626624,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1750.0,
+    "latitude": 8.902826,
+    "longitude": 76.626703,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1760.0,
+    "latitude": 8.902872,
+    "longitude": 76.626782,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1770.0,
+    "latitude": 8.902918,
+    "longitude": 76.626861,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1780.0,
+    "latitude": 8.902963,
+    "longitude": 76.62694,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1790.0,
+    "latitude": 8.903009,
+    "longitude": 76.62702,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1800.0,
+    "latitude": 8.903054,
+    "longitude": 76.627099,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1810.0,
+    "latitude": 8.9031,
+    "longitude": 76.627179,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1820.0,
+    "latitude": 8.903145,
+    "longitude": 76.627258,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1830.0,
+    "latitude": 8.90319,
+    "longitude": 76.627338,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1840.0,
+    "latitude": 8.903235,
+    "longitude": 76.627418,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1850.0,
+    "latitude": 8.90328,
+    "longitude": 76.627498,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1860.0,
+    "latitude": 8.903325,
+    "longitude": 76.627577,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1870.0,
+    "latitude": 8.903369,
+    "longitude": 76.627657,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1880.0,
+    "latitude": 8.903414,
+    "longitude": 76.627737,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1890.0,
+    "latitude": 8.903458,
+    "longitude": 76.627817,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1900.0,
+    "latitude": 8.903503,
+    "longitude": 76.627898,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1910.0,
+    "latitude": 8.903547,
+    "longitude": 76.627978,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1920.0,
+    "latitude": 8.903591,
+    "longitude": 76.628058,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1930.0,
+    "latitude": 8.903635,
+    "longitude": 76.628139,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1940.0,
+    "latitude": 8.903679,
+    "longitude": 76.628219,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1950.0,
+    "latitude": 8.903723,
+    "longitude": 76.6283,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1960.0,
+    "latitude": 8.903767,
+    "longitude": 76.62838,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1970.0,
+    "latitude": 8.90381,
+    "longitude": 76.628461,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1980.0,
+    "latitude": 8.903854,
+    "longitude": 76.628542,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 1990.0,
+    "latitude": 8.903897,
+    "longitude": 76.628622,
+    "segment_id": "SEG_005"
+  },
+  {
+    "distance_m": 2000.0,
+    "latitude": 8.90394,
+    "longitude": 76.628703,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2010.0,
+    "latitude": 8.903984,
+    "longitude": 76.628784,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2020.0,
+    "latitude": 8.904027,
+    "longitude": 76.628865,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2030.0,
+    "latitude": 8.90407,
+    "longitude": 76.628946,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2040.0,
+    "latitude": 8.904112,
+    "longitude": 76.629028,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2050.0,
+    "latitude": 8.904155,
+    "longitude": 76.629109,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2060.0,
+    "latitude": 8.904198,
+    "longitude": 76.62919,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2070.0,
+    "latitude": 8.90424,
+    "longitude": 76.629272,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2080.0,
+    "latitude": 8.904283,
+    "longitude": 76.629353,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2090.0,
+    "latitude": 8.904325,
+    "longitude": 76.629435,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2100.0,
+    "latitude": 8.904367,
+    "longitude": 76.629516,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2110.0,
+    "latitude": 8.904409,
+    "longitude": 76.629598,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2120.0,
+    "latitude": 8.904451,
+    "longitude": 76.62968,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2130.0,
+    "latitude": 8.904493,
+    "longitude": 76.629761,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2140.0,
+    "latitude": 8.904535,
+    "longitude": 76.629843,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2150.0,
+    "latitude": 8.904576,
+    "longitude": 76.629925,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2160.0,
+    "latitude": 8.904618,
+    "longitude": 76.630007,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2170.0,
+    "latitude": 8.904659,
+    "longitude": 76.630089,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2180.0,
+    "latitude": 8.9047,
+    "longitude": 76.630171,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2190.0,
+    "latitude": 8.904741,
+    "longitude": 76.630254,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2200.0,
+    "latitude": 8.904782,
+    "longitude": 76.630336,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2210.0,
+    "latitude": 8.904823,
+    "longitude": 76.630418,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2220.0,
+    "latitude": 8.904864,
+    "longitude": 76.630501,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2230.0,
+    "latitude": 8.904905,
+    "longitude": 76.630583,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2240.0,
+    "latitude": 8.904945,
+    "longitude": 76.630666,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2250.0,
+    "latitude": 8.904986,
+    "longitude": 76.630748,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2260.0,
+    "latitude": 8.905026,
+    "longitude": 76.630831,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2270.0,
+    "latitude": 8.905067,
+    "longitude": 76.630914,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2280.0,
+    "latitude": 8.905107,
+    "longitude": 76.630997,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2290.0,
+    "latitude": 8.905147,
+    "longitude": 76.63108,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2300.0,
+    "latitude": 8.905187,
+    "longitude": 76.631163,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2310.0,
+    "latitude": 8.905226,
+    "longitude": 76.631246,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2320.0,
+    "latitude": 8.905266,
+    "longitude": 76.631329,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2330.0,
+    "latitude": 8.905306,
+    "longitude": 76.631412,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2340.0,
+    "latitude": 8.905345,
+    "longitude": 76.631495,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2350.0,
+    "latitude": 8.905384,
+    "longitude": 76.631579,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2360.0,
+    "latitude": 8.905424,
+    "longitude": 76.631662,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2370.0,
+    "latitude": 8.905463,
+    "longitude": 76.631745,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2380.0,
+    "latitude": 8.905502,
+    "longitude": 76.631829,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2390.0,
+    "latitude": 8.905541,
+    "longitude": 76.631912,
+    "segment_id": "SEG_006"
+  },
+  {
+    "distance_m": 2400.0,
+    "latitude": 8.905579,
+    "longitude": 76.631996,
+    "segment_id": "SEG_006"
+  }
+]
