@@ -111,6 +111,35 @@ class TestDashboardV2DataLoaders(unittest.TestCase):
         df_cases = data_loader.load_case_studies_table()
         self.assertFalse(df_cases.empty)
 
+    def test_dynamic_segment_discovery(self):
+        segments = data_loader.discover_temporal_segments()
+        self.assertIsInstance(segments, list)
+        self.assertTrue(len(segments) >= 4)
+        for expected in ["SEG_001", "SEG_002", "SEG_003", "SEG_004"]:
+            self.assertIn(expected, segments)
+
+    def test_segment_observations_and_missing_metadata(self):
+        # SEG_001 has 10 valid observations
+        obs_001 = data_loader.discover_segment_observations("SEG_001")
+        self.assertEqual(len(obs_001), 10)
+        self.assertTrue(all(o["has_metadata"] for o in obs_001))
+
+        # SEG_003 has 10 observations, day 10 has missing metadata diagnostic
+        obs_003 = data_loader.discover_segment_observations("SEG_003")
+        self.assertEqual(len(obs_003), 10)
+        day10_obs = next(o for o in obs_003 if o["day"] == 10)
+        self.assertFalse(day10_obs["has_metadata"])
+        self.assertEqual(day10_obs["metadata_status"], "METADATA MISSING")
+        self.assertEqual(day10_obs["temporal_status"], "TEMPORAL_MATCH_NOT_APPLICABLE")
+
+    def test_sequence_daily_summary_and_events(self):
+        df_sum = data_loader.load_sequence_daily_summary("SEG_004_D01_D05")
+        self.assertFalse(df_sum.empty)
+        self.assertEqual(len(df_sum), 5)
+        events = data_loader.load_sequence_events("SEG_004_D01_D05")
+        self.assertTrue(len(events) > 0)
+
+
 
 class TestDashboardV2ComponentImports(unittest.TestCase):
     """Verify all 12 component modules import cleanly and define render functions."""

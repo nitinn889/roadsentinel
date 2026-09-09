@@ -1,259 +1,378 @@
-"""Temporal Road Monitoring & Model-Observed Change Component for RoadSentinel Dashboard."""
+"""Temporal Road Monitoring & Repeated Inspection Component for RoadSentinel Dashboard V2.
+
+Provides:
+- Dynamic discovery of stored physical segment observations from env/output/temporal_segments/
+- Zero image-upload requirement (reads directly from repository disk)
+- VIEW A: Full Segment History (all stored observations, metadata sidecars, and ineligibility reasons)
+- VIEW B: Validated Temporal Sequences (geometric tracking, change quantification, and event taxonomy)
+"""
 
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, Dict, List
 import pandas as pd
 import streamlit as st
-from data_loader import WORKSPACE_ROOT, load_canonical_metrics, load_temporal_sequences_table
+
+from data_loader import (
+    WORKSPACE_ROOT,
+    discover_segment_observations,
+    discover_temporal_segments,
+    load_canonical_metrics,
+    load_sequence_daily_summary,
+    load_sequence_events,
+    load_sequence_progression,
+    load_temporal_sequences_table,
+)
 
 PLOTS_DIR = WORKSPACE_ROOT / "integration/experiment_a/temporal/plots"
 
+VALIDATED_SEQUENCES_MAP = {
+    "SEG_001": [
+        {
+            "id": "SEG_001_D03_D10",
+            "title": "SEG_001 D03–D10 — Environmental Modulation Sequence (Overcast / Rain / Sunset Glare)",
+            "states": "Days 03 to 10 (8 states)",
+            "camera": "🌄 Highway Curve Vantage Overlook",
+            "key_takeaway": "Severity rises under overcast contrast (Day 06–08) and collapses under low-angle sunset lighting (Day 10) due to RoadMarkingSuppressor over-filtering.",
+        }
+    ],
+    "SEG_002": [
+        {
+            "id": "SEG_002_D01_D02",
+            "title": "SEG_002 D01–D02 — Highway Overlook Baseline Pair",
+            "states": "Days 01 to 02 (2 states)",
+            "camera": "🌄 Highway Curve Vantage Overlook",
+            "key_takeaway": "Stable shoulder aggregate tracking across initial clear noon observations (Severity Δ: +0.0343).",
+        },
+        {
+            "id": "SEG_002_D04_D05",
+            "title": "SEG_002 D04–D05 — Moderate Overcast Shift Pair",
+            "states": "Days 04 to 05 (2 states)",
+            "camera": "🌄 Highway Curve Vantage Overlook",
+            "key_takeaway": "Diffuse cloud cover inflates pavement contrast, increasing candidate defect area.",
+        },
+        {
+            "id": "SEG_002_D06_D07",
+            "title": "SEG_002 D06–D07 — Late Afternoon Low-Angle Pair",
+            "states": "Days 06 to 07 (2 states)",
+            "camera": "🌄 Highway Curve Vantage Overlook",
+            "key_takeaway": "Shoulder tracking retained under grazing 35° sun angle.",
+        },
+    ],
+    "SEG_003": [
+        {
+            "id": "SEG_003_D01_D07",
+            "title": "SEG_003 D01–D07 — Model Response Stability Control Test (CV: 0.67%)",
+            "states": "Days 01 to 07 (7 states)",
+            "camera": "🌄 Highway Curve Vantage Overlook",
+            "key_takeaway": "Near-zero coefficient of variation (CV = 0.67%) across 7 consecutive days confirms outstanding perception repeatability under fixed lighting. The single tracked region is a systematic shoulder false-positive candidate.",
+        },
+        {
+            "id": "SEG_003_D08_D09",
+            "title": "SEG_003 D08–D09 — Overcast Diffuse Lighting Pair",
+            "states": "Days 08 to 09 (2 states)",
+            "camera": "🌄 Highway Curve Vantage Overlook",
+            "key_takeaway": "Invariant control verification following initial 7-day run under diffuse overcast conditions.",
+        },
+    ],
+    "SEG_004": [
+        {
+            "id": "SEG_004_D01_D05",
+            "title": "SEG_004 D01–D05 — Model-Observed Progression Sequence (Top-Down Drone, Δ: +0.7302)",
+            "states": "Days 01 to 05 (5 states)",
+            "camera": "🔭 Overhead Drone Survey (SAM 2 Top-Down)",
+            "key_takeaway": "Model-observed severity progression across simulated road states under a fixed camera viewpoint (0.0000 → 0.7302, Δ = +0.7302). Tracking captures continuous defect area expansion.",
+        },
+        {
+            "id": "SEG_004_D06_D10",
+            "title": "SEG_004 D06–D10 — Extreme Weather & Sunset Flare Confound",
+            "states": "Days 06 to 10 (5 states)",
+            "camera": "🔭 Overhead Drone Survey (SAM 2 Top-Down)",
+            "key_takeaway": "Rain puddles on Days 07–08 inflate defect count to 12 clusters; sunset glare on Days 09–10 triggers full road corridor suppression.",
+        },
+    ],
+}
+
 
 def render_temporal_monitoring():
-    st.markdown("## Temporal Road Monitoring & Model-Observed Change")
+    st.markdown("## Repeated Inspection & Temporal Road Monitoring")
     st.markdown(
-        "Explore multi-day defect tracking across repeated camera inspections in Experiment A. "
-        "Evaluates temporal correspondence, track persistence, and distinguishes systematic "
-        "sensor responses from environmental confounds."
+        "Evaluate multi-day road surveillance across repeated camera inspections stored in "
+        "`env/output/temporal_segments/`. No image uploads required — observations are discovered "
+        "dynamically from the project filesystem and sidecar metadata."
     )
 
-    metrics = load_canonical_metrics()
-    seq_table = load_temporal_sequences_table()
+    canon = load_canonical_metrics()
 
-    # 1. Scientific Disclaimer & Tracking Algorithm
+    # 1. Scientific Disclaimer & Tracking Engine Callout
     st.markdown("""
     <div class="callout-box warn">
         <strong>CRITICAL SCIENTIFIC WORDING & TRACKING SPECIFICATION:</strong><br>
         • <strong>Strict Phrasing</strong>: Multi-day metrics represent <strong>MODEL-OBSERVED TEMPORAL CHANGE</strong> across simulated road states and environmental conditions, NOT certified ground-truth physical pavement deterioration.<br>
-        • <strong>Hierarchical Tracking Engine</strong>: Greedy one-to-one bipartite matching executed in order:
+        • <strong>Hierarchical Tracking Engine</strong>: Greedy one-to-one bipartite matching executed in strict order:
           <code>Mask IoU ≥ 0.50</code> → <code>BBox IoU ≥ 0.30</code> → <code>Centroid Distance ≤ 75 px + Area Ratio ≤ 3.0×</code> (No Hungarian assignment).
     </div>
     """, unsafe_allow_html=True)
 
-    # 2. Canonical Event Taxonomy Counts
-    st.markdown("### 1. Canonical Temporal Event Totals (All 8 Subsequences)")
-    e1, e2, e3, e4, e5 = st.columns(5)
-    with e1:
-        st.metric("NEW_DEFECT", "48", help="A defect observed on Day T with no spatial correspondence on Day T-1.")
-    with e2:
-        st.metric("TOTAL_MATCHED", "33", help="Defect track maintained across consecutive observations (14 increased, 19 decreased).")
-    with e3:
-        st.metric("AREA_INCREASED", "14", help="Matched region exhibiting >15% observed bounding area growth (canonical count: 14).")
-    with e4:
-        st.metric("AREA_DECREASED", "19", help="Matched region exhibiting >15% observed area contraction (canonical count: 19).")
-    with e5:
-        st.metric("NOT_OBSERVED", "34", help="Region tracked previously but unobserved on Day T. NEVER marked as REPAIRED.")
+    # 2. Dynamic Segment Selector & Execution Mode
+    segments = discover_temporal_segments()
+    if not segments:
+        st.error("No temporal segment directories discovered in env/output/temporal_segments/.")
+        return
+
+    ctrl_col1, ctrl_col2 = st.columns([2, 2])
+    with ctrl_col1:
+        selected_segment = st.selectbox(
+            "Select Road Segment (Dynamically Discovered)",
+            segments,
+            index=segments.index("SEG_004") if "SEG_004" in segments else 0,
+            help="Discovered dynamically from env/output/temporal_segments/. SEG_005/SEG_006 will appear automatically when captured."
+        )
+
+    with ctrl_col2:
+        exec_mode = st.radio(
+            "Execution & Evaluation Mode",
+            ["Verified Demo Mode (Precomputed)", "Live Prototype Mode (Rerun YOLO on Stored Images)"],
+            index=0,
+            horizontal=True,
+            help="Verified Demo Mode loads frozen Phase-2/3/4/11 outputs instantly. Live Mode runs YOLO directly on the stored segment files without re-uploading."
+        )
+
+    # Discover observations for the chosen segment
+    observations = discover_segment_observations(selected_segment)
 
     st.markdown("---")
 
-    # 3. Validated Sequences Selector (All 8 Subsequences)
-    st.markdown("### 2. Evaluated Same-Camera Sequences (8 Sequences, 33 Transitions)")
-    
-    sequences_dict = {
-        "SEG_004_D01_D05": {
-            "title": "SEG_004 D01–D05 — Progression Sequence (Top-Down Drone, Δ: +0.7302)",
-            "renderer": render_seg004_progression_view,
-        },
-        "SEG_003_D01_D07": {
-            "title": "SEG_003 D01–D07 — Stability Control Test (Fixed Overlook, CV: 0.67%)",
-            "renderer": render_seg003_control_view,
-        },
-        "SEG_001_D03_D10": {
-            "title": "SEG_001 D03–D10 — Environmental Modulation (Overcast / Rain / Sunset Glare)",
-            "renderer": render_seg001_confound_view,
-        },
-        "SEG_004_D06_D10": {
-            "title": "SEG_004 D06–D10 — Extreme Weather & Sunset Flare Confound",
-            "renderer": render_seg004_weather_confound_view,
-        },
-        "SEG_002_D01_D02": {
-            "title": "SEG_002 D01–D02 — Highway Overlook Baseline Pair",
-            "renderer": lambda: render_generic_sequence_view("SEG_002_D01_D02", "Highway Overlook", 2, "0.2444", "0.2444", "+0.0000", "Stable shoulder tracking across initial clear days."),
-        },
-        "SEG_002_D04_D05": {
-            "title": "SEG_002 D04–D05 — Moderate Overcast Shift Pair",
-            "renderer": lambda: render_generic_sequence_view("SEG_002_D04_D05", "Highway Overlook", 2, "0.2444", "0.2444", "+0.0000", "Stable tracking through moderate diffuse cloud cover."),
-        },
-        "SEG_002_D06_D07": {
-            "title": "SEG_002 D06–D07 — Late Afternoon Low-Angle Pair",
-            "renderer": lambda: render_generic_sequence_view("SEG_002_D06_D07", "Highway Overlook", 2, "0.2444", "0.2444", "+0.0000", "Shoulder aggregate track retained under 35° sun elevation."),
-        },
-        "SEG_003_D08_D09": {
-            "title": "SEG_003 D08–D09 — Overcast Diffuse Lighting Pair",
-            "renderer": lambda: render_generic_sequence_view("SEG_003_D08_D09", "Overlook Vantage", 2, "0.2444", "0.2444", "+0.0000", "Invariant control verification following initial 7-day run."),
-        },
-    }
+    # 3. Two Primary Views Tab Navigation
+    tab_view_a, tab_view_b, tab_events = st.tabs([
+        "VIEW A: Full Segment History (All Observations)",
+        "VIEW B: Validated Temporal Sequences",
+        "Canonical Event Taxonomy & Research Figures"
+    ])
 
-    selected_key = st.selectbox(
-        "Select Evaluated Temporal Sequence:",
-        list(sequences_dict.keys()),
-        format_func=lambda k: sequences_dict[k]["title"],
-        index=0,
-    )
+    # ==========================================
+    # VIEW A: FULL SEGMENT HISTORY
+    # ==========================================
+    with tab_view_a:
+        st.markdown(f"### VIEW A: Full Observation History for `{selected_segment}`")
+        st.markdown(
+            f"Displays all **{len(observations)} physical observations** stored in `env/output/temporal_segments/{selected_segment}/`. "
+            "Includes all capture metadata sidecars, pavement distress metrics, and explicit temporal eligibility reasons."
+        )
 
-    st.markdown("---")
+        if not observations:
+            st.warning(f"No stored day captures found for {selected_segment}.")
+        else:
+            # Summary Table
+            summary_rows = []
+            for obs in observations:
+                summary_rows.append({
+                    "Day": obs["day_label"],
+                    "Metadata": obs["metadata_status"],
+                    "Camera Preset": obs["camera_preset"],
+                    "Lighting": obs["lighting_preset"],
+                    "Pavement State": obs["road_health_state"],
+                    "Moisture": obs["moisture_state"],
+                    "Severity": f"{obs['current_severity']:.4f}",
+                    "Defects": obs["defect_count"],
+                    "Area Ratio": f"{obs['defect_area_ratio']:.6f}",
+                    "Anomaly Score": f"{obs['surface_anomaly_score']:.4f}",
+                    "Temporal Status": obs["temporal_status"],
+                    "Ineligibility Reason": obs["exclusion_reason"] if obs["temporal_status"] != "ELIGIBLE" else "None (Eligible)",
+                })
+            st.dataframe(pd.DataFrame(summary_rows), hide_index=True, use_container_width=True)
 
-    # Render selected sequence view
-    sequences_dict[selected_key]["renderer"]()
+            st.markdown("---")
+            st.markdown("#### Physical Observation Cards & Sidecar Inspector")
 
-    st.markdown("---")
+            # Day Selector for detailed view
+            day_labels = [obs["day_label"] for obs in observations]
+            selected_day_label = st.selectbox(
+                "Select Day Observation to Inspect:",
+                day_labels,
+                index=min(4, len(day_labels) - 1),
+                key="view_a_day_select"
+            )
+            obs_match = next((o for o in observations if o["day_label"] == selected_day_label), observations[0])
 
-    # 4. Temporal Ineligible Captures Table (Section 15)
-    st.markdown("### 3. Temporal Tracking Ineligibility Accounting")
-    st.markdown(
-        "To preserve geometric tracking validity, camera transitions with changing viewpoint geometries or isolated non-contiguous "
-        "states are excluded from bipartite matching. All 40 physical captures remain 100% accessible in single-image view."
-    )
+            col_img, col_info = st.columns([1.2, 1])
+            with col_img:
+                img_path = Path(obs_match["image_path"])
+                if img_path.exists():
+                    if "Live" in exec_mode:
+                        try:
+                            import cv2
+                            from ultralytics import YOLO
+                            yolo_weights = WORKSPACE_ROOT / "yolo/weights/best.pt"
+                            model = YOLO(str(yolo_weights))
+                            res = model(str(img_path), conf=0.25, imgsz=512, verbose=False)[0]
+                            canvas = cv2.imread(str(img_path))
+                            for box in res.boxes:
+                                xyxy = [int(v) for v in box.xyxy[0].tolist()]
+                                conf = float(box.conf.item())
+                                cname = {0: "D00", 1: "D10", 2: "D20", 3: "D40", 4: "Repair"}.get(int(box.cls.item()), "Defect")
+                                cv2.rectangle(canvas, (xyxy[0], xyxy[1]), (xyxy[2], xyxy[3]), (0, 140, 255), 2)
+                                cv2.putText(canvas, f"{cname} {conf:.2f}", (xyxy[0], max(15, xyxy[1] - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 140, 255), 1)
+                            st.image(cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB), caption=f"⚡ Live YOLOv8n GPU Inference on {selected_segment} {selected_day_label}", use_container_width=True)
+                        except Exception as e:
+                            st.image(str(img_path), caption=f"{selected_segment} — {selected_day_label} (Raw Capture)", use_container_width=True)
+                    else:
+                        st.image(str(img_path), caption=f"{selected_segment} — {selected_day_label} ({obs_match['camera_preset']})", use_container_width=True)
+                else:
+                    st.warning(f"Image asset missing on disk at `{img_path}`.")
 
-    ineligible_data = [
-        {"Capture": "SEG_001 Day 01", "Condition": "Nadir Overhead Drone", "Ineligibility Reason": "VIEWPOINT_CHANGE", "Detailed Note": "Camera switch between Day 02 and Day 03 (switched from overhead nadir to oblique roadside view)."},
-        {"Capture": "SEG_001 Day 02", "Condition": "Nadir Overhead Drone", "Ineligibility Reason": "VIEWPOINT_CHANGE", "Detailed Note": "Camera perspective changed before Day 03 sequence inception."},
-        {"Capture": "SEG_002 Day 03", "Condition": "Overlook Variant", "Ineligibility Reason": "VIEWPOINT_CHANGE", "Detailed Note": "Intermediate pan/tilt geometry offset between Day 02 and Day 04 pairs."},
-        {"Capture": "SEG_002 Days 08, 09, 10", "Condition": "Overlook Low Sun", "Ineligibility Reason": "INSUFFICIENT_CONTIGUOUS_STATES", "Detailed Note": "Non-consecutive single-frame captures with varying illumination angles."},
-        {"Capture": "SEG_003 Day 10", "Condition": "Overcast Heavy", "Ineligibility Reason": "INSUFFICIENT_CONTIGUOUS_STATES", "Detailed Note": "Isolated terminal state following the D08-D09 pair."},
-    ]
-    st.dataframe(pd.DataFrame(ineligible_data), hide_index=True, use_container_width=True)
+            with col_info:
+                # Eligibility Badge
+                if obs_match["temporal_status"] == "ELIGIBLE":
+                    st.markdown("""
+                    <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; border-radius: 6px; padding: 10px; margin-bottom: 12px;">
+                        <span style="color: #34d399; font-weight: bold; font-size: 14px;">TEMPORAL ELIGIBLE</span>
+                        <div style="color: #cbd5e1; font-size: 12px; margin-top: 4px;">Compatible fixed camera geometry and continuous multi-state progression.</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown(f"""
+                    <div style="background: rgba(234, 179, 8, 0.15); border: 1px solid #eab308; border-radius: 6px; padding: 10px; margin-bottom: 12px;">
+                        <span style="color: #facc15; font-weight: bold; font-size: 14px;">TEMPORAL MATCH NOT APPLICABLE</span>
+                        <div style="color: #fef08a; font-size: 12px; margin-top: 4px;"><b>Reason:</b> {obs_match['exclusion_reason']}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-    st.markdown("---")
+                # Metadata Sidecar Details
+                if obs_match["has_metadata"]:
+                    st.markdown(f"""
+                    **Metadata Sidecar Status**: `VALID`  
+                    - **Camera Geometry**: {obs_match['camera_preset']}  
+                    - **Lighting / Solar Angle**: {obs_match['lighting_preset']}  
+                    - **Pavement Evolution State**: {obs_match['road_health_state']}  
+                    - **Moisture State**: {obs_match['moisture_state']}  
+                    """)
+                else:
+                    st.markdown("""
+                    <div class="callout-box danger">
+                        <strong>METADATA MISSING (Diagnostic Case):</strong><br>
+                        Simulation metadata sidecar was intentionally omitted for this capture (diagnostic verification).
+                    </div>
+                    """, unsafe_allow_html=True)
 
-    # 5. Publication Figures & Sequences Summary
-    st.markdown("### 4. Temporal Analytics Research Figures")
-    col_fig1, col_fig2 = st.columns(2)
-    with col_fig1:
-        p_event = PLOTS_DIR / "fig6_temporal_event_distribution.png"
-        if p_event.exists():
-            st.image(str(p_event), caption="Figure 6: Temporal Event Transition Distribution (Phase 4)", use_container_width=True)
-    with col_fig2:
-        p_track = PLOTS_DIR / "fig5_track_length_distribution.png"
-        if p_track.exists():
-            st.image(str(p_track), caption="Figure 5: Track Lifespan Retention Distribution", use_container_width=True)
+                st.markdown("---")
+                # Perception & Deterioration Metrics
+                m1, m2 = st.columns(2)
+                with m1:
+                    st.metric("Current Severity", f"{obs_match['current_severity']:.4f}")
+                    st.metric("Defect Count", obs_match["defect_count"])
+                with m2:
+                    st.metric("Defect Area Ratio", f"{obs_match['defect_area_ratio']:.6f}")
+                    st.metric("Surface Anomaly", f"{obs_match['surface_anomaly_score']:.4f}")
 
-    if not seq_table.empty:
-        with st.expander("View Full Sequences Metadata Table (All 8 Subsequences)"):
-            st.dataframe(seq_table, use_container_width=True)
+    # ==========================================
+    # VIEW B: VALIDATED TEMPORAL SEQUENCES
+    # ==========================================
+    with tab_view_b:
+        st.markdown(f"### VIEW B: Validated Compatible Sequences for `{selected_segment}`")
+        st.markdown(
+            "To preserve geometric tracking integrity, bipartite correspondence is executed **only on validated sequences** "
+            "with constant camera geometry. Incompatible transitions (viewpoint switches, isolated frames) are safely excluded."
+        )
 
+        val_seqs = VALIDATED_SEQUENCES_MAP.get(selected_segment, [])
+        if not val_seqs:
+            st.info(f"No validated multi-state temporal sequences defined yet for {selected_segment}.")
+        else:
+            seq_options = [s["title"] for s in val_seqs]
+            selected_seq_title = st.selectbox("Select Validated Sequence:", seq_options, index=0)
+            selected_seq_obj = next(s for s in val_seqs if s["title"] == selected_seq_title)
+            selected_seq_id = selected_seq_obj["id"]
 
-def render_seg004_progression_view():
-    st.markdown("### SEG_004 D01–D05: Model-Observed Progression Sequence")
+            st.markdown(f"""
+            <div style="background: #1e293b; padding: 14px 18px; border-radius: 8px; border-left: 4px solid #38bdf8; margin: 12px 0 18px 0;">
+                <b style="color: #38bdf8;">Sequence Scope:</b> {selected_seq_obj['states']} | <b>Camera:</b> {selected_seq_obj['camera']}<br>
+                <span style="color: #cbd5e1; font-size: 13px; margin-top: 4px; display: block;"><b>Research Takeaway:</b> {selected_seq_obj['key_takeaway']}</span>
+            </div>
+            """, unsafe_allow_html=True)
 
-    col_info, col_plot = st.columns([1, 1.2])
-    with col_info:
-        st.markdown("""
-        **Experimental Condition**:
-        - **Pavement Evolution**: Model-observed severity progression across simulated road states under a fixed camera viewpoint.
-        - **Camera Geometry**: Fixed Overhead Drone Survey (Top-Down Nadir, 30m)
-        - **Inspection Horizon**: 5 Consecutive States (Days 01–05)
-        """)
+            # Load sequence outputs
+            df_seq_daily = load_sequence_daily_summary(selected_seq_id)
+            seq_events = load_sequence_events(selected_seq_id)
+            seq_prog = load_sequence_progression(selected_seq_id)
 
-        st.markdown("#### Measured Severity Progression")
-        prog_df = pd.DataFrame({
-            "Day": ["Day 01", "Day 02", "Day 03", "Day 04", "Day 05"],
-            "Measured Severity": [0.0000, 0.0000, 0.2564, 0.6542, 0.7302],
-            "Observed State": ["State D01 (0 defects)", "State D02 (0 defects)", "State D03 (1 defect)", "State D04 (2 defects)", "State D05 (2 defects)"]
-        })
-        st.dataframe(prog_df, hide_index=True, use_container_width=True)
+            if not df_seq_daily.empty:
+                st.markdown("#### MODEL-OBSERVED TEMPORAL CHANGE: Quantitative Trajectories")
 
-        st.markdown("""
-        <div class="callout-box">
-            <strong>Scientific Nuance:</strong><br>
-            The sequence displays a <strong>model-observed severity progression across simulated road states under a fixed camera viewpoint</strong> (<strong>Δ = +0.7302</strong>).<br>
-            <em>Do not describe this as an unconfounded physical deterioration measurement:</em> while the drone camera angle is fixed top-down, subtle ambient illumination variations exist between states.
-        </div>
-        """, unsafe_allow_html=True)
+                # Metric Line Charts
+                chart_col1, chart_col2, chart_col3 = st.columns(3)
+                with chart_col1:
+                    st.markdown("**Current Severity vs Day**")
+                    st.line_chart(df_seq_daily.set_index("day")["current_severity"], use_container_width=True)
+                with chart_col2:
+                    st.markdown("**Defect Area Ratio vs Day**")
+                    st.line_chart(df_seq_daily.set_index("day")["defect_area_ratio"], use_container_width=True)
+                with chart_col3:
+                    st.markdown("**Candidate Defect Count vs Day**")
+                    st.line_chart(df_seq_daily.set_index("day")["defect_count"], use_container_width=True)
 
-    with col_plot:
-        plot_p = PLOTS_DIR / "fig2_seg004_drone_progression.png"
-        if plot_p.exists():
-            st.image(str(plot_p), caption="Figure 2: SEG_004 Drone Nadir Severity & Defect Progression", use_container_width=True)
+                # Day-to-Day Change Table
+                st.markdown("#### Day-to-Day Transition & Delta Table")
+                disp_cols = [
+                    "day", "current_severity", "current_severity_delta",
+                    "defect_count", "defect_count_delta",
+                    "defect_area_ratio", "defect_area_ratio_delta",
+                    "surface_anomaly_score", "surface_anomaly_score_delta"
+                ]
+                available_disp = [c for c in disp_cols if c in df_seq_daily.columns]
+                st.dataframe(df_seq_daily[available_disp], hide_index=True, use_container_width=True)
 
+            # Events for this specific sequence
+            if seq_events:
+                st.markdown(f"#### Sequence Track Events ({len(seq_events)} transitions)")
+                df_ev = pd.DataFrame(seq_events)
+                st.dataframe(df_ev, hide_index=True, use_container_width=True)
 
-def render_seg003_control_view():
-    st.markdown("### SEG_003 D01–D07: Model Response Stability Control")
-    
-    col_info, col_plot = st.columns([1, 1.2])
-    with col_info:
-        st.markdown("""
-        **Experimental Condition**:
-        - **Pavement State**: Invariant Pristine (Grade A)
-        - **Camera Geometry**: Fixed Highway Curve Vantage Overlook
-        - **Lighting & Weather**: Constant Clear Noon (70° Sun Elevation)
-        - **Inspection Horizon**: 7 Consecutive Days (Days 01–07)
-        """)
-        
-        st.markdown("#### Quantitative Invariance Metrics")
-        m1, m2 = st.columns(2)
-        with m1:
-            st.metric("Mean Severity", "0.2444", delta="Range: 0.2417 – 0.2472")
-            st.metric("Defect Count", "1.00", delta="Exactly 1 region every day")
-        with m2:
-            st.metric("Coefficient of Var. (CV)", "0.67%", delta="Near-Zero Variance")
-            st.metric("Longest Track", "7 States", delta="100% Track Retention")
+            # Sequence figure if available
+            p_seq_fig = PLOTS_DIR / f"fig2_{selected_segment.lower()}_drone_progression.png"
+            if not p_seq_fig.exists():
+                p_seq_fig = PLOTS_DIR / f"fig1_{selected_segment.lower()}_stability_control.png"
+            if not p_seq_fig.exists():
+                p_seq_fig = PLOTS_DIR / f"fig3_{selected_segment.lower()}_environmental_response.png"
 
-        st.markdown("""
-        <div class="callout-box success">
-            <strong>Critical Research Interpretation:</strong><br>
-            The near-zero coefficient of variation (<strong>CV = 0.67%</strong>) demonstrates that when physical pavement and lighting remain constant, the DINOv2+SAM2 perception pipeline exhibits exceptional repeatability.<br><br>
-            <strong>Examiner Note:</strong> The persistent detected region is a <em>systematic false-positive candidate</em> (road shoulder aggregate contrast under grazing perspective), not confirmed physical damage.
-        </div>
-        """, unsafe_allow_html=True)
+            if p_seq_fig.exists():
+                st.image(str(p_seq_fig), caption=f"Publication Figure for {selected_seq_id}", use_container_width=True)
 
-    with col_plot:
-        plot_p = PLOTS_DIR / "fig1_seg003_stability_control.png"
-        if plot_p.exists():
-            st.image(str(plot_p), caption="Figure 1: SEG_003 Multi-State Severity & Defect Count Invariance", use_container_width=True)
+    # ==========================================
+    # CANONICAL EVENT TAXONOMY & FIGURES
+    # ==========================================
+    with tab_events:
+        st.markdown("### Canonical Event Taxonomy & All 8 Sequences Overview")
+        st.markdown(
+            "Across all 8 temporal subsequences in Experiment A (40 captures, 33 matched transitions, 48 unique tracks), "
+            "the bipartite tracking engine classified pairwise temporal transitions into 5 formal event types:"
+        )
 
+        e1, e2, e3, e4, e5 = st.columns(5)
+        with e1:
+            st.metric("NEW_DEFECT", "48", help="A defect observed on Day T with no spatial correspondence on Day T-1.")
+        with e2:
+            st.metric("MATCHED_EXISTING", "33", help="Defect track maintained across consecutive observations (14 increased, 19 decreased).")
+        with e3:
+            st.metric("AREA_INCREASED", "14", help="Matched region exhibiting >15% observed bounding area growth (canonical count: 14).")
+        with e4:
+            st.metric("AREA_DECREASED", "19", help="Matched region exhibiting >15% observed area contraction (canonical count: 19).")
+        with e5:
+            st.metric("NOT_OBSERVED", "34", help="Region tracked previously but unobserved on Day T. NEVER marked as REPAIRED.")
 
-def render_seg001_confound_view():
-    st.markdown("### SEG_001 D03–D10: Environmental Modulation Sequence")
+        col_fig1, col_fig2 = st.columns(2)
+        with col_fig1:
+            p_event = PLOTS_DIR / "fig6_temporal_event_distribution.png"
+            if p_event.exists():
+                st.image(str(p_event), caption="Figure 6: Temporal Event Transition Distribution across all 8 Sequences", use_container_width=True)
+        with col_fig2:
+            p_track = PLOTS_DIR / "fig5_track_length_distribution.png"
+            if p_track.exists():
+                st.image(str(p_track), caption="Figure 5: Track Lifespan Retention Distribution (Longest track: 7 states)", use_container_width=True)
 
-    st.markdown("""
-    <div class="callout-box warn">
-        <strong>EXPLICIT ENVIRONMENTAL CONFOUND WARNING:</strong><br>
-        <em>"Observed severity changes in this sequence reflect both underlying road-state variation and perception sensitivity to illumination and moisture conditions."</em>
-    </div>
-    """, unsafe_allow_html=True)
-
-    col_info, col_plot = st.columns([1, 1.2])
-    with col_info:
-        st.markdown("""
-        **Sequence Characteristics**:
-        - **Initial State (Day 03)**: Severity = 0.0000
-        - **Peak State (Day 06–08)**: Cloud Cover / Overcast inflates pavement contrast -> Peak Severity = **0.7285** (12 unique tracks).
-        - **Final State (Day 10)**: Low-angle Sunset lighting triggers RoadMarkingSuppressor over-filtering -> Severity collapses to **0.0000**.
-        - **Key Lesson**: Optical perception models are sensitive to environmental contrast changes. Temporal filtering and weather normalization are essential for operational deployment.
-        """)
-
-    with col_plot:
-        plot_p = PLOTS_DIR / "fig3_seg001_environmental_response.png"
-        if plot_p.exists():
-            st.image(str(plot_p), caption="Figure 3: Environmental Sensitivity & False Suppression under Weather Shifts", use_container_width=True)
-
-
-def render_seg004_weather_confound_view():
-    st.markdown("### SEG_004 D06–D10: Weather Glare & Rain Artifacts")
-    st.markdown("""
-    <div class="callout-box danger">
-        <strong>Severe Weather Confound Notice:</strong><br>
-        Heavy Rain on Days 07–08 produced water reflections and specular highlights on asphalt, inflating detected defect regions to 12 clusters. On Days 09–10, extreme sunset glare caused full road-corridor suppression.
-    </div>
-    """, unsafe_allow_html=True)
-
-    plot_p = PLOTS_DIR / "seg004_d06_d10_temporal_response.png"
-    if plot_p.exists():
-        st.image(str(plot_p), caption="SEG_004 D06–D10 Extreme Environmental Response Curve")
-
-
-def render_generic_sequence_view(seq_id: str, camera: str, num_states: int, s_init: str, s_final: str, delta: str, note: str):
-    st.markdown(f"### {seq_id}: Subsequence Pair Analysis")
-    st.markdown(f"**Camera Geometry**: `{camera}` | **Observed States**: `{num_states}` consecutive frames")
-    
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.metric("Initial Severity", s_init)
-    with c2:
-        st.metric("Final Severity", s_final)
-    with c3:
-        st.metric("Observed Severity Delta", delta)
-
-    st.markdown(f"**Analysis Note**: {note}")
+        # Full Sequences Table
+        seq_table = load_temporal_sequences_table()
+        if not seq_table.empty:
+            with st.expander("View Full Sequences Metadata Table (All 8 Subsequences)"):
+                st.dataframe(seq_table, use_container_width=True)

@@ -21,7 +21,9 @@
 - [x] **Cross-Domain & Decision Views Built**: Integrated Phase 10 cross-domain transfer and Phase 13 decision engine.
 - [x] **Experiment B & Edge Pi Clearly Flagged**: Explicitly marked as PLANNED / PENDING FUTURE PHASE.
 - [x] **Demonstration Guides Authored**: Created `EXAMINER_DEMO_GUIDE.md` (5-min) and `EXAMINER_2_MINUTE_DEMO.md` (2-min).
-- [x] **Automated Test Suite Verified**: All routes and loaders verified without errors.
+- [x] **Automated Test Suite Verified**: All routes and loaders verified without errors (15/15 unit tests pass).
+- [x] **Phase 15 Repeated Inspection Mode**: Dynamic discovery of segment folders (`SEG_001`–`SEG_004`, ready for `SEG_005`+), View A (full segment history) & View B (validated sequences), missing metadata handling, zero upload requirement.
+
 
 ---
 
