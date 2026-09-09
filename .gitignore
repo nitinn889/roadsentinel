@@ -229,3 +229,9 @@ Thumbs.db
 # Override the global *.pt ignore rule for ONLY the final
 # road-defect YOLO checkpoint used by RoadSentinel.
 !yolo/weights/best.pt
+
+# ============================================================
+# Experiment A perception generated outputs (masks and overlays)
+# ============================================================
+integration/experiment_a/perception/
+
