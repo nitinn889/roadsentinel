@@ -67,17 +67,17 @@ def render_methodology():
         st.markdown("""
         #### Multi-Day Bipartite Association
         Tracks are propagated across consecutive observation days ($T-1 \\to T$) using hierarchical matching:
-        1. **Mask IoU**: Primary association criterion between SAM2 binary segmentation masks.
-        2. **BBox IoU Fallback**: Used when mask overlap is ambiguous or during camera jitter.
-        3. **Centroid Distance Fallback**: Normalized Euclidean distance thresholded to 10% of frame diagonal.
-        4. **One-to-One Matching**: Solved via Hungarian / greedy matching to prevent multi-defect collapse.
+        1. **Mask IoU**: Primary association criterion between SAM2 binary segmentation masks ($\\ge 0.50$).
+        2. **BBox IoU Fallback**: Used when mask overlap is ambiguous or during camera jitter ($\\ge 0.30$).
+        3. **Centroid Distance Fallback**: Normalized Euclidean distance ($\\le 75\\,\\text{px}$) with area ratio constraint ($\\le 3.0\\times$).
+        4. **One-to-One Greedy Matching**: Priority assignment preventing multi-defect track collapse.
 
         #### Formal Event Taxonomy
-        - `NEW_DEFECT`: Unmatched detection appearing on Day $T$.
-        - `MATCHED_EXISTING`: Continuous tracking of a spatial defect across days.
-        - `OBSERVED_AREA_INCREASED`: Tracked defect area expands by $\\ge 15\\%$.
-        - `OBSERVED_AREA_DECREASED`: Tracked defect area contracts by $\\ge 15\\%$.
-        - `NOT_OBSERVED`: Defect observed on Day $T-1$ absent on Day $T$. **Never marked as REPAIRED** without affirmative maintenance metadata.
+        - `NEW_DEFECT`: Unmatched detection appearing on Day $T$ (canonical count: 48).
+        - `MATCHED_EXISTING`: Continuous tracking of a spatial defect across days (canonical count: 33).
+        - `OBSERVED_AREA_INCREASED`: Tracked defect area expands by $\\ge 15\\%$ (canonical count: 14).
+        - `OBSERVED_AREA_DECREASED`: Tracked defect area contracts by $\\ge 15\\%$ (canonical count: 19).
+        - `NOT_OBSERVED`: Defect observed on Day $T-1$ absent on Day $T$ (canonical count: 34). **Never marked as REPAIRED** without affirmative maintenance metadata.
         """)
 
     with tabs[3]:
@@ -94,10 +94,10 @@ def render_methodology():
         - $W$: Subbase moisture / water exposure index $[0.0 - 1.0]$
         - $\\Delta t$: Forecast horizon $\\in \\{30, 60, 90\\}$ days
 
-        #### Monotone Convexity Constraints
-        Enforces physical plausibility:
+        #### Monotone Directional Constraints
+        Configured with `monotone_constraints: (1, 1, 1, 1, 1, 1)`:
         $$\\frac{\\partial \\hat{S}}{\\partial S_0} \\ge 0, \\quad \\frac{\\partial \\hat{S}}{\\partial R} \\ge 0, \\quad \\frac{\\partial \\hat{S}}{\\partial V} \\ge 0, \\quad \\frac{\\partial \\hat{S}}{\\partial T} \\ge 0, \\quad \\frac{\\partial \\hat{S}}{\\partial W} \\ge 0, \\quad \\frac{\\partial \\hat{S}}{\\partial \\Delta t} \\ge 0$$
-        Ensures deterioration never spontaneously reverses without physical maintenance intervention.
+        Enforces that tree-split predictions never project lower deterioration for higher stressor inputs or longer forecast horizons.
         """)
 
     with tabs[4]:
@@ -117,7 +117,7 @@ def render_methodology():
         )
 
         artifacts = [
-            ("PERCEPTION_METHODOLOGY.md", WORKSPACE_ROOT / "integration/PERCEPTION_METHODOLOGY.md", "Complete mathematical specification of DINOv2 memory bank and SAM2 prompting."),
+            ("PERCEPTION_METHODOLOGY.md", WORKSPACE_ROOT / "benchmark/final_comparison/PERCEPTION_METHODOLOGY.md", "Complete mathematical specification of DINOv2 memory bank and SAM2 prompting."),
             ("PERCEPTION_RESEARCH_SUMMARY.md", WORKSPACE_ROOT / "integration/PERCEPTION_RESEARCH_SUMMARY.md", "Final Phase-6 research interpretation, failure modes, and benchmark conclusions."),
             ("TEMPORAL_RESEARCH_SUMMARY.md", WORKSPACE_ROOT / "integration/experiment_a/TEMPORAL_RESEARCH_SUMMARY.md", "Phase-4 temporal analysis, tracking stability CV=0.67%, and environmental confounds."),
             ("FINAL_PERCEPTION_TABLE.csv", WORKSPACE_ROOT / "integration/dashboard_assets/perception/FINAL_PERCEPTION_TABLE.csv", "Frozen headline comparison table (Precision, Recall, F1, Latency, FPS)."),

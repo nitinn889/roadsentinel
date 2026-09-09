@@ -115,7 +115,7 @@ def render_failure_modes():
     with ycol2:
         st.markdown("""
         - **Sub-Resolution Crack Misses**: Downsampling high-resolution images to 512×512 removes sub-millimeter hairline crack fissures from feature maps.
-        - **Severe Viewpoint / Camera Domain Shift**: When tested on forward-facing dashcam video (e.g. India_005086), YOLOv8n trained solely on top-down UAV drone views collapsed to 0 detections, demonstrating complete out-of-domain sensitivity.
+        - **Forward-Facing Dashcam Domain Shift**: When tested on the forward-facing dashcam domain-shift example (India_005086), YOLOv8n trained solely on top-down UAV drone views produced no detections on the examined frame.
         """)
 
     st.markdown("---")

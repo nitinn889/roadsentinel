@@ -13,7 +13,7 @@ Phase 7 establishes the **first fully unified, examiner-facing interactive resea
 - **Supervised Damage Detection**: Ultralytics YOLOv8n (5 classes, conf=0.25, imgsz=512).
 - **Foundation Anomaly Perception**: Meta DINOv2 (ViT-S/14) + SAM2 (Hiera-S) zero-shot anomaly localization and segmentation.
 - **Multi-Day Temporal Analytics**: Experiment A tracking across 40 captures, featuring the SEG_003 stability control (CV = 0.67%) and SEG_004 progression sequence (Δ = +0.7302).
-- **Scenario-Conditioned Forecasting**: Frozen XGBoost Model V2 trained with monotone convexity constraints on 6 observational environmental and operational stressor features.
+- **Scenario-Conditioned Forecasting**: Frozen XGBoost Model V2 trained with monotone directional constraints on 6 observational environmental and operational stressor features.
 - **Comparative Research & Failure Modes**: Comprehensive benchmark evaluation on the 480-image RDD2022 China_Drone validation split, paired with transparent documentation of algorithmic failure modes and IoU sensitivity.
 - **Edge Deployment Roadmap**: Transparently structures the embedded evaluation framework while marking Raspberry Pi 5 benchmarking as **PENDING PHASE 8** with zero fabricated data.
 
@@ -30,7 +30,7 @@ Phase 7 establishes the **first fully unified, examiner-facing interactive resea
 - **Default Port**: `8501` (configurable via `--server.port`).
 - **Execution Architecture**:
   - **Verified Demo Mode (Default)**: Precomputed, cached, and validated outputs ensure instant, 100% deterministic operation during examiner presentations without requiring GPU initialization or external network calls.
-  - **Live Inference Mode (Optional)**: Provides on-demand GPU inference for YOLOv8n and DINOv2+SAM2, equipped with graceful try-except fallbacks that automatically revert to precomputed assets if CUDA errors or memory shortages occur.
+  - **Live Inference Mode (Optional)**: Provides on-demand GPU inference for YOLOv8n (while DINOv2+SAM2 displays frozen precomputed segmentations), equipped with graceful try-except fallbacks that automatically revert to precomputed assets if CUDA errors or memory shortages occur.
 
 ---
 
@@ -67,12 +67,12 @@ dashboard/
   1. Original Road Frame
   2. YOLOv8n Detections (bounding boxes, class label, confidence)
   3. DINOv2+SAM2 Anomaly Segmentation (mask-derived bounding box, generic `road_defect` label)
-- Pavement state metrics automatically computed:
-  - Current Severity Index ($S_0$)
+- Pavement state metrics:
+  - Current Severity Index ($S_0$): Computed on Experiment A multi-modal captures as a weighted combination of defect area ($m^2$/pixels), estimated depth (dynamically re-weighted in RGB mode), water hazard presence/confidence, and surrounding damage extent. On 2D detection benchmark frames, multi-modal severity is marked N/A.
   - Defect Count
   - Defect Area Ratio (%)
   - Surface Anomaly Score
-- Session state continuity: $S_0$ automatically seeds the starting baseline for the Future Condition Forecast page.
+- Session state continuity: $S_0$ automatically seeds the starting baseline for the Future Condition Forecast page when available.
 
 ### 4.2 Scenario-Conditioned Deterioration Forecasting (XGBoost Model V2)
 - Exactly matches frozen 6-feature signature: `[current_severity, rainfall_level, traffic_level, temperature, water_exposure, days_ahead]`.
@@ -84,10 +84,11 @@ dashboard/
 ### 4.3 Temporal Road Monitoring & Multi-Day Analytics
 - Exposes all 4 primary sequence regimes from Experiment A:
   - **SEG_003 D01–D07**: Invariant stability control proving model repeatability (**CV = 0.67%**, mean severity 0.2444, 7-state track retention). Explicitly notes detected region is a systematic false-positive candidate.
-  - **SEG_004 D01–D05**: Monotonic severity progression (**Δ = +0.7302**) tracking physical road deterioration.
+  - **SEG_004 D01–D05**: Model-observed severity progression across simulated road states under a fixed camera viewpoint (**Δ = +0.7302**).
   - **SEG_001 D03–D10**: Demonstrates optical sensitivity and false suppression under weather shifts (cloud cover inflating severity to 0.7285, sunset glare suppressing defects).
   - **SEG_004 D06–D10**: Rain puddle reflections (12 false clusters) and sunset glare confounds.
-- Comprehensive 5-event taxonomy counters: `NEW_DEFECT` (48), `MATCHED_EXISTING` (33), `AREA_INCREASED` (21), `AREA_DECREASED` (12), `NOT_OBSERVED` (34). Reaffirms `NOT_OBSERVED` is **never marked as REPAIRED**.
+- Comprehensive 5-event taxonomy counters: `NEW_DEFECT` (48), `MATCHED_EXISTING` (33), `AREA_INCREASED` (14), `AREA_DECREASED` (19), `NOT_OBSERVED` (34). Reaffirms `NOT_OBSERVED` is **never marked as REPAIRED**.
+- Bipartite tracking algorithm: Evaluated using hierarchical greedy matching: Mask IoU ($\ge 0.50$) $\to$ BBox IoU fallback ($\ge 0.30$) $\to$ Centroid/Area fallback ($\le 75\,\text{px}, \le 3.0\times$).
 
 ### 4.4 Perception Benchmark: YOLOv8n vs DINOv2+SAM2
 - Renders frozen headline metrics on RDD2022 China_Drone (480 images, 742 GT boxes):
@@ -99,7 +100,7 @@ dashboard/
 
 ### 4.5 Failure Mode & Sensitivity Analysis
 - Transparent analysis of DINOv2+SAM2 failures: coarse gravel aggregate false alarms (1,055 unmatched regions), 14×14 px thin crack patch dilution, long crack SAM2 fragmentation, specular puddle reflections, and sunset shadow suppression.
-- Transparent analysis of YOLOv8n failures: D20 confusion, roadside soil FPs, worn thermoplastic marking wear, and total failure under forward dashcam domain shift (India_005086).
+- Transparent analysis of YOLOv8n failures: D20 confusion, roadside soil FPs, worn thermoplastic marking wear, and absence of detections on forward dashcam domain shift (India_005086).
 - IoU sensitivity analysis: IoU 0.50 (TP = 25) vs IoU 0.25 (TP = 74), with rigorous explanation that relaxed criteria reveal partial mask overlap rather than true precision parity.
 
 ### 4.6 Edge Deployment (Raspberry Pi 5)
@@ -129,7 +130,7 @@ Extensive automated and manual stress tests were performed to guarantee fail-saf
    - `Page [7. Edge Deployment]`: 0 exceptions
    - `Page [8. Research / Methodology]`: 0 exceptions
 3. **Session State Continuity**:
-   - Single-Image Assessment selected image (`0.5781` severity) seamlessly populated the baseline slider on the Future Condition Forecast page.
+   - Single-Image Assessment selected image severity seamlessly populates the baseline slider on the Future Condition Forecast page when available.
 4. **Missing Artifact Defensive Fallbacks**:
    - Tested behavior under simulated missing manifests and optional files; data loaders return graceful empty structures without throwing uncaught exceptions.
 
@@ -138,14 +139,14 @@ Extensive automated and manual stress tests were performed to guarantee fail-saf
 ## 6. Known Limitations & Research Boundaries
 
 1. **Benchmark Distribution Bias**: The validation benchmark uses RDD2022 China_Drone, which directly matches YOLOv8n's supervised training domain. DINOv2+SAM2 is zero-shot and penalized on standard bounding box IoU metrics.
-2. **Optical Sensor Sensitivity**: Both pipelines exhibit sensitivity to environmental extremes (specular puddle glare and grazing low-angle sunset shadows), underscoring the requirement for multi-frame temporal filtering in operational settings.
-3. **Synthetic Deterioration Horizon**: Multi-day temporal progressions (Experiment A) capture simulated deterioration states rather than multi-year physical weathering, necessitating validation against long-term highway infrastructure datasets.
+2. **Distinct Optical Sensitivities**: DINOv2+SAM2 is vulnerable to specular puddle reflections and sunset shadow gradients confusing heuristic suppression, whereas YOLOv8n is sensitive to road-border terrain textures and camera viewpoint shifts.
+3. **Synthetic Deterioration Horizon**: Multi-day temporal progressions (Experiment A) capture simulated road deterioration states rather than multi-year physical weathering, necessitating validation against long-term highway infrastructure datasets.
 
 ---
 
 ## 7. Phase 8 Readiness Assessment
 
 - **Readiness**: YES.
-- All Phase 1–7 artifacts, datasets, and perception/forecasting models are permanently frozen.
+- All Phase 1–7 artifacts, datasets, and perception/forecasting models are frozen for evaluation as of the Phase-7 commit.
 - Edge deployment target specifications and metric schemas are established.
 - The repository is completely primed for Phase 8 embedded deployment and on-device profiling on the Raspberry Pi 5 platform.

@@ -69,7 +69,7 @@ dashboard/
 | **5. YOLO vs DINOv2+SAM2** | Final frozen comparison table, YOLO 5-class breakdown (with D40 low support caveat), curated panel gallery. |
 | **6. Failure Mode Analysis** | Transparent breakdown of DINOv2 texture FPs, thin crack patch dilution, YOLO D20 confusion, and IoU 0.25 sensitivity. |
 | **7. Edge Deployment** | Embedded deployment architecture, Cortex-A76 target specs, planned metrics, and `PENDING PHASE 8` badge. |
-| **8. Research / Methodology** | Mathematical formulation of monotone forecasting, Hungarian tracking rules, and repository links. |
+| **8. Research / Methodology** | Mathematical formulation of monotone forecasting, hierarchical greedy tracking rules, and repository links. |
 
 ---
 
@@ -80,9 +80,9 @@ dashboard/
 - Zero GPU compute required; deterministic latency (< 10 ms per click).
 - Safest mode for live presentations and academic examinations.
 
-### B. Live Inference Mode (Optional)
+### B. Live YOLOv8n Inference Mode (Optional)
 - Available on the Single-Image Road Assessment page.
-- Dynamically invokes PyTorch and CUDA on `best.pt` (RTX 5060 Laptop GPU).
+- Dynamically invokes PyTorch and CUDA for YOLOv8n on `best.pt` (RTX 5060 Laptop GPU), while DINOv2+SAM2 displays frozen precomputed segmentations.
 - If GPU memory is exhausted or CUDA is uninitialized, the UI catches the error and seamlessly falls back to precomputed results without crashing.
 
 ---

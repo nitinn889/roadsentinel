@@ -56,11 +56,11 @@ def render_temporal_monitoring():
     with e1:
         st.metric("NEW_DEFECT", "48", help="A defect observed on Day T with no spatial correspondence on Day T-1.")
     with e2:
-        st.metric("MATCHED_EXISTING", "33", help="Defect track maintained across consecutive observations.")
+        st.metric("MATCHED_EXISTING", "33", help="Defect track maintained across consecutive observations (14 increased, 19 decreased).")
     with e3:
-        st.metric("AREA_INCREASED", "21", help="Matched region exhibiting >15% observed bounding area growth.")
+        st.metric("AREA_INCREASED", "14", help="Matched region exhibiting >15% observed bounding area growth (canonical Phase-4 count: 14).")
     with e4:
-        st.metric("AREA_DECREASED", "12", help="Matched region exhibiting >15% observed area contraction.")
+        st.metric("AREA_DECREASED", "19", help="Matched region exhibiting >15% observed area contraction (canonical Phase-4 count: 19).")
     with e5:
         st.metric("NOT_OBSERVED", "34", help="Region tracked previously but unobserved on Day T. NEVER marked as REPAIRED.")
 
@@ -123,7 +123,7 @@ def render_seg004_progression_view():
     with col_info:
         st.markdown("""
         **Experimental Condition**:
-        - **Pavement Evolution**: Unblemished baseline transitioning to severe road breakdown
+        - **Pavement Evolution**: Model-observed severity progression across simulated road states under a fixed camera viewpoint.
         - **Camera Geometry**: Fixed Overhead Drone Survey (Top-Down Nadir)
         - **Inspection Horizon**: 5 Consecutive States (Days 01–05)
         """)
@@ -132,15 +132,15 @@ def render_seg004_progression_view():
         prog_df = pd.DataFrame({
             "Day": ["Day 01", "Day 02", "Day 03", "Day 04", "Day 05"],
             "Measured Severity": [0.0000, 0.0000, 0.2564, 0.6542, 0.7302],
-            "Observed State": ["Baseline (0 defects)", "Baseline (0 defects)", "Initial Crack (1 defect)", "Branching Cracks (2 defects)", "Critical Breakdown (2 defects)"]
+            "Observed State": ["State D01 (0 defects)", "State D02 (0 defects)", "State D03 (1 defect)", "State D04 (2 defects)", "State D05 (2 defects)"]
         })
         st.dataframe(prog_df, hide_index=True, use_container_width=True)
 
         st.markdown("""
         <div class="callout-box">
             <strong>Scientific Nuance:</strong><br>
-            The sequence displays a clean monotonic severity growth (<strong>Δ = +0.7302</strong>) tracking physical road degradation.<br>
-            <em>Do not describe this as a laboratory-perfect deterioration measurement:</em> while the drone camera angle is fixed top-down, subtle ambient illumination variations exist between states.
+            The sequence displays a <strong>model-observed severity progression across simulated road states under a fixed camera viewpoint</strong> (<strong>Δ = +0.7302</strong>).<br>
+            <em>Do not describe this as an unconfounded physical deterioration measurement:</em> while the drone camera angle is fixed top-down, subtle ambient illumination variations exist between states.
         </div>
         """, unsafe_allow_html=True)
 

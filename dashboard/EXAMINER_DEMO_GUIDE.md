@@ -55,15 +55,15 @@ Launch the dashboard from the repository root:
 ## 5. Review Current Severity Metrics
 1. **Action**: Review the *Pavement State Metrics* cards below the images.
 2. **Key Talking Points**:
-   - Note the calculated **Current Severity Index** (e.g. `0.5781`), computed directly from detected defect count and segmented pavement area coverage.
-   - Mention that this measured severity is automatically preserved in session state to initialize future condition forecasts.
+   - Explain the **Current Severity Index**: On multi-modal inspection captures (Experiment A), severity is computed per defect as a weighted combination of defect area ($m^2$/pixels), estimated depth (dynamically re-weighted in RGB mode), water hazard presence/confidence, and surrounding damage extent. On 2D detection benchmark frames evaluated solely on bounding boxes, multi-modal severity is marked N/A.
+   - Mention that measured severity values are preserved in session state to initialize future condition forecasts.
 
 ---
 
 ## 6. Configure Future Forecast Scenario
 1. **Action**: Navigate to `3. Future Condition Forecast`.
 2. **Key Talking Points**:
-   - Show that the starting baseline severity ($S_0$) is automatically pre-populated from the single-image assessment.
+   - Show that the starting baseline severity ($S_0$) is automatically pre-populated from the single-image assessment (or adjustable via slider).
    - Switch the *Scenario Preset* dropdown from `NORMAL` to `HEAVY_RAIN` (or `HIGH_HEAT`).
    - Note how precipitation, traffic, and temperature sliders adjust to match empirically grounded 90th-percentile stressor thresholds.
    - Set the *Forecast Horizon* slider to **60 Days** or **90 Days**.
@@ -77,7 +77,7 @@ Launch the dashboard from the repository root:
    - Review the Baseline Severity, Projected Future Severity, and estimated change ($\Delta$).
    - Read or highlight the **Mandatory Scientific Disclaimer**:
      > *"The forecast is scenario-conditioned and derived from observational training data; it should not be interpreted as a deterministic physical deterioration prediction."*
-   - Mention that the model incorporates **monotone convexity constraints** to ensure physical consistency (degradation does not spontaneously reverse without maintenance).
+   - Mention that the model incorporates **monotone directional constraints** (`monotone_constraints: (1,1,1,1,1,1)`) ensuring tree predictions do not project lower deterioration under increased stress levels or longer forecast horizons.
 
 ---
 
@@ -85,14 +85,15 @@ Launch the dashboard from the repository root:
 1. **Action**: Navigate to `4. Temporal Road Monitoring`.
 2. **Key Talking Points**:
    - Introduce the multi-day inspection evaluation from Experiment A (40 captures across 4 sequences).
-   - Review the **Temporal Event Taxonomy** cards: `NEW_DEFECT` (48), `MATCHED_EXISTING` (33), `AREA_INCREASED` (21), `AREA_DECREASED` (12), and `NOT_OBSERVED` (34).
+   - Review the **Temporal Event Taxonomy** cards: `NEW_DEFECT` (48), `MATCHED_EXISTING` (33), `AREA_INCREASED` (14), `AREA_DECREASED` (19), and `NOT_OBSERVED` (34).
    - Reiterate that `NOT_OBSERVED` is **never fabricated as REPAIRED** without maintenance metadata.
+   - Explain the **One-to-One Hierarchical Matching Algorithm**: Mask IoU ($\ge 0.50$) $\to$ BBox IoU fallback ($\ge 0.30$) $\to$ Centroid/Area fallback ($\le 75\,\text{px}, \le 3.0\times$).
 
 ---
 
 ## 9. Demonstrate Progression vs Stability Sequences
 1. **Action A (Progression)**: Select `SEG_004_D01_D05 — Monotonic Progression Sequence`.
-   - Show the clean monotonic severity climb from `0.0000` (baseline unblemished) to `0.7302` (critical breakdown).
+   - Show the model-observed severity progression across simulated road states under a fixed camera viewpoint (`0.0000` to `0.7302`, $\Delta = +0.7302$).
    - Point out Figure 2 showing defect area expansion across successive states.
 2. **Action B (Stability Control)**: Switch to `SEG_003_D01_D07 — Stability Control Test`.
    - Highlight the **0.67% Coefficient of Variation** across 7 consecutive observation states under invariant lighting.

@@ -83,13 +83,14 @@ def render_single_image_assessment():
     with mode_col2:
         exec_mode = st.radio(
             "Execution Mode",
-            ["Verified Demo Mode (Precomputed)", "Live Inference Mode (GPU)"],
+            ["Verified Demo Mode (Precomputed)", "Live YOLOv8n Inference Mode (GPU)"],
             index=0,
-            help="Verified Demo Mode ensures fast, offline-safe demonstration. Live Mode runs the frozen model on GPU if available."
+            help="Verified Demo Mode ensures fast, offline-safe demonstration using frozen assets. Live YOLOv8n Mode executes the frozen PyTorch detector on GPU."
         )
 
     curated_panels = get_curated_panel_images()
     benchmark_summary = load_benchmark_summary()
+    exp_a_df = load_experiment_a_perception()
     per_image_recs = {r["image_id"]: r for r in benchmark_summary.get("per_image_records", [])}
 
     # Image Selector Tabs / Dropdown
@@ -123,16 +124,16 @@ def render_single_image_assessment():
     raw_bgr = cv2.imread(str(active_img_path))
     raw_rgb = cv2.cvtColor(raw_bgr, cv2.COLOR_BGR2RGB)
 
-    # Prepare YOLO Results
+    # Prepare YOLO & DINO/SAM Results
     yolo_dets = []
     dino_boxes = []
-    current_severity = 0.0
+    current_severity = None
     defect_count = 0
-    defect_area_ratio = 0.0
-    surface_anomaly_score = 0.0
+    defect_area_ratio = None
+    surface_anomaly_score = None
 
     if exec_mode.startswith("Live") and torch_is_available():
-        with st.spinner("Executing live YOLOv8n & DINOv2+SAM2 inference on GPU..."):
+        with st.spinner("Executing live YOLOv8n inference on GPU... (DINOv2+SAM2 uses frozen precomputed segmentations)"):
             try:
                 from ultralytics import YOLO
                 yolo_model = YOLO(str(WORKSPACE_ROOT / "yolo/weights/best.pt"))
@@ -146,18 +147,25 @@ def render_single_image_assessment():
                             "bbox": [float(v) for v in b],
                         })
             except Exception as e:
-                st.error(f"Live inference error: {e}. Falling back to precomputed verified results.")
+                st.error(f"Live YOLO inference error: {e}. Falling back to precomputed verified results.")
                 yolo_dets = bench_rec.get("raw_yolo", []) if bench_rec else []
+        if bench_rec:
+            dino_boxes = bench_rec.get("raw_dino_boxes", [])
+            defect_count = len(dino_boxes)
     else:
         # Precomputed Verified Demo
         if bench_rec:
             yolo_dets = bench_rec.get("raw_yolo", [])
             dino_boxes = bench_rec.get("raw_dino_boxes", [])
             defect_count = len(dino_boxes)
-            # Estimate proxy metrics from benchmark
-            defect_area_ratio = sum((b[2]-b[0])*(b[3]-b[1]) for b in dino_boxes) / (512*512) if dino_boxes else 0.0
-            current_severity = min(1.0, 0.20 * defect_count + 10.0 * defect_area_ratio)
-            surface_anomaly_score = 0.35 if defect_count > 0 else 0.15
+
+    # Check if this image has exact multi-modal severity from Experiment A
+    if not exp_a_df.empty and selected_id in exp_a_df["image_id"].values:
+        row_exp = exp_a_df[exp_a_df["image_id"] == selected_id].iloc[0]
+        current_severity = float(row_exp["current_severity"])
+        defect_count = int(row_exp["defect_count"])
+        defect_area_ratio = float(row_exp["defect_area_ratio"])
+        surface_anomaly_score = float(row_exp["surface_anomaly_score"])
 
     # If curated panel figure exists, check if pre-rendered panel can be shown
     panel_fig_path = None
@@ -191,25 +199,30 @@ def render_single_image_assessment():
     st.markdown("### Pavement State Metrics")
     m1, m2, m3, m4 = st.columns(4)
     with m1:
-        st.metric("Current Severity Index", f"{current_severity:.4f}", delta=f"{defect_count} defect regions")
+        sev_display = f"{current_severity:.4f}" if current_severity is not None else "N/A (Detection Benchmark)"
+        st.metric("Current Severity Index", sev_display, delta=f"{defect_count} defect regions" if defect_count > 0 else "0 defects")
     with m2:
         st.metric("Defect Count", f"{defect_count}", delta=f"{len(yolo_dets)} YOLO boxes")
     with m3:
-        st.metric("Defect Area Ratio", f"{defect_area_ratio*100:.2f}%", delta="Pavement coverage")
+        area_display = f"{defect_area_ratio*100:.2f}%" if defect_area_ratio is not None else "N/A (BBox Only)"
+        st.metric("Defect Area Ratio", area_display, delta="Pavement coverage" if defect_area_ratio is not None else None)
     with m4:
-        st.metric("Surface Anomaly Score", f"{surface_anomaly_score:.3f}", delta="DINOv2 patch distance")
+        anomaly_display = f"{surface_anomaly_score:.3f}" if surface_anomaly_score is not None else "N/A (Benchmark)"
+        st.metric("Surface Anomaly Score", anomaly_display, delta="DINOv2 patch distance" if surface_anomaly_score is not None else None)
 
-    # Pass current severity to session state for future forecast page
-    st.session_state["selected_current_severity"] = current_severity
+    # Pass current severity to session state for future forecast page if available
+    if current_severity is not None:
+        st.session_state["selected_current_severity"] = current_severity
     st.session_state["selected_image_id"] = selected_id
 
-    # Educational Tooltip
+    # Educational Tooltip with Exact Severity Formula Description
     st.markdown("""
     <div class="callout-box">
-        <strong>Educational Guide:</strong><br>
+        <strong>Educational Guide & Severity Calculation:</strong><br>
         • <strong>DINOv2</strong>: Compares vision transformer patch embeddings (14×14 px) against a clean asphalt memory bank to compute surface anomaly distances.<br>
         • <strong>SAM2</strong>: Refines anomalous candidate centroid prompts into detailed boundary segmentation masks.<br>
-        • <strong>YOLOv8n</strong>: Directly predicts supervised damage classes (D00=Longitudinal, D10=Transverse, D20=Alligator, D40=Pothole, Repair) and rectangular bounding boxes.
+        • <strong>YOLOv8n</strong>: Directly predicts supervised damage classes (D00=Longitudinal, D10=Transverse, D20=Alligator, D40=Pothole, Repair) and rectangular bounding boxes.<br>
+        • <strong>Severity Formula (Frozen Perception Pipeline)</strong>: Computed per defect as a weighted combination of defect area ($m^2$ or pixel mask extent), estimated depth (dynamically re-weighted when depth maps are unavailable in RGB-only mode), water hazard presence/confidence, and surrounding crack extent, scaled by detection confidence and normalized to $[0.0, 1.0]$. (RDD2022 validation frames evaluate bounding boxes only; multi-modal severity is marked N/A).
     </div>
     """, unsafe_allow_html=True)
 
@@ -219,8 +232,8 @@ def render_single_image_assessment():
             "image_id": selected_id,
             "yolo_detections": yolo_dets,
             "dino_sam_mask_derived_boxes": dino_boxes,
-            "current_severity": round(current_severity, 4),
-            "defect_area_ratio": round(defect_area_ratio, 6),
+            "current_severity": round(current_severity, 4) if current_severity is not None else "N/A",
+            "defect_area_ratio": round(defect_area_ratio, 6) if defect_area_ratio is not None else "N/A",
             "verified_demo_mode": not exec_mode.startswith("Live"),
             "ground_truth_available": panel_meta.get("has_gt", True) if panel_meta else True,
         })
