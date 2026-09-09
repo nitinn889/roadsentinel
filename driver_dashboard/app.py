@@ -517,7 +517,12 @@ def main():
 
     # Evaluate Geofence & Hazards Ahead
     if geofence_res["is_on_route"]:
-        nearest_hazard = get_nearest_hazard_ahead(curr_dist_m, curr_lat, curr_lon, hazards_for_day, speed_kmh=curr_speed_kmh)
+        nearest_hazard = get_nearest_hazard_ahead(curr_dist_m, curr_lat, curr_lon, hazards_for_day)
+        if nearest_hazard:
+            speed_mps = (curr_speed_kmh / 3.6) if curr_speed_kmh > 0 else 0.0
+            dist_ahead = nearest_hazard.get("distance_ahead_m", 0.0)
+            nearest_hazard["eta_seconds"] = round(dist_ahead / speed_mps, 1) if speed_mps > 0 else None
+
         lookahead_info = compute_400m_lookahead_health(curr_dist_m, sim.day, primary_data)
         alert_obj, sim.fired_alerts = evaluate_alert_status(nearest_hazard, curr_speed_kmh, sim.fired_alerts)
         if alert_obj and alert_obj["is_new"]:

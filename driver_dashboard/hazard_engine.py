@@ -130,13 +130,15 @@ def get_nearest_hazard_ahead(
     vehicle_lat: float,
     vehicle_lon: float,
     hazards_for_day: List[Dict[str, Any]],
-    speed_kmh: float = 0.0,
+    *args,
+    **kwargs,
 ) -> Optional[Dict[str, Any]]:
     """Find the nearest hazard strictly AHEAD of the vehicle (global_distance_m > vehicle_dist_m).
 
     Returns dictionary containing hazard record, distance_ahead_m, haversine_dist_m, and eta_seconds.
     Ignored hazards behind the vehicle.
     """
+    speed_kmh = kwargs.get("speed_kmh", args[0] if args else 0.0)
     hazards_ahead = [
         h for h in hazards_for_day if h["global_distance_m"] > vehicle_dist_m
     ]
@@ -151,7 +153,7 @@ def get_nearest_hazard_ahead(
         vehicle_lat, vehicle_lon, nearest_hazard["latitude"], nearest_hazard["longitude"]
     )
 
-    speed_mps = (speed_kmh / 3.6) if speed_kmh > 0 else 0.0
+    speed_mps = (float(speed_kmh) / 3.6) if float(speed_kmh) > 0 else 0.0
     eta_sec = round(dist_ahead_m / speed_mps, 1) if speed_mps > 0 else None
 
     result = dict(nearest_hazard)
