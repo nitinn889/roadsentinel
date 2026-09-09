@@ -1,0 +1,23 @@
+{
+  "India_005086": {
+    "description": "Forward dashcam view (cross-domain)",
+    "file": "/home/nitin-nandakumar/Downloads/roadsentinel/yolo/test_conditions/cross_domain/India_005086.jpg",
+    "dino_knn_distance": 0.8653,
+    "dino_domain_score": 0.0,
+    "dino_ood_score": 1.0
+  },
+  "0454": {
+    "description": "Pothole dataset probe",
+    "file": "/home/nitin-nandakumar/Downloads/roadsentinel/yolo/test_conditions/cross_domain/0454.png",
+    "dino_knn_distance": 0.3492,
+    "dino_domain_score": 0.2404,
+    "dino_ood_score": 0.7596
+  },
+  "original_healthy": {
+    "description": "Pristine synthetic road baseline",
+    "file": "/home/nitin-nandakumar/Downloads/roadsentinel/yolo/test_conditions/cross_domain/original_healthy.jpg",
+    "dino_knn_distance": 0.4372,
+    "dino_domain_score": 0.0285,
+    "dino_ood_score": 0.9715
+  }
+}

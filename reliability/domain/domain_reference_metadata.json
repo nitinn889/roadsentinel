@@ -1,0 +1,20 @@
+{
+  "model_backbone": "dinov2_vits14",
+  "embedding_dim": 384,
+  "input_resolution": [
+    518,
+    518
+  ],
+  "training_image_count": 1921,
+  "k_neighbors": 20,
+  "knn_distance_distribution": {
+    "min": 0.03357696533203125,
+    "median": 0.17300939559936523,
+    "mean": 0.18574507534503937,
+    "std": 0.0834488645195961,
+    "p95": 0.3482009768486023,
+    "p99": 0.4490656554698944,
+    "max": 0.6025460362434387
+  },
+  "normalization_formula": "dino_domain_score = clip(1.0 - (d_knn - p05) / (p95 - p05), 0, 1)"
+}

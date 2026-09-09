@@ -1,0 +1,4 @@
+reliability_band,sample_count,population_share_pct,mean_predicted_reliability,actual_yolo_success_rate,actual_yolo_failure_rate,mean_yolo_f1,recommended_action
+HIGH,407,84.79,0.9603,0.9509,0.0491,0.7687,AUTOMATED_ACCEPT
+MEDIUM,37,7.71,0.7592,0.8649,0.1351,0.7433,SECONDARY_INSPECTION
+LOW,36,7.5,0.1078,0.1111,0.8889,0.0944,ESCALATE_MANUAL_REVIEW

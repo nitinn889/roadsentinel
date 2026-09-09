@@ -1,0 +1,26 @@
+{
+  "n_total": 480,
+  "n_success": 423,
+  "n_failure": 57,
+  "dino_ood_success": {
+    "mean": 0.3527,
+    "std": 0.1937,
+    "median": 0.3176,
+    "iqr_25": 0.2193,
+    "iqr_75": 0.4419
+  },
+  "dino_ood_failure": {
+    "mean": 0.4184,
+    "std": 0.2157,
+    "median": 0.3692,
+    "iqr_25": 0.2495,
+    "iqr_75": 0.5756
+  },
+  "mann_whitney_u": {
+    "statistic": 14134.0,
+    "p_value": 0.0345352321299204,
+    "rank_biserial_correlation": -0.1724,
+    "cohen_d": 0.3206,
+    "significant_at_005": true
+  }
+}

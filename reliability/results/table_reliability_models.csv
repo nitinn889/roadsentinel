@@ -1,0 +1,4 @@
+model,features,AUROC,AUPRC,balanced_accuracy,precision,recall,failure_F1,Brier_score,ECE,notes
+YOLO Confidence Baseline,"max_conf, mean_conf, std_conf, pred_count, num_low_conf, num_high_conf",0.8649,0.7274,0.7719,1.0,0.5439,0.7045,0.0497,0.0156,Supervised confidence metrics only (no visual/domain information)
+DINOv2 OOD Baseline,"dino_ood_score, dino_knn_distance, dino_centroid_distance",0.5971,0.154,0.5833,0.1608,0.5614,0.25,0.1039,0.0064,"Zero-shot foundation domain familiarity relative to 1,921 training embeddings"
+Combined Reliability Model,"Confidence + DINO OOD + Brightness, Contrast, Sharpness, Edge Density",0.8549,0.717,0.7999,0.8537,0.614,0.7143,0.0511,0.0308,Multimodal reliability estimation with regularized logistic calibration

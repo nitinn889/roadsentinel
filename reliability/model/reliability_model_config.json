@@ -1,0 +1,92 @@
+{
+  "model_type": "LogisticRegression_L2",
+  "random_state": 42,
+  "features": [
+    "max_confidence",
+    "mean_confidence",
+    "std_confidence",
+    "yolo_pred_count",
+    "num_low_conf",
+    "num_high_conf",
+    "dino_ood_score",
+    "dino_knn_distance",
+    "dino_centroid_distance",
+    "brightness",
+    "contrast",
+    "sharpness",
+    "edge_density"
+  ],
+  "scaler_means": [
+    0.615645,
+    0.5467552083333334,
+    0.06038666666666667,
+    1.8208333333333333,
+    0.5520833333333334,
+    0.7354166666666667,
+    0.3605341666666666,
+    0.18412479166666665,
+    0.3345839583333333,
+    145.20024999999998,
+    22.210624999999997,
+    323.33212499999996,
+    0.056329333333333335
+  ],
+  "scaler_scales": [
+    0.23278559532683002,
+    0.2197578842299102,
+    0.07836547303429546,
+    1.2604493797407688,
+    0.890573219742331,
+    0.7265757540607098,
+    0.19755853847481653,
+    0.08473543526494645,
+    0.11154980788194242,
+    25.85711656432003,
+    11.735984354797074,
+    406.00368415721846,
+    0.06940533545152627
+  ],
+  "coefficients": [
+    -0.8205055009289288,
+    -1.1882861111155443,
+    0.12578900348321156,
+    -1.2282070112680594,
+    -0.07701922563137435,
+    0.7926455862073095,
+    0.19247071366906482,
+    -0.05751052804085652,
+    -0.1695520091632354,
+    0.2423489402511745,
+    0.1015543650442689,
+    0.4229615110197505,
+    -0.4406842786120805
+  ],
+  "intercept": -2.9188259181150205,
+  "decision_threshold": 0.34,
+  "reliability_bands": {
+    "HIGH": {
+      "min_reliability": 0.85,
+      "action": "AUTOMATED_ACCEPT"
+    },
+    "MEDIUM": {
+      "min_reliability": 0.6,
+      "max_reliability": 0.85,
+      "action": "SECONDARY_INSPECTION"
+    },
+    "LOW": {
+      "max_reliability": 0.6,
+      "action": "ESCALATE_MANUAL_REVIEW"
+    }
+  },
+  "performance": {
+    "AUROC": 0.8549,
+    "AUPRC": 0.717,
+    "balanced_accuracy": 0.7999,
+    "precision": 0.8537,
+    "recall": 0.614,
+    "failure_F1": 0.7143,
+    "Brier_score": 0.0511,
+    "ECE": 0.0308,
+    "optimal_threshold": 0.34
+  }
+}

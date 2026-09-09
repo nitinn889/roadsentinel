@@ -1,0 +1,92 @@
+{
+  "reliability_module_frozen": true,
+  "evaluation_protocol": "5_fold_stratified_cv",
+  "sample_count": 480,
+  "failure_count": 57,
+  "success_count": 423,
+  "baseline_rate": 0.1187,
+  "model_comparison": {
+    "yolo_confidence_only": {
+      "AUROC": 0.8649,
+      "AUPRC": 0.7274,
+      "balanced_accuracy": 0.7719,
+      "precision": 1.0,
+      "recall": 0.5439,
+      "failure_F1": 0.7045,
+      "Brier_score": 0.0497,
+      "ECE": 0.0156,
+      "optimal_threshold": 0.45
+    },
+    "dino_ood_only": {
+      "AUROC": 0.5971,
+      "AUPRC": 0.154,
+      "balanced_accuracy": 0.5833,
+      "precision": 0.1608,
+      "recall": 0.5614,
+      "failure_F1": 0.25,
+      "Brier_score": 0.1039,
+      "ECE": 0.0064,
+      "optimal_threshold": 0.12
+    },
+    "combined_model": {
+      "AUROC": 0.8549,
+      "AUPRC": 0.717,
+      "balanced_accuracy": 0.7999,
+      "precision": 0.8537,
+      "recall": 0.614,
+      "failure_F1": 0.7143,
+      "Brier_score": 0.0511,
+      "ECE": 0.0308,
+      "optimal_threshold": 0.34
+    },
+    "delta_auroc": -0.01,
+    "delta_auprc": -0.0104
+  },
+  "hypothesis_test": {
+    "statistic": 14134.0,
+    "p_value": 0.0345352321299204,
+    "rank_biserial_correlation": -0.1724,
+    "cohen_d": 0.3206,
+    "significant_at_005": true
+  },
+  "risk_coverage_summary": {
+    "error_at_100_pct": 11.87,
+    "error_at_80_pct": 4.69,
+    "error_at_60_pct": 4.17,
+    "f1_at_100_pct": 0.7161,
+    "f1_at_80_pct": 0.7663,
+    "f1_at_60_pct": 0.7667
+  },
+  "reliability_bands": [
+    {
+      "reliability_band": "HIGH",
+      "sample_count": 407,
+      "population_share_pct": 84.79,
+      "mean_predicted_reliability": 0.9603,
+      "actual_yolo_success_rate": 0.9509,
+      "actual_yolo_failure_rate": 0.0491,
+      "mean_yolo_f1": 0.7687,
+      "recommended_action": "AUTOMATED_ACCEPT"
+    },
+    {
+      "reliability_band": "MEDIUM",
+      "sample_count": 37,
+      "population_share_pct": 7.71,
+      "mean_predicted_reliability": 0.7592,
+      "actual_yolo_success_rate": 0.8649,
+      "actual_yolo_failure_rate": 0.1351,
+      "mean_yolo_f1": 0.7433,
+      "recommended_action": "SECONDARY_INSPECTION"
+    },
+    {
+      "reliability_band": "LOW",
+      "sample_count": 36,
+      "population_share_pct": 7.5,
+      "mean_predicted_reliability": 0.1078,
+      "actual_yolo_success_rate": 0.1111,
+      "actual_yolo_failure_rate": 0.8889,
+      "mean_yolo_f1": 0.0944,
+      "recommended_action": "ESCALATE_MANUAL_REVIEW"
+    }
+  ]
+}
