@@ -146,6 +146,13 @@ class TestHazardEngineAndAlerts(unittest.TestCase):
         self.assertIsNotNone(nh1)
         self.assertEqual(nh1["hazard_id"], "H1")
         self.assertAlmostEqual(nh1["distance_ahead_m"], 200.0, places=1)
+        self.assertIn("eta_seconds", nh1)
+        self.assertIsNone(nh1["eta_seconds"])  # default speed = 0 (stationary)
+
+        # When moving at 72 km/h = 20 m/s: 200m ahead -> ETA = 10.0 sec
+        nh1_moving = get_nearest_hazard_ahead(100.0, START_LATITUDE, START_LONGITUDE, sample_hazards, speed_kmh=72.0)
+        self.assertIsNotNone(nh1_moving["eta_seconds"])
+        self.assertAlmostEqual(nh1_moving["eta_seconds"], 10.0, places=1)
 
         # Vehicle at 400m -> H1 (300m) is BEHIND and IGNORED; nearest hazard ahead is H2 (700m)
         nh2 = get_nearest_hazard_ahead(400.0, START_LATITUDE, START_LONGITUDE, sample_hazards)

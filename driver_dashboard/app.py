@@ -517,7 +517,7 @@ def main():
 
     # Evaluate Geofence & Hazards Ahead
     if geofence_res["is_on_route"]:
-        nearest_hazard = get_nearest_hazard_ahead(curr_dist_m, curr_lat, curr_lon, hazards_for_day)
+        nearest_hazard = get_nearest_hazard_ahead(curr_dist_m, curr_lat, curr_lon, hazards_for_day, speed_kmh=curr_speed_kmh)
         lookahead_info = compute_400m_lookahead_health(curr_dist_m, sim.day, primary_data)
         alert_obj, sim.fired_alerts = evaluate_alert_status(nearest_hazard, curr_speed_kmh, sim.fired_alerts)
         if alert_obj and alert_obj["is_new"]:
@@ -574,7 +574,11 @@ def main():
         with kpi3:
             if nearest_hazard:
                 haz_txt = f"{nearest_hazard['hazard_type']} — {nearest_hazard['distance_ahead_m']:.0f}m"
-                eta_txt = f"ETA: ~{nearest_hazard['eta_seconds']:.1f}s" if nearest_hazard['eta_seconds'] is not None else "ETA: Stationary"
+                eta_val = nearest_hazard.get("eta_seconds")
+                if eta_val is None and curr_speed_kmh > 0:
+                    speed_mps = curr_speed_kmh / 3.6
+                    eta_val = round(nearest_hazard["distance_ahead_m"] / speed_mps, 1) if speed_mps > 0 else None
+                eta_txt = f"ETA: ~{eta_val:.1f}s" if eta_val is not None else "ETA: Stationary"
                 haz_color = "#f87171" if nearest_hazard["distance_ahead_m"] <= 30 else ("#facc15" if nearest_hazard["distance_ahead_m"] <= 80 else "#38bdf8")
             else:
                 haz_txt = "No Hazards Ahead"
