@@ -94,29 +94,39 @@ def load_temporal_defect_history(segment_id: str) -> Dict[int, Dict[str, Any]]:
     return day_defects
 
 
-def get_segment_day_info(segment_id: str, day: int) -> Dict[str, Any]:
+def get_segment_day_info(
+    segment_id: str,
+    day: int,
+    primary_data: Optional[Dict[int, Dict[str, Any]]] = None,
+    *args,
+    **kwargs,
+) -> Dict[str, Any]:
     """Get segment status and metrics for a specific day."""
     if segment_id in MISSING_DATA_SEGMENTS:
         return {
             "segment_id": segment_id,
             "day": day,
             "has_data": False,
+            "data_pending": True,
             "current_severity": None,
             "defect_count": 0,
             "status_text": "DATA UNAVAILABLE / PENDING INSPECTION",
         }
 
-    all_data = load_primary_results_data()
+    all_data = primary_data if primary_data is not None else load_primary_results_data()
     seg_info = all_data.get(day, {}).get(segment_id, {"has_data": False})
     if not seg_info.get("has_data"):
         return {
             "segment_id": segment_id,
             "day": day,
             "has_data": False,
+            "data_pending": True,
             "current_severity": None,
             "defect_count": 0,
             "status_text": "DATA UNAVAILABLE / PENDING INSPECTION",
         }
 
-    seg_info["status_text"] = "INSPECTED"
-    return seg_info
+    res = dict(seg_info)
+    res["data_pending"] = False
+    res["status_text"] = "INSPECTED"
+    return res

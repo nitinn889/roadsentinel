@@ -755,7 +755,7 @@ def main():
             seg_info = get_segment_day_info(seg_name, sim.day, primary_data)
 
             with strip_cols[idx]:
-                if seg_info["data_pending"]:
+                if seg_info.get("data_pending", False):
                     border_color = "#64748b"
                     bg_color = "#1e293b"
                     health_display = "PENDING"
@@ -792,7 +792,7 @@ def main():
                     curr_s = get_segment_day_info(s_name, sim.day, primary_data)
                     prev_s = get_segment_day_info(s_name, prev_day, primary_data)
 
-                    if curr_s["data_pending"] or prev_s["data_pending"]:
+                    if curr_s.get("data_pending", False) or prev_s.get("data_pending", False):
                         change_txt = "DATA PENDING"
                         c_score_txt = "N/A"
                         p_score_txt = "N/A"
