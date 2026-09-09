@@ -1,0 +1,9 @@
+attribute,in_domain_reference,cross_domain_benchmark,domain_difference_significance
+Dataset Name,RDD2022 China_Drone (Validation),RDD2022 India (Cross-Domain),Independent geographic and physical domain
+Country / Geography,China (Urban municipal roads),India (Mixed urban/rural national highways),Substantial variation in asphalt formulation and maintenance practices
+Capture Platform & Viewpoint,"UAV Drone (Orthogonal Nadir ~25-100m, Pitch -89°)","Vehicle Dashcam / Smartphone (~1.2m, Forward Oblique)","Extreme geometric perspective shift, horizon vanishing line, vehicle hood reflection"
+Image Resolution,512x512 / 1080p aerial crop,720x720 dashcam frame,Different spatial aspect ratio and pixel ground sample distance (GSD)
+Optical / Illumination Conditions,Consistent daylight diffuse aerial illumination,"Direct sun glare, windshield reflections, dynamic roadside shadows",Severe photometric disturbance for vision backbones
+Road Surface Characteristics,Smooth asphalt with standard municipal lane markings,"Weathered asphalt, dust accumulation, unpaved shoulders, irregular potholes",Higher textural entropy and visual clutter
+YOLO Training Relationship,"Drawn from same distribution as 1,921 training images",ZERO overlap; 100% unseen by YOLOv8n detector,Strict zero-shot cross-domain evaluation
+DINOv2 Domain Reference Relationship,Drawn from same distribution as training reference,ZERO overlap; strictly external probe distribution,Unbiased test of DINOv2 feature-space OOD distance metric

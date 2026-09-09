@@ -1,0 +1,4 @@
+model,AUROC,AUPRC,balanced_accuracy,failure_F1,Brier_score,ECE
+Model A (YOLO Confidence Only),0.9238,0.9978,0.7158,0.9577,0.0446,0.0681
+Model B (DINOv2 OOD Only),0.3677,0.9645,0.5,0.0,0.6602,0.7944
+Model C (Frozen Combined Model),0.9015,0.9972,0.7526,0.9312,0.0801,0.1209

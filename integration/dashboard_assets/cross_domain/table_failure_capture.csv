@@ -1,0 +1,4 @@
+tier,failures_captured,total_failures,percentage_of_all_failures,interpretation
+LOW Reliability,262,292,89.73,Highest-risk band correctly isolates failure modes
+LOW + MEDIUM Reliability,287,292,98.29,Total non-accepted inspection pool contains vast majority of failures
+HIGH Reliability (Silent Failures / False Confidence),5,292,1.71,Residual failures slipping into automated accept tier

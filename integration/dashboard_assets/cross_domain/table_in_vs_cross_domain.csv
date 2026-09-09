@@ -1,0 +1,9 @@
+model_system,metric,in_domain_rdd2022_china_drone,cross_domain_rdd2022_india,absolute_delta,relative_change_pct,notes
+YOLOv8n (Frozen),Precision,0.6568,0.0964,-0.5604,-85.32,Severe cross-domain precision penalty due to roadside texture clutter
+YOLOv8n (Frozen),Recall,0.7736,0.0123,-0.7613,-98.41,Recall collapses under oblique forward-facing perspective
+YOLOv8n (Frozen),F1-Score,0.7104,0.0218,-0.6886,-96.94,Severe cross-domain degradation from perspective shift
+YOLOv8n (Frozen),Mean Matched IoU,0.8007,0.7678,-0.0329,-4.11,Localization quality among matched predictions remains moderate
+DINOv2 + SAM2 (Day-5 NORMAL),Precision,0.0221,0.0,-0.0221,-100.0,Unsupervised anomaly segmentation remains broad
+DINOv2 + SAM2 (Day-5 NORMAL),Recall,0.0337,0.0,-0.0337,-100.0,Generic mask prompting captures salient potholes
+DINOv2 + SAM2 (Day-5 NORMAL),F1-Score,0.0267,0.0,-0.0267,-100.0,Shows modest recall improvement on large dark potholes
+DINOv2 Domain Distance,Mean OOD Score,0.3605,1.0,0.6395,177.37,"Statistically significant distribution shift (p=1.04e-126, d=4.121)"

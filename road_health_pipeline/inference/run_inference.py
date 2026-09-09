@@ -610,7 +610,7 @@ def infer(
 
     # Filter any residual candidates overlapping with vehicles or road markings
     if vehicle_mask is not None and np.any(vehicle_mask):
-        candidates = pipeline.vehicle_suppressor.filter_candidate_boxes(candidates, vehicle_mask)
+        candidates = pipeline.vehicle_suppressor.filter_candidate_regions(candidates, vehicle_mask)
     if marking_mask is not None and np.any(marking_mask):
         candidates = pipeline.marking_suppressor.filter_candidate_regions(candidates, enhanced_rgb, marking_mask)
 
