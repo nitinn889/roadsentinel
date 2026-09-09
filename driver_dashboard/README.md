@@ -16,12 +16,13 @@ Unlike the examiner-facing research dashboard (`dashboard/`), the Driver Dashboa
 - **Nearest Hazard Ahead**: Distance, ETA, and hazard type (Pothole / Road Defect).
 - **Proactive Alerts**: Non-directive Advisory ($150\,\text{m}$), Warning ($80\,\text{m}$), and Urgent ($30\,\text{m}$) driver alerts with single-trigger deduplication.
 - **2.4 km Road Strip & Map**: Live PyDeck visualization showing vehicle movement and segment status (SEG_001 through SEG_006).
+- **Citizen Road-Damage Reporting + AI Verification**: Upload road defect/pothole photos for multi-model AI verification (YOLO + DINOv2 domain gate + SAM2 defect segmentation + reliability calibration + model severity).
 
 ---
 
 ## 🚀 Launch Instructions
 
-Launch ONLY the Driver Dashboard:
+Launch ONLY the Driver Dashboard (Port 8502):
 
 ```bash
 ./launch_driver_dashboard.sh
@@ -30,7 +31,7 @@ Launch ONLY the Driver Dashboard:
 Or run via Streamlit directly:
 
 ```bash
-streamlit run driver_dashboard/app.py
+.venv/bin/streamlit run driver_dashboard/app.py --server.port 8502
 ```
 
 ---
@@ -48,12 +49,29 @@ streamlit run driver_dashboard/app.py
 
 ---
 
+## 📸 Citizen Road-Damage Reporting + AI Verification
+
+The **Citizen Road-Damage Reporting** module allows drivers and citizens to report road hazards with automated multi-model verification:
+1. **Input**: Image upload (JPG, PNG, WEBP) + optional GPS coordinates.
+2. **YOLO Detection**: Detects defects (Class `D40` mapped to `Pothole`, `D00`/`D10`/`D20` to `Road Defect`, `Repair` to `Repair / Patch`).
+3. **DINOv2 Domain Gate**: Computes kNN cosine distance to training reference embeddings to identify out-of-distribution visual domains.
+4. **SAM2 Instance Segmentation**: Prompts SAM2 with defect bounding boxes to extract fine-grained masks and compute defect area ratios.
+5. **Model-Derived Severity**: Multi-factor distress rating $[0.0, 1.0]$ explicitly labeled `MODEL-DERIVED SEVERITY — NOT PCI`.
+6. **Perception Reliability**: Calibrated score $[0.0, 1.0]$ (`HIGH`, `MEDIUM`, `LOW`).
+7. **Report Outcomes**:
+   - `VERIFIED REPORT`: Strong detection with high/medium reliability in familiar visual domain.
+   - `NEEDS MANUAL REVIEW`: Plausible defect with low confidence, low reliability, or domain shift.
+   - `RETAKE / NO VERIFIED DAMAGE`: Unusable image, no defect detected, or invalid input.
+8. **Local Persistence**: Reports stored in `driver_dashboard/data/citizen_reports/` (`RS-CR-XXXX`) with raw images, annotated overlays, and JSON/CSV summary manifests.
+
+---
+
 ## 🧪 Testing
 
-Run the automated driver dashboard unit test suite:
+Run the automated driver dashboard unit and integration test suites:
 
 ```bash
-python -m unittest driver_dashboard/tests/test_driver_dashboard.py
+PYTHONPATH=driver_dashboard PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 ./.venv/bin/pytest driver_dashboard/tests/
 ```
 
-Tests verify Haversine calculations, route generation, boundary mapping, geofencing, hazard filtering, alert deduplication, 400m look-ahead health, and simulation movement.
+Tests verify Haversine calculations, route generation, boundary mapping, geofencing, hazard filtering, alert deduplication, 400m look-ahead health, simulation movement, and complete citizen reporting AI analysis and persistence.

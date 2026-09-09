@@ -69,3 +69,34 @@ As the car approaches defects on `SEG_001` and `SEG_002`:
 
 1. Click **🔄 RESET** to restore vehicle distance to 0 m and clear stateful alert logs.
 2. Select **Day 01** or **Day 03** to observe how temporal track IDs maintain defect positions across inspection days while health scores reflect temporal evolution.
+
+---
+
+## 5. Citizen Road-Damage Reporting + AI Verification Demo
+
+Follow these steps to demonstrate the citizen reporting workflow:
+
+### Step 1: Open Citizen Reporting Tab
+1. Click the **📸 Citizen Report Road Damage** tab at the top of the main dashboard.
+
+### Step 2: Test Damage Verification
+1. Under **Quick Test Presets**, click **🕳️ Pothole Sample** or **🩹 Defect/Repair Sample**.
+2. Click **📍 Snap to Current Vehicle Position** to automatically inject the simulated vehicle's GPS coordinates.
+3. Click **🔍 Analyze & Verify Report**.
+4. Observe the AI Verification Results Card:
+   - **Status Banner**: Displays `🟢 VERIFIED REPORT` or `🟡 NEEDS MANUAL REVIEW`.
+   - **Visuals**: Displays raw photo alongside AI annotated overlay with bounding boxes and translucent SAM2 segmentation masks.
+   - **KPI Metrics**: Shows defect type (`Pothole` / `Road Defect`), YOLO confidence, perception reliability (`HIGH` / `MEDIUM`), DINOv2 visual domain familiarity (`IN_DOMAIN`), and model-derived severity (labeled `MODEL-DERIVED SEVERITY — NOT PCI`).
+   - **Corridor Mapping**: Displays corridor geofence status (`ON_ROADSENTINEL_ROUTE`) and nearest road segment (e.g. `SEG_001`).
+
+### Step 3: Test Non-Damage / Pristine Road
+1. Click **🛣️ Pristine Road Baseline** preset.
+2. Uncheck **Include GPS Location** to test omission handling (`LOCATION NOT PROVIDED`).
+3. Click **🔍 Analyze & Verify Report**.
+4. Observe the result: `🔴 RETAKE / NO VERIFIED DAMAGE` with zero detected defects and severity 0.0.
+
+### Step 4: Persist and Inspect Stored Reports
+1. Click **💾 Submit & Store Report Locally**.
+2. Note the confirmation message displaying unique ID `RS-CR-XXXX`.
+3. Switch to the **📋 Stored Citizen Reports Log** tab to view the searchable historical archive, view status distribution metrics, and inspect raw and annotated images.
+

@@ -1,0 +1,5 @@
+report_id,timestamp,status,defect_type,yolo_confidence,reliability_level,domain_familiarity,model_severity,gps_display,geofence_status,nearest_segment,decision_reason
+RS-CR-0001,2026-09-09T18:26:57.339483+00:00,VERIFIED REPORT,Repair / Patch,0.9183,HIGH,IN_DOMAIN,0.7499,"8.893500, 76.614500",ON_ROADSENTINEL_ROUTE,SEG_001,Verified Repair / Patch with 91.8% confidence and HIGH perception reliability.
+RS-CR-0002,2026-09-09T18:28:29.212419+00:00,VERIFIED REPORT,Pothole,0.88,HIGH,IN_DOMAIN,0.78,"8.893200, 76.614100",ON_ROADSENTINEL_ROUTE,SEG_001,Unit test verified defect
+RS-CR-0003,2026-09-09T18:28:37.284089+00:00,VERIFIED REPORT,Pothole,0.88,HIGH,IN_DOMAIN,0.78,"8.893200, 76.614100",ON_ROADSENTINEL_ROUTE,SEG_001,Unit test verified defect
+RS-CR-0004,2026-09-09T18:29:28.586494+00:00,VERIFIED REPORT,Pothole,0.88,HIGH,IN_DOMAIN,0.78,"8.893200, 76.614100",ON_ROADSENTINEL_ROUTE,SEG_001,Unit test verified defect
