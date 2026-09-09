@@ -1,20 +1,22 @@
-"""System Overview Component for RoadSentinel Dashboard."""
+"""System Overview Component for RoadSentinel Dashboard V2."""
 
 from __future__ import annotations
 
 import streamlit as st
-from data_loader import load_perception_manifest, load_final_perception_table, load_binary_metrics
+from data_loader import load_canonical_metrics, WORKSPACE_ROOT
 
 
 def render_overview():
+    canon = load_canonical_metrics()
+
     st.markdown("""
-    <div class="main-header">
-        <div class="main-title">RoadSentinel — Road Perception & Deterioration Intelligence</div>
-        <div class="sub-title">
-            Examiner-Facing Interactive Dashboard integrating Supervised Damage Detection (YOLOv8n),
-            Zero-Shot Foundation Anomaly Perception (DINOv2 + SAM2), Multi-Day Temporal Analytics,
-            and Scenario-Conditioned Deterioration Forecasting (XGBoost Model V2).
-        </div>
+    <div class="main-header" style="background: linear-gradient(135deg, #0f172a, #1e293b); padding: 24px; border-radius: 12px; border-left: 6px solid #2563eb; margin-bottom: 24px;">
+        <h1 style="color: #f8fafc; margin: 0; font-size: 28px;">RoadSentinel: Perception, Reliability & Deterioration Intelligence</h1>
+        <p style="color: #94a3b8; margin: 8px 0 0 0; font-size: 15px;">
+            Examiner-Facing Interactive Demonstration integrating Supervised Damage Detection (YOLOv8n),
+            Foundation Macro Domain Gating (DINOv2), Sample-Level Reliability Estimation, Multi-Day Temporal Tracking,
+            Scenario-Conditioned Forecasting (XGBoost), and the Decoupled Road-Health Decision Engine.
+        </p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -22,110 +24,118 @@ def render_overview():
     st.markdown("### System Pipeline Status")
     col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
-        st.markdown('<div class="status-pill frozen">PERCEPTION — FROZEN</div>', unsafe_allow_html=True)
-        st.caption("YOLOv8n & DINOv2/SAM2")
+        st.markdown('<div style="background: #1e293b; border: 1px solid #3b82f6; border-radius: 6px; padding: 10px; text-align: center;"><b style="color: #60a5fa;">PERCEPTION</b><br><span style="color: #94a3b8; font-size: 12px;">YOLOv8n Frozen</span></div>', unsafe_allow_html=True)
     with col2:
-        st.markdown('<div class="status-pill complete">TEMPORAL — COMPLETE</div>', unsafe_allow_html=True)
-        st.caption("Phase 4 Evidence Locked")
+        st.markdown('<div style="background: #1e293b; border: 1px solid #8b5cf6; border-radius: 6px; padding: 10px; text-align: center;"><b style="color: #a78bfa;">DOMAIN GATE</b><br><span style="color: #94a3b8; font-size: 12px;">DINOv2 AUROC 1.0</span></div>', unsafe_allow_html=True)
     with col3:
-        st.markdown('<div class="status-pill complete">FORECAST — COMPLETE</div>', unsafe_allow_html=True)
-        st.caption("XGBoost Model V2")
+        st.markdown('<div style="background: #1e293b; border: 1px solid #10b981; border-radius: 6px; padding: 10px; text-align: center;"><b style="color: #34d399;">TEMPORAL & FC</b><br><span style="color: #94a3b8; font-size: 12px;">Goal 1 & 2 Complete</span></div>', unsafe_allow_html=True)
     with col4:
-        st.markdown('<div class="status-pill pending">EDGE PI 5 — PENDING</div>', unsafe_allow_html=True)
-        st.caption("Phase 8 Deployment")
+        st.markdown('<div style="background: #1e293b; border: 1px solid #ef4444; border-radius: 6px; padding: 10px; text-align: center;"><b style="color: #f87171;">DECISION</b><br><span style="color: #94a3b8; font-size: 12px;">Phase 13 Complete</span></div>', unsafe_allow_html=True)
     with col5:
-        st.markdown('<div class="status-pill caution">EXP B — PENDING</div>', unsafe_allow_html=True)
-        st.caption("Intervention Metadata")
+        st.markdown('<div style="background: #1e293b; border: 1px solid #64748b; border-radius: 6px; padding: 10px; text-align: center;"><b style="color: #94a3b8;">EDGE PI 5</b><br><span style="color: #64748b; font-size: 12px;">Future Phase Pending</span></div>', unsafe_allow_html=True)
 
     st.markdown("---")
 
-    # High-level architecture flow
-    st.markdown("### End-to-End System Architecture")
+    # Canonical Architecture Flow
+    st.markdown("### Canonical Multi-Stream Technical Architecture")
     st.markdown("""
     ```
-    +---------------------------------------------------------------------------------------------------+
-    |                                   RAW ROAD CAMERA / UAV SURVEY                                    |
-    +-------------------------------------------------+-------------------------------------------------+
-                                                      |
-                             +------------------------+------------------------+
-                             |                                                 |
-                             v                                                 v
-             +-------------------------------+                 +-------------------------------+
-             |      SUPERVISED DETECTOR      |                 |    FOUNDATION ANOMALY MODEL   |
-             |       YOLOv8n (512x512)       |                 |       DINOv2 + SAM2.1         |
-             +---------------+---------------+                 +---------------+---------------+
-                             |                                                 |
-             * Crack Bounding Boxes (D00/D10/D20)               * Defect Segmentation Masks
-             * Pothole Detection (D40)                         * Mask-Derived Bounding Boxes
-             * Repaired Pavement Surface                       * Surface Anomaly Score
-             * Fast Inference: 3.6ms (276 FPS)                 * Zero-Shot Viewpoint Invariance
-                             |                                                 |
-                             +------------------------+------------------------+
-                                                      |
-                                                      v
-                                      +-------------------------------+
-                                      |    CURRENT SEVERITY ENGINE    |
-                                      |   Normalized Index [0.0 - 1.0]|
-                                      +---------------+---------------+
-                                                      |
-                             +------------------------+------------------------+
-                             |                                                 |
-                             v                                                 v
-             +-------------------------------+                 +-------------------------------+
-             |     TEMPORAL CORRESPONDENCE   |                 |    SCENARIO FORECAST MODEL    |
-             |       Phase 4 Analytics       |                 |       XGBoost Model V2        |
-             +---------------+---------------+                 +---------------+---------------+
-             * Mask/BBox IoU Matching                          * Climate: Rain, Temp, Moisture
-             * Multi-Day Track Persistence                     * Structural: Traffic Volume
-             * Event Classification                            * Monotone Severity Constraints
-             * Environmental Confound Analysis                 * Horizon Forecast: 30-90 Days
-    +---------------------------------------------------------------------------------------------------+
+    ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+    │                                  INCOMING ROAD CAPTURE + METADATA                                │
+    └────────────────────────────────────────────────┬─────────────────────────────────────────────────┘
+                                                     │
+                             ┌───────────────────────┴───────────────────────┐
+                             │                                               │
+                             ▼                                               ▼
+             ┌───────────────────────────────┐               ┌───────────────────────────────┐
+             │      TIER 1: DOMAIN GATE      │               │     TIER 2: PERCEPTION CORE   │
+             │   DINOv2 ViT-S/14 Embedding   │               │   • YOLOv8n Damage Detector   │
+             │   (Threshold p99 = 0.4491)    │               │   • DINO/SAM2 Surface Feature │
+             └───────────────┬───────────────┘               └───────────────┬───────────────┘
+                             │                                               │
+               [ d_kNN > 0.4491: SHIFT ]                     [ Current Model Severity: 0-1 ]
+                             │                                               │
+                             ▼                                               ▼
+             ┌───────────────────────────────┐               ┌───────────────────────────────┐
+             │       DOMAIN_ESCALATION       │               │   TIER 3: RELIABILITY FILTER  │
+             │   Quarantine Visual Shift     │               │   Model B Calibrated Conf     │
+             └───────────────────────────────┘               └───────────────┬───────────────┘
+                                                                             │
+                                                     ┌───────────────────────┴───────────────────────┐
+                                                     │                                               │
+                                                     ▼                                               ▼
+                                     ┌───────────────────────────────┐               ┌───────────────────────────────┐
+                                     │   TIER 4: TEMPORAL TRACKING   │               │   TIER 5: SCENARIO FORECAST   │
+                                     │   • Greedy Track Matching     │               │   • XGBoost Model V2 (LTPP)   │
+                                     │   • Area Delta Quantification │               │   • 90-Day Climate Scenarios  │
+                                     └───────────────┬───────────────┘               └───────────────┬───────────────┘
+                                                     │                                               │
+                                                     └───────────────────────┬───────────────────────┘
+                                                                             │
+                                                                             ▼
+                                                             ┌───────────────────────────────┐
+                                                             │   TIER 6: DECISION ENGINE     │
+                                                             │   • PRIORITY_REVIEW           │
+                                                             │   • MONITOR                   │
+                                                             │   • AUTOMATED_ACCEPT          │
+                                                             │   • REINSPECT                 │
+                                                             └───────────────────────────────┘
     ```
     """)
 
-    # Quick Stats Metric Cards
-    st.markdown("### Core Empirical Findings at a Glance")
+    # Headline Research Metrics
+    st.markdown("### Core Empirical Anchors at a Glance")
     mcol1, mcol2, mcol3, mcol4 = st.columns(4)
 
     with mcol1:
         st.markdown("""
-        <div class="metric-card">
-            <div class="metric-label">In-Domain Benchmark F1</div>
-            <div class="metric-value" style="color: #38bdf8;">0.7104</div>
-            <div class="metric-delta positive">YOLOv8n (vs DINO/SAM 0.0267)</div>
+        <div style="background: #1e293b; padding: 16px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+            <div style="color: #94a3b8; font-size: 12px; font-weight: bold;">IN-DOMAIN BENCHMARK F1</div>
+            <div style="color: #60a5fa; font-size: 26px; font-weight: bold; margin: 4px 0;">0.7104</div>
+            <div style="color: #10b981; font-size: 12px;">YOLOv8n (vs DINO/SAM 0.0267)</div>
         </div>
         """, unsafe_allow_html=True)
 
     with mcol2:
         st.markdown("""
-        <div class="metric-card">
-            <div class="metric-label">Inference Latency Ratio</div>
-            <div class="metric-value" style="color: #34d399;">72.7×</div>
-            <div class="metric-delta positive">YOLO 3.6ms vs DINO/SAM 263ms</div>
+        <div style="background: #1e293b; padding: 16px; border-radius: 8px; border-left: 4px solid #8b5cf6;">
+            <div style="color: #94a3b8; font-size: 12px; font-weight: bold;">DOMAIN GATE ACCURACY</div>
+            <div style="color: #a78bfa; font-size: 26px; font-weight: bold; margin: 4px 0;">1.0000</div>
+            <div style="color: #10b981; font-size: 12px;">AUROC (100% India Shift Detection)</div>
         </div>
         """, unsafe_allow_html=True)
 
     with mcol3:
         st.markdown("""
-        <div class="metric-card">
-            <div class="metric-label">Control Sequence CV</div>
-            <div class="metric-value" style="color: #a855f7;">0.67%</div>
-            <div class="metric-delta neutral">SEG_003 7-day stability test</div>
+        <div style="background: #1e293b; padding: 16px; border-radius: 8px; border-left: 4px solid #10b981;">
+            <div style="color: #94a3b8; font-size: 12px; font-weight: bold;">SELECTIVE ERROR REDUCTION</div>
+            <div style="color: #34d399; font-size: 26px; font-weight: bold; margin: 4px 0;">88.4%</div>
+            <div style="color: #10b981; font-size: 12px;">In-Domain Risk-Coverage Control</div>
         </div>
         """, unsafe_allow_html=True)
 
     with mcol4:
         st.markdown("""
-        <div class="metric-card">
-            <div class="metric-label">Observed Progression</div>
-            <div class="metric-value" style="color: #f59e0b;">+0.7302</div>
-            <div class="metric-delta positive">SEG_004 D01–D05 deterioration</div>
+        <div style="background: #1e293b; padding: 16px; border-radius: 8px; border-left: 4px solid #ef4444;">
+            <div style="color: #94a3b8; font-size: 12px; font-weight: bold;">CROSS-DOMAIN QUARANTINE</div>
+            <div style="color: #f87171; font-size: 26px; font-weight: bold; margin: 4px 0;">100.0%</div>
+            <div style="color: #10b981; font-size: 12px;">0/293 Silent Failures Accepted</div>
         </div>
         """, unsafe_allow_html=True)
 
-    st.markdown("""
-    <div class="callout-box">
-        <strong>Examiner Note:</strong> Use the sidebar navigation on the left to explore specific research areas.
-        Every section is powered by frozen research data and offline-verified artifacts to ensure 100% demo reliability.
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("---")
+
+    # Research Findings Summary Panel
+    st.markdown("### Examiner Research Findings Panel")
+    findings = [
+        ("1. In-Domain Detector Dominance", "YOLOv8n dominates direct road damage detection in-domain (F1 = 0.7104 vs 0.0267) with 72.7x lower inference latency (3.62 ms vs 263.15 ms)."),
+        ("2. Cross-Domain Transfer Collapse", "Both supervised and foundation models degrade drastically under zero-shot domain transfer (YOLO F1 drops -96.8% from 0.7104 to 0.0226 on Indian dashcams)."),
+        ("3. Foundation Model as Macro Domain Gate", "DINOv2 foundation embeddings provide flawless macro domain shift detection (AUROC 1.0000, separating China from India with a +0.1158 cosine distance margin)."),
+        ("4. Sample-Level Reliability Selective Prediction", "YOLO confidence calibration enables selective prediction, dropping accepted inspection error from 17.9% down to 2.1% (88.4% error reduction)."),
+        ("5. Model-Observed Temporal Analytics", "Greedy hierarchical matching successfully tracks persistent defect regions and quantifies area increase/decrease across multi-day surveillance."),
+        ("6. Scenario-Conditioned Forecasting", "XGBoost Model V2 projects future pavement severity under 5 climate and traffic scenarios, identifying Wet Exposure as the primary degradation catalyst."),
+        ("7. Evidence-Based Decision Governance", "The Decision Engine combines all 4 decoupled evidence streams into actionable review tiers without uncalibrated score scaling."),
+    ]
+
+    for title, desc in findings:
+        st.markdown(f"**{title}**: {desc}")

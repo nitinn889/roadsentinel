@@ -1,12 +1,11 @@
-"""RoadSentinel Dashboard Data Loader.
+"""RoadSentinel Dashboard V2 Centralized Data Loader.
 
-Provides offline-first, cached data loading with complete defensive fallback handling.
-Guarantees that the dashboard never crashes even if an optional file or GPU is missing.
+Provides offline-first, cached data loading from canonical JSON and CSV assets.
+Guarantees defensive fallbacks and fast, responsive dashboard rendering.
 """
 
 from __future__ import annotations
 
-import csv
 import json
 import logging
 from pathlib import Path
@@ -17,48 +16,57 @@ import streamlit as st
 
 log = logging.getLogger("dashboard_data_loader")
 
-# Workspace root
 WORKSPACE_ROOT = Path(__file__).resolve().parents[1]
-PERCEPTION_ASSETS = WORKSPACE_ROOT / "integration/dashboard_assets/perception"
+CANONICAL_METRICS_PATH = WORKSPACE_ROOT / "integration/CANONICAL_RESEARCH_METRICS.json"
+DECISIONS_PATH = WORKSPACE_ROOT / "decision_engine/ROAD_HEALTH_DECISIONS.csv"
+FORECASTS_PATH = WORKSPACE_ROOT / "integration/primary_goals/goal1_forecasts.csv"
+PRIMARY_RESULTS_PATH = WORKSPACE_ROOT / "integration/primary_goals/ROADSENTINEL_PRIMARY_RESULTS.csv"
 BENCHMARK_DIR = WORKSPACE_ROOT / "benchmark/final_comparison"
 TEMPORAL_DIR = WORKSPACE_ROOT / "integration/experiment_a/temporal"
-EXP_A_DIR = WORKSPACE_ROOT / "integration/experiment_a"
-XGBOOST_DIR = WORKSPACE_ROOT / "xgboost"
+CROSS_DOMAIN_DIR = WORKSPACE_ROOT / "cross_domain/results"
+RELIABILITY_VAL_DIR = WORKSPACE_ROOT / "reliability_validation"
+DECISION_ENGINE_DIR = WORKSPACE_ROOT / "decision_engine"
 
 
 @st.cache_data(show_spinner=False)
-def load_perception_manifest() -> Dict[str, Any]:
-    """Load perception handoff manifest with fallback."""
-    manifest_p = PERCEPTION_ASSETS / "perception_handoff_manifest.json"
-    if manifest_p.exists():
+def load_canonical_metrics() -> Dict[str, Any]:
+    """Load canonical research metrics JSON as single source of truth."""
+    if CANONICAL_METRICS_PATH.exists():
         try:
-            return json.loads(manifest_p.read_text(encoding="utf-8"))
-        except Exception as e:
-            log.warning("Could not read perception manifest: %s", e)
-    
-    # Minimal defensive fallback
-    return {
-        "perception_pipelines_frozen": True,
-        "status": "PHASE_6_COMPLETE",
-        "headline_comparison": {
-            "delta_precision": 0.6346,
-            "delta_recall": 0.7399,
-            "delta_f1": 0.6837,
-            "latency_ratio": 72.7,
-            "higher_precision": "YOLOv8n",
-            "higher_recall": "YOLOv8n",
-            "higher_f1": "YOLOv8n",
-            "faster_model": "YOLOv8n"
-        }
-    }
+            return json.loads(CANONICAL_METRICS_PATH.read_text(encoding="utf-8"))
+        except Exception as err:
+            log.warning("Could not read canonical metrics: %s", err)
+    return {}
+
+
+@st.cache_data(show_spinner=False)
+def load_decisions_table() -> pd.DataFrame:
+    """Load ROAD_HEALTH_DECISIONS.csv for all 40 Experiment A captures."""
+    if DECISIONS_PATH.exists():
+        return pd.read_csv(DECISIONS_PATH)
+    return pd.DataFrame()
+
+
+@st.cache_data(show_spinner=False)
+def load_goal1_forecasts() -> pd.DataFrame:
+    """Load goal1_forecasts.csv (600 scenario forecast records)."""
+    if FORECASTS_PATH.exists():
+        return pd.read_csv(FORECASTS_PATH)
+    return pd.DataFrame()
+
+
+@st.cache_data(show_spinner=False)
+def load_primary_results() -> pd.DataFrame:
+    """Load ROADSENTINEL_PRIMARY_RESULTS.csv (40 captures with Goal 1 & 2 summaries)."""
+    if PRIMARY_RESULTS_PATH.exists():
+        return pd.read_csv(PRIMARY_RESULTS_PATH)
+    return pd.DataFrame()
 
 
 @st.cache_data(show_spinner=False)
 def load_final_perception_table() -> pd.DataFrame:
-    """Load FINAL_PERCEPTION_TABLE.csv."""
-    p = PERCEPTION_ASSETS / "FINAL_PERCEPTION_TABLE.csv"
-    if not p.exists():
-        p = BENCHMARK_DIR / "FINAL_PERCEPTION_TABLE.csv"
+    """Load FINAL_PERCEPTION_TABLE.csv (Phase 5/6 Common Benchmark)."""
+    p = BENCHMARK_DIR / "FINAL_PERCEPTION_TABLE.csv"
     if p.exists():
         return pd.read_csv(p)
     return pd.DataFrame()
@@ -67,29 +75,11 @@ def load_final_perception_table() -> pd.DataFrame:
 @st.cache_data(show_spinner=False)
 def load_binary_metrics() -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Load primary (IoU 0.50) and secondary (IoU 0.25) binary metrics."""
-    p50 = PERCEPTION_ASSETS / "common_binary_metrics.csv"
-    p25 = PERCEPTION_ASSETS / "common_binary_sensitivity_iou25.csv"
+    p50 = BENCHMARK_DIR / "common_binary_metrics.csv"
+    p25 = BENCHMARK_DIR / "common_binary_sensitivity_iou25.csv"
     df50 = pd.read_csv(p50) if p50.exists() else pd.DataFrame()
     df25 = pd.read_csv(p25) if p25.exists() else pd.DataFrame()
     return df50, df25
-
-
-@st.cache_data(show_spinner=False)
-def load_yolo_semantic_metrics() -> pd.DataFrame:
-    """Load YOLO 5-class semantic metrics."""
-    p = PERCEPTION_ASSETS / "yolo_semantic_metrics.csv"
-    if p.exists():
-        return pd.read_csv(p)
-    return pd.DataFrame()
-
-
-@st.cache_data(show_spinner=False)
-def load_panel_examples() -> pd.DataFrame:
-    """Load panel examples manifest."""
-    p = PERCEPTION_ASSETS / "panel_examples.csv"
-    if p.exists():
-        return pd.read_csv(p)
-    return pd.DataFrame()
 
 
 @st.cache_data(show_spinner=False)
@@ -102,9 +92,63 @@ def load_temporal_sequences_table() -> pd.DataFrame:
 
 
 @st.cache_data(show_spinner=False)
-def load_experiment_a_perception() -> pd.DataFrame:
-    """Load Experiment A 40-capture perception results."""
-    p = EXP_A_DIR / "perception_results.csv"
+def load_cross_domain_dataset() -> pd.DataFrame:
+    """Load cross_domain_reliability_dataset.csv (300 Indian frames)."""
+    p = CROSS_DOMAIN_DIR / "cross_domain_reliability_dataset.csv"
+    if p.exists():
+        return pd.read_csv(p)
+    return pd.DataFrame()
+
+
+@st.cache_data(show_spinner=False)
+def load_reliability_ablation_table() -> pd.DataFrame:
+    """Load table_full_ablation.csv (Phase 12 Models A-H across Targets T0-T4)."""
+    p = RELIABILITY_VAL_DIR / "tables/table_full_ablation.csv"
+    if p.exists():
+        return pd.read_csv(p)
+    return pd.DataFrame()
+
+
+@st.cache_data(show_spinner=False)
+def load_domain_gate_table() -> pd.DataFrame:
+    """Load table_domain_gate.csv (Phase 12 Domain Gating metrics)."""
+    p = RELIABILITY_VAL_DIR / "tables/table_domain_gate.csv"
+    if p.exists():
+        return pd.read_csv(p)
+    return pd.DataFrame()
+
+
+@st.cache_data(show_spinner=False)
+def load_cross_domain_routing_table() -> pd.DataFrame:
+    """Load table_cross_domain_routing.csv (Phase 13 Safety Comparison)."""
+    p = DECISION_ENGINE_DIR / "tables/table_cross_domain_routing.csv"
+    if p.exists():
+        return pd.read_csv(p)
+    return pd.DataFrame()
+
+
+@st.cache_data(show_spinner=False)
+def load_decision_ablation_table() -> pd.DataFrame:
+    """Load table_decision_ablation.csv (Phase 13 Systems A to E)."""
+    p = DECISION_ENGINE_DIR / "tables/table_decision_ablation.csv"
+    if p.exists():
+        return pd.read_csv(p)
+    return pd.DataFrame()
+
+
+@st.cache_data(show_spinner=False)
+def load_segment_decision_summary() -> pd.DataFrame:
+    """Load table_segment_decision_summary.csv."""
+    p = DECISION_ENGINE_DIR / "tables/table_segment_decision_summary.csv"
+    if p.exists():
+        return pd.read_csv(p)
+    return pd.DataFrame()
+
+
+@st.cache_data(show_spinner=False)
+def load_case_studies_table() -> pd.DataFrame:
+    """Load table_case_studies.csv."""
+    p = DECISION_ENGINE_DIR / "tables/table_case_studies.csv"
     if p.exists():
         return pd.read_csv(p)
     return pd.DataFrame()
@@ -123,38 +167,49 @@ def load_benchmark_summary() -> Dict[str, Any]:
 
 
 @st.cache_data(show_spinner=False)
-def get_curated_panel_images() -> List[Dict[str, Any]]:
-    """Return verified curated sample images for the Single-Image view."""
-    panels_df = load_panel_examples()
-    items = []
-    if not panels_df.empty:
-        for _, row in panels_df.iterrows():
-            items.append({
-                "id": str(row["image_id"]),
-                "category": str(row["category"]),
-                "source": str(row["source"]),
-                "yolo_summary": str(row["yolo_summary"]),
-                "dino_summary": str(row["dino_sam_summary"]),
-                "reason": str(row["panel_reason"]),
-                "asset_path": str(WORKSPACE_ROOT / row["asset_paths"]) if pd.notna(row["asset_paths"]) else None,
-                "has_gt": bool(row.get("has_gt", True)),
-            })
-    return items
+def load_yolo_semantic_metrics() -> pd.DataFrame:
+    """Load yolo_semantic_metrics.csv (Class breakdown)."""
+    p = BENCHMARK_DIR / "yolo_semantic_metrics.csv"
+    if p.exists():
+        return pd.read_csv(p)
+    return pd.DataFrame()
 
 
-@st.cache_resource(show_spinner=False)
-def load_xgboost_forecast_model():
-    """Lazily load trained XGBoost Model V2 and config."""
-    model_p = XGBOOST_DIR / "model/scenario_model_v2.json"
-    cfg_p = XGBOOST_DIR / "config/scenario_model_v2.json"
-    if not model_p.exists() or not cfg_p.exists():
-        return None, None
-    try:
-        from xgboost import XGBRegressor
-        model = XGBRegressor()
-        model.load_model(str(model_p))
-        config = json.loads(cfg_p.read_text(encoding="utf-8"))
-        return model, config
-    except Exception as e:
-        log.warning("Could not load XGBoost model: %s", e)
-        return None, None
+@st.cache_data(show_spinner=False)
+def load_panel_examples() -> pd.DataFrame:
+    """Load panel_examples.csv (Curated case studies)."""
+    p = BENCHMARK_DIR / "panel_examples.csv"
+    if p.exists():
+        return pd.read_csv(p)
+    return pd.DataFrame()
+
+
+@st.cache_data(show_spinner=False)
+def load_cross_domain_comparison_table() -> pd.DataFrame:
+    """Load table_in_vs_cross_domain.csv."""
+    p = WORKSPACE_ROOT / "cross_domain/tables/table_in_vs_cross_domain.csv"
+    if p.exists():
+        return pd.read_csv(p)
+    return pd.DataFrame()
+
+
+@st.cache_data(show_spinner=False)
+def load_decision_policy_table() -> pd.DataFrame:
+    """Load table_decision_policy.csv."""
+    p = DECISION_ENGINE_DIR / "tables/table_decision_policy.csv"
+    if p.exists():
+        return pd.read_csv(p)
+    return pd.DataFrame()
+
+
+def get_image_path(segment_id: str, day: int) -> Optional[Path]:
+    """Resolve physical capture image path for any segment and day."""
+    day_str = f"day_{day:02d}"
+    p = WORKSPACE_ROOT / f"env/output/manual_inspections/{day_str}/{segment_id}/raw.png"
+    if p.exists():
+        return p
+    p_alt = WORKSPACE_ROOT / f"env/output/manual_inspections/{day_str}/{segment_id}/original.jpg"
+    if p_alt.exists():
+        return p_alt
+    return None
+
