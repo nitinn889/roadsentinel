@@ -342,22 +342,26 @@ def run_uncertainty_audit() -> List[Dict[str, Any]]:
     pt_mae = float(mean_absolute_error(y_test, y_pred))
     pt_rmse = float(mean_squared_error(y_test, y_pred) ** 0.5)
 
-    # Row-level bootstrap on held-out test set (N=24)
-    n_test = len(y_test)
+    # Site-level cluster bootstrap on held-out test sites (N=6 sites, 24 rows)
+    test_site_ids = np.array([r["site_id"] for r in test_rows])
+    unique_test_sites = np.unique(test_site_ids)
+    n_sites = len(unique_test_sites)
     boot_r2, boot_mae, boot_rmse = [], [], []
     for _ in range(BOOTSTRAP_ROUNDS):
-        idx = rng.choice(n_test, size=n_test, replace=True)
-        b_yt = y_test[idx]
-        b_yp = y_pred[idx]
-        # Check for constant y in sample
+        samp_sites = rng.choice(unique_test_sites, size=n_sites, replace=True)
+        idx_list = []
+        for s in samp_sites:
+            idx_list.extend(np.where(test_site_ids == s)[0])
+        b_yt = y_test[idx_list]
+        b_yp = y_pred[idx_list]
         if np.var(b_yt) > 1e-6:
             boot_r2.append(float(r2_score(b_yt, b_yp)))
         boot_mae.append(float(mean_absolute_error(b_yt, b_yp)))
         boot_rmse.append(float(mean_squared_error(b_yt, b_yp) ** 0.5))
 
-    log_ci("xgboost_test_r2", pt_r2, np.percentile(boot_r2, 2.5), np.percentile(boot_r2, 97.5), n_test, "longitudinal_pair", "Held-out test set bootstrap (N=24 rows across 6 sites)")
-    log_ci("xgboost_test_mae", pt_mae, np.percentile(boot_mae, 2.5), np.percentile(boot_mae, 97.5), n_test, "longitudinal_pair", "Held-out test set bootstrap (N=24 rows across 6 sites)")
-    log_ci("xgboost_test_rmse", pt_rmse, np.percentile(boot_rmse, 2.5), np.percentile(boot_rmse, 97.5), n_test, "longitudinal_pair", "Held-out test set bootstrap (N=24 rows across 6 sites)")
+    log_ci("xgboost_test_r2", pt_r2, np.percentile(boot_r2, 2.5), np.percentile(boot_r2, 97.5), n_sites, "site_cluster", "Site-level cluster bootstrap (2000 iterations, resampling 6 held-out test sites with replacement)")
+    log_ci("xgboost_test_mae", pt_mae, np.percentile(boot_mae, 2.5), np.percentile(boot_mae, 97.5), n_sites, "site_cluster", "Site-level cluster bootstrap (2000 iterations, resampling 6 held-out test sites with replacement)")
+    log_ci("xgboost_test_rmse", pt_rmse, np.percentile(boot_rmse, 2.5), np.percentile(boot_rmse, 97.5), n_sites, "site_cluster", "Site-level cluster bootstrap (2000 iterations, resampling 6 held-out test sites with replacement)")
 
     # Save CSV artifact
     df_ci = pd.DataFrame(ci_records)
@@ -393,11 +397,11 @@ def generate_markdown_report(df_ci: pd.DataFrame) -> None:
 ## 1. Executive Summary
 
 This report establishes non-parametric 95% bootstrap confidence intervals for all core RoadSentinel perceptual, domain-gating, reliability, and longitudinal deterioration metrics. To prevent distortion from clustered or sequential observations, resampling units strictly mirror the data generation process:
-- **Perception metrics** are resampled at the **image level** ($N=480$ China UAV, $N=300$ India Dashcam).
+- **Perception metrics** are resampled at the **image level** ($N=480$ China UAV, $N=300$ India Dashcam). Fine-grained flight sequence IDs are unverified/unavailable in RDD2022.
 - **Matched IoU** is resampled at the **detection pair level** across valid true positives ($N=574$).
 - **Domain Gate metrics** use stratified image-level resampling ($480$ familiar, $300$ out-of-domain).
-- **Risk-Coverage metrics** resample full validation evaluation frames ($N=480$).
-- **XGBoost forecasting metrics** resample the held-out test evaluation set ($N=24$ longitudinal progression pairs across 6 disjoint test sites).
+- **Risk-Coverage metrics** resample complete validation evaluation frames ($N=480$) with re-ranking inside each bootstrap iteration.
+- **XGBoost forecasting metrics** use **site-level cluster bootstrap**, resampling the 6 disjoint test sites with replacement ($N=24$ rows clustered across 6 sites).
 
 ---
 
@@ -412,29 +416,30 @@ This report establishes non-parametric 95% bootstrap confidence intervals for al
 ## 3. Detailed Interpretations & Methodological Notes
 
 ### 3.1 In-Domain China Perception Robustness
-- **F1 Score**: $0.7104$, 95% CI: `[{df_ci.loc[df_ci['metric_name']=='china_yolo_f1', 'ci_95_lower'].values[0]}, {df_ci.loc[df_ci['metric_name']=='china_yolo_f1', 'ci_95_upper'].values[0]}]`. The lower bound confirms that standalone YOLO achieves solid in-domain performance above $0.67$ under identical aerial survey flight conditions.
-- **Matched IoU**: $0.8007$, 95% CI: `[{df_ci.loc[df_ci['metric_name']=='china_yolo_matched_iou', 'ci_95_lower'].values[0]}, {df_ci.loc[df_ci['metric_name']=='china_yolo_matched_iou', 'ci_95_upper'].values[0]}]`. Spatial overlap among true positives is highly consistent, clustering tightly around 0.80.
+- **F1 Score**: $0.7104$, 95% CI: `[{df_ci.loc[df_ci['metric_name']=='china_yolo_f1', 'ci_95_lower'].values[0]}, {df_ci.loc[df_ci['metric_name']=='china_yolo_f1', 'ci_95_upper'].values[0]}]`. Standalone YOLO achieves consistent in-domain performance above $0.68$ under familiar aerial flight conditions. Note: Fine-grained UAV flight IDs are unavailable in RDD2022, so image-level resampling is used; perceptual grouping sensitivity is evaluated in [`group_sensitive_metrics.csv`](../../artifacts/phase1b/group_sensitive_metrics.csv).
+- **Matched IoU**: $0.8007$, 95% CI: `[{df_ci.loc[df_ci['metric_name']=='china_yolo_matched_iou', 'ci_95_lower'].values[0]}, {df_ci.loc[df_ci['metric_name']=='china_yolo_matched_iou', 'ci_95_upper'].values[0]}]`. Spatial overlap among true positives clusters tightly around 0.80.
 
 ### 3.2 Cross-Domain India Collapse & Low-Sample Floor
-- **F1 Score**: $0.0218$, 95% CI: `[{df_ci.loc[df_ci['metric_name']=='india_yolo_f1', 'ci_95_lower'].values[0]}, {df_ci.loc[df_ci['metric_name']=='india_yolo_f1', 'ci_95_upper'].values[0]}]`. The upper bound remains below $0.040$, conclusively demonstrating cross-domain failure regardless of sampling variation.
-- **Matched IoU**: In accordance with Prompt 1B instructions (*"Do not report meaningless confidence intervals when the effective sample size is insufficient. Use UNAVAILABLE_INSUFFICIENT_SAMPLE instead"*), the India matched IoU confidence interval is marked **`UNAVAILABLE_INSUFFICIENT_SAMPLE`** because only 8 true positive detections exist across 300 images.
+- **F1 Score**: $0.0218$, 95% CI: `[{df_ci.loc[df_ci['metric_name']=='india_yolo_f1', 'ci_95_lower'].values[0]}, {df_ci.loc[df_ci['metric_name']=='india_yolo_f1', 'ci_95_upper'].values[0]}]`. Upper bound remains below $0.040$, confirming cross-domain failure regardless of sampling variation.
+- **Matched IoU**: Marked **`UNAVAILABLE_INSUFFICIENT_SAMPLE`** because only 8 true positive detections exist across 300 India images.
 
 ### 3.3 DINOv2 Domain Gate Benchmark Separation
-- **AUROC**: $1.0000$, 95% CI: `[{df_ci.loc[df_ci['metric_name']=='domain_gate_auroc', 'ci_95_lower'].values[0]}, {df_ci.loc[df_ci['metric_name']=='domain_gate_auroc', 'ci_95_upper'].values[0]}]`. All 2,000 bootstrap iterations achieved perfect separation ($1.0000$) on the evaluated China UAV vs. India Dashcam benchmark.
-- **False Warning Rate**: $1.46\\%$, 95% CI: `[{df_ci.loc[df_ci['metric_name']=='domain_gate_china_false_warning_pct', 'ci_95_lower'].values[0]}%, {df_ci.loc[df_ci['metric_name']=='domain_gate_china_false_warning_pct', 'ci_95_upper'].values[0]}%]`. In-domain false quarantine is strictly bounded below $2.7\\%$.
+- **AUROC**: $1.0000$, 95% CI: `[{df_ci.loc[df_ci['metric_name']=='domain_gate_auroc', 'ci_95_lower'].values[0]}, {df_ci.loc[df_ci['metric_name']=='domain_gate_auroc', 'ci_95_upper'].values[0]}]`. Perfect empirical separation holds across all 2,000 bootstrap iterations on this evaluated UAV vs. Dashcam benchmark.
+- **False Warning Rate**: $1.46\\%$, 95% CI: `[{df_ci.loc[df_ci['metric_name']=='domain_gate_china_false_warning_pct', 'ci_95_lower'].values[0]}%, {df_ci.loc[df_ci['metric_name']=='domain_gate_china_false_warning_pct', 'ci_95_upper'].values[0]}%]`. In-domain false quarantine is strictly bounded below $2.5\\%$.
 
 ### 3.4 Risk-Coverage Selective Error Reduction
 - Under Target $T_1$, accepted failure drops from $17.92\\%$ (at 100% coverage) to:
   - $80\\%$ Coverage: Point $9.38\\%$, 95% CI `[{df_ci.loc[df_ci['metric_name']=='risk_coverage_target_t1_80pct_cov_error_pct', 'ci_95_lower'].values[0]}%, {df_ci.loc[df_ci['metric_name']=='risk_coverage_target_t1_80pct_cov_error_pct', 'ci_95_upper'].values[0]}%]`
   - $50\\%$ Coverage: Point $6.25\\%$, 95% CI `[{df_ci.loc[df_ci['metric_name']=='risk_coverage_target_t1_50pct_cov_error_pct', 'ci_95_lower'].values[0]}%, {df_ci.loc[df_ci['metric_name']=='risk_coverage_target_t1_50pct_cov_error_pct', 'ci_95_upper'].values[0]}%]`
-- Even under adverse bootstrap resampling, error reduction is statistically significant ($p < 10^{-6}$).
+- Uncertainty was estimated by complete frame resampling ($N=480$) with re-ranking in each bootstrap round.
 
-### 3.5 XGBoost Forecasting Generalization
-- **Held-Out Test $R^2$**: $0.8055$, 95% CI: `[{df_ci.loc[df_ci['metric_name']=='xgboost_test_r2', 'ci_95_lower'].values[0]}, {df_ci.loc[df_ci['metric_name']=='xgboost_test_r2', 'ci_95_upper'].values[0]}]`.
-- **Held-Out Test MAE**: $0.0924$, 95% CI: `[{df_ci.loc[df_ci['metric_name']=='xgboost_test_mae', 'ci_95_lower'].values[0]}, {df_ci.loc[df_ci['metric_name']=='xgboost_test_mae', 'ci_95_upper'].values[0]}]`.
-- Site-disjoint evaluation confirms that the statistical regression model generalizes effectively to unseen highway sections without spatial memorization.
+### 3.5 XGBoost Forecasting Generalization & Site-Level Uncertainty
+- **Held-Out Test $R^2$**: $0.8055$, Site-Level Cluster 95% CI: `[{df_ci.loc[df_ci['metric_name']=='xgboost_test_r2', 'ci_95_lower'].values[0]}, {df_ci.loc[df_ci['metric_name']=='xgboost_test_r2', 'ci_95_upper'].values[0]}]`.
+- **Held-Out Test MAE**: $0.0924$, Site-Level Cluster 95% CI: `[{df_ci.loc[df_ci['metric_name']=='xgboost_test_mae', 'ci_95_lower'].values[0]}, {df_ci.loc[df_ci['metric_name']=='xgboost_test_mae', 'ci_95_upper'].values[0]}]`.
+- **Site-Level Cluster Protocol**: By resampling the 6 test highway sections rather than independent rows, the cluster bootstrap properly reflects between-site variance and produces wider, scientifically honest bounds.
+- **Critical Baseline Finding**: On this test set, naive Persistence ($\\text{{MAE}} = 0.0754$) and OLS Linear Regression ($\\text{{MAE}} = 0.0832$) outperform XGBoost ($\\text{{MAE}} = 0.0924$). See [`forecast_baseline_comparison.csv`](../../artifacts/phase1b/forecast_baseline_comparison.csv).
 """
-    with open(md_path, "w") as f:
+    with open(md_path, "w", encoding="utf-8") as f:
         f.write(report_md)
     log.info("Saved STATISTICAL_UNCERTAINTY.md to %s", md_path)
 

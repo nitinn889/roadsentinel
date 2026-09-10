@@ -62,7 +62,7 @@ This experiment evaluates 5 independent policy architectures to verify that the 
 
 1. **Standalone YOLO Catastrophic Failure on OOD**: Direct deployment of `YOLO_ONLY` admits **$293$ out of $300$** catastrophic perception failures directly into automated asset management systems ($97.67\%$ failure rate among accepted inspections).
 2. **Confidence Alone is Dangerously Insufficient**: `YOLO_PLUS_RELIABILITY` filters low-confidence frames, but still leaks **$11$ high-confidence false detections** on Indian roads into downstream databases because the feature extractor itself is uncalibrated on shifted distributions.
-3. **Domain Gating Guarantees Zero Unsafe Leakage**: Adding the DINOv2 foundation domain gate (`YOLO_PLUS_DOMAIN_GATE`) completely eliminates unsafe accepts on shifted data (**0 unsafe automated accepts**, 100% failure quarantine).
+3. **Domain Gating Prevents Unsafe Downstream Accepts**: Adding the DINOv2 foundation domain gate (`YOLO_PLUS_DOMAIN_GATE`) successfully intercepted shifted data: **zero unsafe automated accepts were observed on the evaluated benchmark** ($0$ unsafe automated accepts out of $300$ shifted images). Note: Domain escalation routes uncalibrated frames away from autonomous acceptance into manual inspection; it is a safe routing mechanism and must be kept strictly distinct from correct pothole detection.
 4. **Computational Trade-Off Justification**:
    - `YOLO_ONLY`: 3.62 ms (276.2 FPS) but offers 0% cross-domain safety protection.
    - `STAGED_PIPELINE` (Gate + Reliability): 28.40 ms (35.2 FPS), operating comfortably in real time (>30 FPS) while preventing 100% of cross-domain failures and reducing in-domain error to 8.11%.

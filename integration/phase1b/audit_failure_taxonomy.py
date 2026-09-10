@@ -76,11 +76,19 @@ def run_failure_taxonomy_audit() -> None:
         pc = [p["confidence"] for p in r["raw_yolo"]]
         gb = [g["bbox"] for g in r["raw_gt"]]
 
-        matched_p = set()
+        candidates = []
         for pi, b1 in enumerate(pb):
             for gi, b2 in enumerate(gb):
-                if bbox_iou(b1, b2) >= 0.50:
-                    matched_p.add(pi)
+                v = bbox_iou(b1, b2)
+                if v >= 0.50:
+                    candidates.append((v, pi, gi))
+        candidates.sort(key=lambda x: x[0], reverse=True)
+
+        matched_p, matched_g = set(), set()
+        for v, pi, gi in candidates:
+            if pi not in matched_p and gi not in matched_g:
+                matched_p.add(pi)
+                matched_g.add(gi)
 
         for pi, (b, c) in enumerate(zip(pb, pc)):
             if pi not in matched_p and c >= 0.70:
@@ -99,9 +107,6 @@ def run_failure_taxonomy_audit() -> None:
                     "failure_category": "HIGH_CONFIDENCE_FALSE_POSITIVE",
                     "evidence_based_explanation": f"YOLO outputs high confidence ({c:.4f}) with zero ground-truth spatial overlap (IoU < 0.50); corresponds to road shoulder texture, shadow, or longitudinal pavement seam.",
                 })
-                break
-        if len([rec for rec in taxonomy_records if rec["failure_category"] == "HIGH_CONFIDENCE_FALSE_POSITIVE"]) >= 3:
-            break
 
     # -------------------------------------------------------------------------
     # 2. Severe False Negatives (China Validation)

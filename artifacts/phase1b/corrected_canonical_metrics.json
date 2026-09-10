@@ -1,0 +1,228 @@
+{
+  "project_name": "RoadSentinel",
+  "audit_version": "Phase 1B-R Corrected & Revalidated Canonical Metrics",
+  "audit_date": "2026-09-10",
+  "active_branch": "phase1b-robustness-validation",
+  "auditor": "Pair-Programming Agent (Antigravity IDE)",
+  "scientific_integrity_policy": "Preserve all negative results; eliminate unsupported claims and mathematical contradictions",
+  "perception_in_domain_china": {
+    "dataset": "RDD2022 China_Drone Validation Split",
+    "image_count": 480,
+    "ground_truth_boxes": 742,
+    "group_independence_status": "UNVERIFIED (Drone flight trajectories and site IDs not published in RDD2022)",
+    "suspected_near_duplicate_pairs": 56,
+    "affected_validation_images": 24,
+    "clean_validation_image_count": 456,
+    "yolo_v8n_full_validation": {
+      "checkpoint": "yolo/weights/best.pt",
+      "conf_threshold": 0.25,
+      "input_size": 512,
+      "precision": 0.6568,
+      "recall": 0.7736,
+      "f1_score": 0.7104,
+      "map_50": 0.6774,
+      "map_50_95": 0.4068,
+      "mean_matched_iou": 0.8007,
+      "latency_gpu_inference_only_ms": 2.15,
+      "latency_end_to_end_pipeline_ms": 3.62,
+      "throughput_gpu_inference_only_fps": 465.3,
+      "throughput_end_to_end_pipeline_fps": 276.2
+    },
+    "yolo_v8n_clean_validation_excluding_near_duplicates": {
+      "sample_count": 456,
+      "precision": 0.6516,
+      "recall": 0.7614,
+      "f1_score": 0.7022,
+      "mean_matched_iou": 0.8008,
+      "delta_f1_vs_full": -0.0082
+    }
+  },
+  "perception_cross_domain_india": {
+    "dataset": "RDD2022 India Cross-Domain Dashcam Benchmark",
+    "image_count": 300,
+    "ground_truth_boxes": 652,
+    "yolo_v8n": {
+      "precision": 0.0964,
+      "recall": 0.0123,
+      "f1_score": 0.0218,
+      "historical_deprecated_f1": 0.0226,
+      "deprecation_status": "DEPRECATED (Superseded by exact audited 0.0218)",
+      "matched_true_positives": 8,
+      "false_positives": 75,
+      "false_negatives": 644,
+      "target_t0_failures": 292,
+      "target_t0_successes": 8,
+      "target_t0_failure_rate_pct": 97.33,
+      "target_t1_failures": 293,
+      "target_t1_successes": 7,
+      "target_t1_failure_rate_pct": 97.67
+    }
+  },
+  "domain_gating_dinov2": {
+    "model_backbone": "dinov2_vits14 (384-dim CLS token)",
+    "distance_definition": "20-NN cosine distance (1 - cosine similarity), L2-normalized embeddings, leave-one-out self exclusion",
+    "reference_bank_version": "cross_domain/results/train_domain_reference_embeddings.npz (N=1921 China UAV training images)",
+    "exact_intra_training_knn_distribution": {
+      "mean": 0.1875,
+      "std": 0.083,
+      "p95": 0.3503,
+      "p99": 0.4558
+    },
+    "canonical_historical_thresholds": {
+      "p95_warning_threshold": 0.3804,
+      "p99_operational_gate_threshold": 0.4491,
+      "origin_note": "p99=0.4491 from Phase 8 metadata; p95=0.3804 conservative warning threshold hardcoded in Phase 12"
+    },
+    "separation_margin": 0.1158,
+    "benchmark_separation_auroc": 1.0,
+    "operational_performance_at_canonical_p99": {
+      "threshold_value": 0.4491,
+      "india_cross_domain_quarantine_rate_pct": 100.0,
+      "china_in_domain_false_warning_rate_pct": 1.46,
+      "tuning_leakage": "ZERO (Threshold selected purely from familiar China training reference data)"
+    }
+  },
+  "reliability_selective_prediction": {
+    "pure_reliability_rejection_target_t1": {
+      "ranking_algorithm": "Percentile ranking by Model B out-of-fold probability of success (F1 >= 0.50)",
+      "baseline_100_pct_coverage_error_pct": 17.92,
+      "80_pct_coverage_error_pct": 9.38,
+      "50_pct_coverage_error_pct": 6.25,
+      "error_reduction_at_50_pct_cov_pct": 65.12,
+      "baseline_errors_isolated_at_50_pct_cov_pct": 82.56
+    },
+    "pure_reliability_rejection_target_t0": {
+      "ranking_algorithm": "Percentile ranking by Model B out-of-fold probability of success (F1 > 0)",
+      "baseline_100_pct_coverage_error_pct": 11.88,
+      "80_pct_coverage_error_pct": 4.17,
+      "50_pct_coverage_error_pct": 2.92
+    },
+    "deprecated_historical_values": {
+      "80_pct_coverage_canonical_value": 8.85,
+      "50_pct_coverage_canonical_value": 2.08,
+      "status": "DEPRECATED as pure Model B rejection (corresponded to fixed-threshold / combined filter in Phase 12)"
+    }
+  },
+  "temporal_tracking_experiment_a": {
+    "provenance": "CARLA / Unreal Engine Synthetic Simulation (env/scripts/rs_inspection_capture.py)",
+    "simulation_policy_compliance": "Simulator-configured progression must not be presented as real-world pavement deterioration",
+    "total_synthetic_captures": 40,
+    "evaluated_sequences": 8,
+    "eligible_transitions": 33,
+    "semantic_rule": "NOT_OBSERVED != REPAIRED (Strictly enforced)",
+    "canonical_event_counts": {
+      "NEW_DEFECT": 48,
+      "NOT_OBSERVED": 34,
+      "OBSERVED_AREA_INCREASED": 14,
+      "OBSERVED_AREA_DECREASED": 19,
+      "TOTAL_MATCHED_TRANSITIONS": 33
+    }
+  },
+  "forecasting_ltpp_scenario": {
+    "dataset": "FHWA Long-Term Pavement Performance (LTPP InfoPave SDR 40)",
+    "site_partitioning": "17 training sites (89 pairs), 6 held-out test sites (24 pairs), strictly site-disjoint",
+    "observed_prediction_horizons": {
+      "test_set_mean_days_ahead": 447.5,
+      "test_set_days_range": [
+        240,
+        720
+      ],
+      "per_site_mean_days": {
+        "02-1002": 622.5,
+        "15-1006": 650.0,
+        "36-1008": 345.0,
+        "36-4017": 354.0,
+        "38-3006": 360.0,
+        "38-5002": 435.0
+      },
+      "conflict_resolution": "The 30-90 days in earlier reports was an evaluation scenario setting; observed LTPP survey intervals span 240-720 days"
+    },
+    "model_comparison_held_out_test": {
+      "persistence_baseline": {
+        "R2": 0.8551,
+        "MAE": 0.0754,
+        "RMSE": 0.0987,
+        "rank": 1
+      },
+      "ols_linear_regression": {
+        "R2": 0.8441,
+        "MAE": 0.0832,
+        "RMSE": 0.1024,
+        "rank": 2
+      },
+      "xgboost_scenario_model": {
+        "R2": 0.8055,
+        "MAE": 0.0924,
+        "RMSE": 0.1144,
+        "rank": 3
+      },
+      "historical_mean": {
+        "R2": -0.0168,
+        "MAE": 0.2316,
+        "RMSE": 0.2615,
+        "rank": 4
+      },
+      "scientific_conclusion": "Persistence and OLS strictly outperform XGBoost on held-out test set; persistence wins on 4 of 6 test sites"
+    },
+    "xgboost_feature_importance": {
+      "current_severity_gain_pct": 75.53,
+      "current_severity_weight_pct": 48.13,
+      "traffic_level_gain_pct": 11.5,
+      "temperature_gain_pct": 5.48,
+      "days_ahead_gain_pct": 5.3,
+      "water_exposure_gain_pct": 1.13,
+      "rainfall_level_gain_pct": 1.05,
+      "interpretation": "Feature importance represents model decision weighting, not physical causality; counterfactual capabilities require validated physical intervention data"
+    },
+    "statistical_uncertainty_site_level_bootstrap": {
+      "method": "Site-level cluster bootstrap (2000 iterations, resampling 6 test sites with replacement)",
+      "xgboost_R2_95CI": [
+        0.212,
+        0.8943
+      ],
+      "xgboost_MAE_95CI": [
+        0.0703,
+        0.1159
+      ],
+      "xgboost_RMSE_95CI": [
+        0.0807,
+        0.1406
+      ]
+    }
+  },
+  "runtime_benchmarks": {
+    "hardware": "NVIDIA GeForce RTX 5060 Laptop GPU (8GB VRAM)",
+    "timing_protocol": "CUDA Event synchronization over 100 timed runs following 20 warm-up runs, batch size 1",
+    "yolo_inference_only": {
+      "latency_ms": 2.15,
+      "fps": 465.3,
+      "vram_mb": 117.0,
+      "protocol": "PyTorch forward pass tensor execution"
+    },
+    "yolo_end_to_end_pipeline": {
+      "latency_ms": 3.62,
+      "fps": 276.2,
+      "protocol": "Preprocessing + Inference + Ultralytics NMS postprocessing"
+    },
+    "dinov2_domain_gate_alone": {
+      "latency_ms": 25.92,
+      "fps": 38.6,
+      "vram_mb": 156.8
+    },
+    "staged_pipeline_gated": {
+      "latency_ms": 28.41,
+      "fps": 35.2,
+      "vram_mb": 156.8
+    },
+    "deployment_constraint": "Real-time deployment claim is strictly limited to benchmarked GPU workstation; edge device (Raspberry Pi 5) remains pending physical evaluation"
+  },
+  "decision_policy_language_compliance": {
+    "verified_finding": "Zero unsafe automated accepts were observed on the evaluated benchmark (300 India cross-domain images)",
+    "forbidden_phrases_removed": [
+      "guarantees",
+      "safety proven",
+      "flawless"
+    ],
+    "distinction_enforced": "Domain escalation prevents unverified detector outputs from entering the database; it does NOT constitute correct defect detection"
+  }
+}

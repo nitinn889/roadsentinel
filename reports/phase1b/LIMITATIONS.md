@@ -34,26 +34,30 @@ This document establishes the scientific boundaries, non-claims, and open engine
 - **Civil Engineering Limitation**: Standard ASTM D6433 pavement condition indexing requires rigorous distress severity classification (Low, Medium, High severity per distress type) over 100-meter sample units, combined with deduct-value curves and deduct-value adjustments.
 - **Prohibited Claim**: RoadSentinel's severity index must **NEVER** be claimed as compliant with or equivalent to ASTM D6433 PCI ratings.
 
-### 2.4 Statistical Regression Projections vs. Causal Deterioration
-- **Observed Result**: The XGBoost scenario forecasting model predicts 30–90 day future IRI roughness deltas, reporting `WET_EXPOSURE = +0.0526` as the highest deterioration condition.
-- **Statistical Limitation**: This model is a supervised empirical regression trained on historical FHWA LTPP section pairs. Environmental variables (`water_exposure`, `rainfall_level`, `traffic_level`) are descriptive covariates.
-- **Prohibited Claim**: RoadSentinel does **NOT** claim causal deterioration modeling. The $+0.0526$ delta is a modelled statistical association, not a proven mechanical cause of structural subgrade failure.
+### 2.4 Statistical Regression Projections vs. Causal Deterioration & Persistence Dominance
+- **Observed Result**: The XGBoost scenario model predicts future IRI roughness deltas on FHWA LTPP section pairs.
+- **Horizon Reality**: While earlier project memos referred to "30–90 day forecasting," the actual observed evaluation pairs in LTPP span **240 to 720 days** (mean **447.5 days**, roughly 345–650 days across test sites). The "30–90 days" was only an inference scenario configuration.
+- **Statistical Limitation**: Environmental variables (`water_exposure`, `rainfall_level`, `traffic_level`) are correlative covariates. Feature importance (`current_severity` = 75.53% gain) reflects model decision splitting behavior, not physical causality.
+- **Persistence Dominance**: On the held-out test set ($N=24$), naive **Persistence** ($\hat{y}_{t_2} = y_{t_1}$, $R^2 = 0.8551$, $\text{MAE} = 0.0754$) and **OLS Linear Regression** ($R^2 = 0.8441$, $\text{MAE} = 0.0832$) strictly outperform **XGBoost** ($R^2 = 0.8055$, $\text{MAE} = 0.0924$). Persistence wins on 4 of the 6 held-out test sites.
+- **Prohibited Claim**: RoadSentinel does **NOT** claim causal deterioration modeling, and does **NOT** claim counterfactual or maintenance planning capabilities without validated real-world intervention data.
 
-### 2.5 Temporal Disappearance Semantics (`NOT_OBSERVED != REPAIRED`)
+### 2.5 Temporal Provenance & Disappearance Semantics (`NOT_OBSERVED != REPAIRED`)
 - **Observed Result**: In multi-day tracking sequences (e.g. `SEG_004`), 16 defect candidates disappear on subsequent days due to sunset grazing glare and camera contrast over-suppression.
-- **Semantic Rule**: The pipeline enforces `NOT_OBSERVED != REPAIRED`.
+- **Simulation Provenance**: The 40 captures across 8 sequences (`SEG_001`–`SEG_004`) are **CARLA / Unreal Engine synthetic simulator captures** (`env/scripts/rs_inspection_capture.py`). Simulator-configured progression must **NEVER** be presented as independently observed real-world pavement deterioration.
+- **Semantic Rule**: The pipeline strictly enforces `NOT_OBSERVED != REPAIRED`.
 - **Operational Limitation**: In autonomous visual inspection, a defect may disappear due to water pooling, lighting shifts, occluding debris, or sensor grazing angles. 
 - **Prohibited Action**: Disappeared defects must **NEVER** be classified as repaired without confirmed municipal maintenance dispatch records.
 
 ### 2.6 Hardware Deployment Status (Raspberry Pi 5)
-- **Observed Result**: Full computational profiling has been completed on the workstation GPU (NVIDIA GeForce RTX 5060 Laptop GPU, 8GB VRAM).
+- **Observed Result**: Full computational profiling has been completed on the workstation GPU (NVIDIA GeForce RTX 5060 Laptop GPU, 8GB VRAM). Inference-only GPU latency is $2.15\text{ ms}$ ($465.3\text{ FPS}$); end-to-end benchmark latency is $3.62\text{ ms}$ ($276.2\text{ FPS}$).
 - **Deployment Limitation**: Physical profiling on embedded hardware (Raspberry Pi 5 with AI Kit / Coral NPU) remains pending hardware availability and real-time quantization testing.
 - **Prohibited Claim**: No claims of Raspberry Pi 5 FPS, power wattage, or thermal stability may be reported until physical hardware benchmarking is completed.
 
-### 2.7 Video Burst-Frame Similarity in Training/Validation Splits
-- **Observed Result**: Perceptual hashing (pHash) identified **56 candidate near-duplicate pairs** between China Train ($N=1,921$) and China Val ($N=480$) with Hamming distance $\le 5$.
+### 2.7 Video Burst-Frame Dependency in Training/Validation Splits
+- **Observed Result**: Perceptual hashing (pHash) identified **56 candidate near-duplicate pairs** between China Train ($N=1,921$) and China Val ($N=480$) with Hamming distance $\le 5$, connecting 46 training images to 24 validation images across 16 components.
 - **Data Limitation**: Because RDD2022 drone surveys were collected from continuous flight video passes along highway segments, sequential video frames in training flights can visually resemble validation flights passing over adjacent roadway verges.
-- **Audit Action**: The 56 pairs are documented in [`artifacts/phase1b/leakage_pairs.csv`](../../artifacts/phase1b/leakage_pairs.csv) for open scientific transparency.
+- **Group Independence Status**: Marked **`UNVERIFIED`** because flight trajectory logs and sequence IDs are not published in RDD2022.
+- **Audit Action**: Documented in [`artifacts/phase1b/leakage_pairs.csv`](../../artifacts/phase1b/leakage_pairs.csv) and evaluated in [`artifacts/phase1b/group_sensitive_metrics.csv`](../../artifacts/phase1b/group_sensitive_metrics.csv). Excluding the 24 affected validation images shifts YOLO F1 from 0.7104 to 0.7022 ($\Delta\text{F1} = -0.0082$, $-1.15\%$), confirming minimal optimistic leakage bias.
 
 ---
 

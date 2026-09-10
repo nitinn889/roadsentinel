@@ -14,6 +14,6 @@ risk_coverage_target_t0_80pct_cov_error_pct,4.1667,2.3438,6.5104,Percentile_Boot
 risk_coverage_target_t0_50pct_cov_error_pct,2.9167,0.8333,5.0000,Percentile_Bootstrap_2.5_97.5,240,accepted_image,2000,42,VALID,Accepted failure rate at 50pct_cov (240 accepted images)
 risk_coverage_target_t1_80pct_cov_error_pct,9.3750,6.5104,12.5000,Percentile_Bootstrap_2.5_97.5,384,accepted_image,2000,42,VALID,Accepted failure rate at 80pct_cov (384 accepted images)
 risk_coverage_target_t1_50pct_cov_error_pct,6.2500,3.3333,9.5833,Percentile_Bootstrap_2.5_97.5,240,accepted_image,2000,42,VALID,Accepted failure rate at 50pct_cov (240 accepted images)
-xgboost_test_r2,0.8055,0.5866,0.9135,Percentile_Bootstrap_2.5_97.5,24,longitudinal_pair,2000,42,VALID,Held-out test set bootstrap (N=24 rows across 6 sites)
-xgboost_test_mae,0.0924,0.0675,0.1210,Percentile_Bootstrap_2.5_97.5,24,longitudinal_pair,2000,42,VALID,Held-out test set bootstrap (N=24 rows across 6 sites)
-xgboost_test_rmse,0.1144,0.0799,0.1497,Percentile_Bootstrap_2.5_97.5,24,longitudinal_pair,2000,42,VALID,Held-out test set bootstrap (N=24 rows across 6 sites)
+xgboost_test_r2,0.8055,0.2120,0.8943,Percentile_Bootstrap_2.5_97.5,6,site_cluster,2000,42,VALID,"Site-level cluster bootstrap (2000 iterations, resampling 6 held-out test sites with replacement)"
+xgboost_test_mae,0.0924,0.0703,0.1159,Percentile_Bootstrap_2.5_97.5,6,site_cluster,2000,42,VALID,"Site-level cluster bootstrap (2000 iterations, resampling 6 held-out test sites with replacement)"
+xgboost_test_rmse,0.1144,0.0807,0.1406,Percentile_Bootstrap_2.5_97.5,6,site_cluster,2000,42,VALID,"Site-level cluster bootstrap (2000 iterations, resampling 6 held-out test sites with replacement)"

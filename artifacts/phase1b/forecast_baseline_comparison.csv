@@ -1,0 +1,11 @@
+comparison_scope,site_id,model_name,sample_count,mean_days_ahead,days_ahead_range,r2_score,mae,rmse,delta_mae_vs_persistence,outperforms_xgboost,notes
+Overall_Held_Out_Test (N=24),ALL_6_TEST_SITES,Persistence (y_hat = y_t1),24,447.5,"[240, 720]",0.8551,0.0754,0.0987,0.0,True,Current distress condition carried forward without change
+Overall_Held_Out_Test (N=24),ALL_6_TEST_SITES,OLS Linear Regression,24,447.5,"[240, 720]",0.8441,0.0832,0.1024,0.0078,True,Standard ordinary least squares multiple linear regression
+Overall_Held_Out_Test (N=24),ALL_6_TEST_SITES,XGBoost Scenario Model,24,447.5,"[240, 720]",0.8055,0.0924,0.1144,0.017,False,Trained gradient boosted tree with environmental covariates
+Overall_Held_Out_Test (N=24),ALL_6_TEST_SITES,Historical Training Mean,24,447.5,"[240, 720]",-0.0168,0.2316,0.2615,0.1562,False,Constant prediction of mean training severity (0.4284)
+Site_Level_Paired,02-1002,XGBoost_vs_Persistence_vs_OLS,4,622.5,"[450, 690]",-0.5002,0.137,0.1529,-0.0101,False,"Persistence MAE=0.1471, OLS MAE=0.1265, XGBoost MAE=0.1370. XGBoost wins"
+Site_Level_Paired,15-1006,XGBoost_vs_Persistence_vs_OLS,3,650.0,"[540, 720]",-63.504,0.0998,0.1034,0.0315,True,"Persistence MAE=0.0683, OLS MAE=0.1294, XGBoost MAE=0.0998. Persistence wins"
+Site_Level_Paired,36-1008,XGBoost_vs_Persistence_vs_OLS,6,345.0,"[240, 450]",-0.3227,0.0581,0.0721,0.0023,True,"Persistence MAE=0.0558, OLS MAE=0.0658, XGBoost MAE=0.0581. Persistence wins"
+Site_Level_Paired,36-4017,XGBoost_vs_Persistence_vs_OLS,5,354.0,"[270, 450]",-0.539,0.106,0.1509,0.0236,True,"Persistence MAE=0.0824, OLS MAE=0.0744, XGBoost MAE=0.1060. Persistence wins"
+Site_Level_Paired,38-3006,XGBoost_vs_Persistence_vs_OLS,2,360.0,"[300, 420]",-1.3828,0.0641,0.0648,-0.021,False,"Persistence MAE=0.0852, OLS MAE=0.0927, XGBoost MAE=0.0641. XGBoost wins"
+Site_Level_Paired,38-5002,XGBoost_vs_Persistence_vs_OLS,4,435.0,"[270, 630]",-35.284,0.0909,0.0934,0.0662,True,"Persistence MAE=0.0247, OLS MAE=0.0376, XGBoost MAE=0.0909. Persistence wins"

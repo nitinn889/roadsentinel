@@ -170,6 +170,10 @@ def test_temporal_semantics_rule():
     "forecasting_per_site.csv",
     "runtime_benchmarks.csv",
     "canonical_phase1b_metrics.json",
+    "correction_reconciliation.csv",
+    "group_sensitive_metrics.csv",
+    "forecast_baseline_comparison.csv",
+    "corrected_canonical_metrics.json",
 ])
 def test_artifacts_exist_and_nonempty(filename: str):
     p = ARTIFACTS_DIR / filename
@@ -194,6 +198,7 @@ def test_figures_exist_and_nonempty(fig_name: str):
 
 @pytest.mark.parametrize("report_name", [
     "PHASE1B_VALIDATION_REPORT.md",
+    "PHASE1B_CORRECTION_REPORT.md",
     "LEAKAGE_AUDIT.md",
     "STATISTICAL_UNCERTAINTY.md",
     "DOMAIN_GATE_ANALYSIS.md",
@@ -206,3 +211,183 @@ def test_reports_exist_and_nonempty(report_name: str):
     p = REPORTS_DIR / report_name
     assert p.exists(), f"Report {report_name} must exist"
     assert p.stat().st_size > 500, f"Report {report_name} must be comprehensive"
+
+
+# =============================================================================
+# 8. Prompt 1B-R Correction & Revalidation Tests
+# =============================================================================
+def test_no_trailing_code_in_validation_report():
+    report_text = (REPORTS_DIR / "PHASE1B_VALIDATION_REPORT.md").read_text(encoding="utf-8")
+    assert "if __name__ == '__main__':" not in report_text
+    assert "with open(md_path" not in report_text
+    assert report_text.strip().endswith("- [x] All work remains isolated on branch `phase1b-robustness-validation` without merging to `main`.")
+
+
+def test_correction_reconciliation_csv_structure():
+    csv_path = ARTIFACTS_DIR / "correction_reconciliation.csv"
+    df = pd.read_csv(csv_path)
+    expected_cols = [
+        "item_number", "metric_or_claim", "old_value_or_claim",
+        "corrected_value_or_claim", "supporting_artifact",
+        "reason_for_correction", "scientific_conclusion_changed"
+    ]
+    for col in expected_cols:
+        assert col in df.columns, f"Column {col} missing in correction_reconciliation.csv"
+    assert len(df) >= 13, "Must cover all 13 required correction items"
+    covered_items = set(df["item_number"].tolist())
+    for item in range(1, 14):
+        assert item in covered_items, f"Correction item {item} must be covered in reconciliation CSV"
+
+
+def test_pure_reliability_rejection_reconciliation():
+    with open(ARTIFACTS_DIR / "corrected_canonical_metrics.json") as f:
+        metrics = json.load(f)
+    rel = metrics["reliability_selective_prediction"]
+    t1 = rel["pure_reliability_rejection_target_t1"]
+    assert t1["80_pct_coverage_error_pct"] == 9.38
+    assert t1["50_pct_coverage_error_pct"] == 6.25
+    assert t1["baseline_100_pct_coverage_error_pct"] == 17.92
+    deprecated = rel["deprecated_historical_values"]
+    assert deprecated["80_pct_coverage_canonical_value"] == 8.85
+    assert deprecated["50_pct_coverage_canonical_value"] == 2.08
+    assert "DEPRECATED" in deprecated["status"]
+
+
+def test_group_sensitive_metrics_leakage_audit():
+    csv_path = ARTIFACTS_DIR / "group_sensitive_metrics.csv"
+    df = pd.read_csv(csv_path)
+    strata = df.set_index("evaluation_stratum")
+    
+    full = strata.loc["China_Drone_Val_Full"]
+    assert full["sample_count"] == 480
+    assert full["f1_score"] == 0.7104
+    assert "UNVERIFIED" in str(full["group_independence_status"])
+    
+    clean = strata.loc["China_Drone_Val_Excluding_Connected_Pairs"]
+    assert clean["sample_count"] == 456
+    assert clean["f1_score"] == 0.7022
+    assert clean["precision"] == 0.6516
+    assert clean["recall"] == 0.7614
+    assert clean["mean_matched_iou"] == 0.8008
+    
+    affected = strata.loc["China_Drone_Val_Connected_Suspected_Pairs"]
+    assert affected["sample_count"] == 24
+    assert affected["f1_score"] == 0.8367
+
+    delta = strata.loc["Delta_Clean_Minus_Full"]
+    assert delta["f1_score"] == -0.0082
+
+
+def test_domain_threshold_reconciliation():
+    with open(ARTIFACTS_DIR / "corrected_canonical_metrics.json") as f:
+        metrics = json.load(f)
+    dg = metrics["domain_gating_dinov2"]
+    exact = dg["exact_intra_training_knn_distribution"]
+    assert exact["p95"] == 0.3503
+    assert exact["p99"] == 0.4558
+    canonical = dg["canonical_historical_thresholds"]
+    assert canonical["p95_warning_threshold"] == 0.3804
+    assert canonical["p99_operational_gate_threshold"] == 0.4491
+    op = dg["operational_performance_at_canonical_p99"]
+    assert op["threshold_value"] == 0.4491
+    assert op["india_cross_domain_quarantine_rate_pct"] == 100.0
+
+
+def test_domain_lighting_prose_matches_table():
+    text = (REPORTS_DIR / "DOMAIN_GATE_ANALYSIS.md").read_text(encoding="utf-8")
+    assert "0.1771" in text, "Low brightness distance (0.1771) must be in DOMAIN_GATE_ANALYSIS.md"
+    assert "0.1912" in text, "High brightness distance (0.1912) must be in DOMAIN_GATE_ANALYSIS.md"
+    assert "0.1873 vs 0.1842" not in text
+
+
+def test_statistical_uncertainty_site_level_bootstrap():
+    df_ci = pd.read_csv(ARTIFACTS_DIR / "confidence_intervals.csv")
+    r2_row = df_ci[df_ci["metric_name"] == "xgboost_test_r2"].iloc[0]
+    assert float(r2_row["point_estimate"]) == 0.8055
+    assert float(r2_row["ci_95_lower"]) == 0.2120
+    assert float(r2_row["ci_95_upper"]) == 0.8943
+    assert r2_row["sampling_unit"] == "site_cluster"
+    
+    mae_row = df_ci[df_ci["metric_name"] == "xgboost_test_mae"].iloc[0]
+    assert float(mae_row["point_estimate"]) == 0.0924
+    assert float(mae_row["ci_95_lower"]) == 0.0703
+    assert float(mae_row["ci_95_upper"]) == 0.1159
+    assert mae_row["sampling_unit"] == "site_cluster"
+
+    # Verify no report asserts unverified p < 10^-6 as an active conclusion
+    for report_file in REPORTS_DIR.glob("*.md"):
+        if report_file.name == "PHASE1B_CORRECTION_REPORT.md":
+            continue
+        content = report_file.read_text(encoding="utf-8").lower()
+        assert "p < 10^-6" not in content
+        assert "p < 10^{-6}" not in content
+
+
+def test_forecasting_baseline_dominance_and_horizons():
+    df_fc = pd.read_csv(ARTIFACTS_DIR / "forecast_baseline_comparison.csv")
+    overall = df_fc[df_fc["comparison_scope"].str.contains("Overall")].set_index("model_name")
+    
+    persist_mae = float(overall.loc["Persistence (y_hat = y_t1)"]["mae"])
+    ols_mae = float(overall.loc["OLS Linear Regression"]["mae"])
+    xgb_mae = float(overall.loc["XGBoost Scenario Model"]["mae"])
+    
+    assert persist_mae == 0.0754
+    assert ols_mae == 0.0832
+    assert xgb_mae == 0.0924
+    assert persist_mae < xgb_mae
+    assert ols_mae < xgb_mae
+    
+    mean_days = float(overall.loc["Persistence (y_hat = y_t1)"]["mean_days_ahead"])
+    assert mean_days == 447.5
+
+    with open(ARTIFACTS_DIR / "corrected_canonical_metrics.json") as f:
+        metrics = json.load(f)
+    imp = metrics["forecasting_ltpp_scenario"]["xgboost_feature_importance"]
+    assert imp["current_severity_gain_pct"] == 75.53
+    assert imp["current_severity_weight_pct"] == 48.13
+
+
+def test_temporal_provenance_synthetic_carla():
+    with open(ARTIFACTS_DIR / "corrected_canonical_metrics.json") as f:
+        metrics = json.load(f)
+    temp = metrics["temporal_tracking_experiment_a"]
+    assert "CARLA" in temp["provenance"]
+    assert "Synthetic" in temp["provenance"]
+    assert "NOT_OBSERVED != REPAIRED" in temp["semantic_rule"]
+
+
+def test_runtime_latency_protocols():
+    with open(ARTIFACTS_DIR / "corrected_canonical_metrics.json") as f:
+        metrics = json.load(f)
+    rt = metrics["runtime_benchmarks"]
+    assert rt["yolo_inference_only"]["latency_ms"] == 2.15
+    assert rt["yolo_end_to_end_pipeline"]["latency_ms"] == 3.62
+    assert "forward" in rt["yolo_inference_only"]["protocol"].lower() or "inference" in rt["yolo_inference_only"]["protocol"].lower()
+    assert "preprocessing" in rt["yolo_end_to_end_pipeline"]["protocol"].lower()
+
+
+def test_policy_language_no_unsupported_guarantees():
+    forbidden = ["guarantees zero unsafe", "safety proven"]
+    for report_file in REPORTS_DIR.glob("*.md"):
+        if report_file.name == "PHASE1B_CORRECTION_REPORT.md":
+            continue
+        content = report_file.read_text(encoding="utf-8").lower()
+        for phrase in forbidden:
+            assert phrase not in content, f"Forbidden phrase '{phrase}' found in {report_file.name}"
+
+
+def test_high_confidence_false_positives_complete():
+    df_tax = pd.read_csv(ARTIFACTS_DIR / "failure_case_taxonomy.csv")
+    high_conf_fps = df_tax[df_tax["failure_category"] == "HIGH_CONFIDENCE_FALSE_POSITIVE"]
+    assert len(high_conf_fps) == 14, "Must catalogue exactly 14 high-confidence false positive detections"
+
+
+def test_latex_rendering_syntax_hygiene():
+    broken_patterns = ["k ext{NN}", " ext{IoU}", "t ightarrow t+1"]
+    for report_file in REPORTS_DIR.glob("*.md"):
+        if report_file.name == "PHASE1B_CORRECTION_REPORT.md":
+            continue
+        content = report_file.read_text(encoding="utf-8")
+        for bp in broken_patterns:
+            assert bp not in content, f"Malformed LaTeX sequence '{bp}' found in {report_file.name}"
+

@@ -1,0 +1,5 @@
+evaluation_stratum,sample_count,ground_truth_boxes,predicted_boxes,true_positives,false_positives,false_negatives,precision,recall,f1_score,mean_matched_iou,group_independence_status,notes
+China_Drone_Val_Full,480,742,874,574,300,168,0.6568,0.7736,0.7104,0.8007,UNVERIFIED (Flight IDs Not Published in RDD2022),Official RDD2022 validation split
+China_Drone_Val_Excluding_Connected_Pairs,456,700,818,533,285,167,0.6516,0.7614,0.7022,0.8008,VERIFIED_PERCEPTUALLY_DISJOINT,Excludes 24 validation observations sharing pHash <= 5 with training images
+China_Drone_Val_Connected_Suspected_Pairs,24,42,56,41,15,1,0.7321,0.9762,0.8367,0.7992,POTENTIAL_BURST_DEPENDENCY,24 validation images connected to training near-duplicates
+Delta_Clean_Minus_Full,-24,-42,-56,-41,-15,-1,-0.0052,-0.0122,-0.0082,0.0001,SENSITIVITY_CHECK,"Sensitivity delta: F1 shifts by -0.0082 (-1.15%), indicating minimal optimistic leakage bias"

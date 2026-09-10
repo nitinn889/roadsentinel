@@ -7,20 +7,25 @@
 
 ---
 
-## 1. Executive Summary
+## 1. Executive Summary & Algorithmic Reconciliation
 
-This evaluation audits the reliability-aware selective prediction subsystem across the full spectrum of rejection rates ($0\%$ to $90\%$ in $10\%$ increments).
+This evaluation audits the reliability-aware selective prediction subsystem across the full spectrum of rejection rates ($0\%$ to $90\%$ in $10\%$ increments) and reconciles historical metrics with reproducible raw records.
 
-The audit rigorously preserves the fundamental scientific distinction between perceptual targets:
-1. **Target $T_1$ (Strict $F_1 \ge 0.50$)**: Balanced detection quality. Baseline unguided error $= 17.92\%$ ($86$ failures out of $480$).
-2. **Target $T_0$ (Historical $F_1 > 0$)**: Complete detection miss (zero matched defect boxes). Baseline unguided error $= 11.87\%$ ($57$ failures out of $480$).
+### 1.1 Architectural Definitions
+1. **Pure Reliability Rejection**: Selective prediction based strictly on sample-level confidence features (Model B out-of-fold predicted probability on Target $T_1$, $F_1 \ge 0.50$), without domain filtering. Observations are sorted in descending order of reliability, and the lowest $R\%$ are quarantined.
+2. **Domain Gating**: Standalone macro-level distribution shift quarantine based on DINOv2 20-NN cosine distance ($p_99 = 0.4491$). Flags $100\%$ of out-of-domain India dashcam frames and exhibits a $1.46\%$ familiar false warning rate.
+3. **Combined Gated Reliability**: The sequential staged pipeline where domain gating precedes reliability rejection: $\text{Input} \rightarrow \text{DINOv2 Gate} \rightarrow \text{YOLOv8n} \rightarrow \text{Reliability Estimator}$.
 
-### Core Audited Findings:
-- **At $20\%$ Rejection ($80\%$ Coverage)**:
-  - Under Target $T_1$: Accepted error drops from $17.92\%$ to **$9.38\%$** ($47.66\%$ risk reduction, isolating $58.14\%$ of baseline errors).
-- **At $50\%$ Rejection ($50\%$ Coverage)**:
-  - Under Target $T_1$: Accepted error collapses to **$6.25\%$** ($65.12\%$ risk reduction, isolating $82.56\%$ of baseline errors).
-  - Under Canonical Gated Filter: Accepted failure rate reaches **$2.08\%$** ($88.4\%$ error reduction, isolating $94.2\%$ of baseline failures).
+### 1.2 Reconciliation of Historical vs. Audited Values
+- **80% Coverage (20% Rejection)**:
+  - **9.38%** ($36$ failures / $384$ accepted images): The **exact reproducible result** of pure Model B percentile ranking on Target $T_1$. Achieves $47.66\%$ error reduction, isolating $58.14\%$ of baseline errors.
+  - **8.85%** ($34$ failures / $384$ accepted images): Historical value from Phase 12 / Canonical Research Metrics resulting from applying a fixed probability threshold ($p \ge 0.7629$) rather than pure percentile sorting. **Officially deprecated as pure Model B rejection**.
+- **50% Coverage (50% Rejection)**:
+  - **6.25%** ($15$ failures / $240$ accepted images): The **exact reproducible result** of pure Model B percentile ranking on Target $T_1$. Achieves $65.12\%$ error reduction, isolating $82.56\%$ of baseline errors.
+  - **2.08%** ($5$ failures / $240$ accepted images): Historical value resulting from a fixed high threshold ($p \ge 0.9850$) or earlier combined gated filtering. **NEVER attribute 2.08% to pure Model B 50% reliability rejection**, as raw records conclusively establish 6.25% under pure ranking.
+- **Target $T_0$ (Historical Zero-Defect Miss, $F_1 > 0$)**:
+  - $80\%$ Coverage: **$4.17\%$** ($16$ failures / $384$ accepted images).
+  - $50\%$ Coverage: **$2.92\%$** ($7$ failures / $240$ accepted images).
 
 ---
 
@@ -69,7 +74,7 @@ Evaluated across all $N = 874$ raw YOLOv8n detections on China validation frames
 
 ## 4. High-Confidence False Positive Analysis
 
-Exactly **14 detections** exhibited confidence $\ge 0.70$ despite having zero spatial match ($	ext{IoU} < 0.50$) with labeled defects:
+Exactly **14 detections** exhibited confidence $\ge 0.70$ despite having zero spatial match ($\text{IoU} < 0.50$) with labeled defects:
 
 | Image Identifier | Confidence Score | Bounding Box `[x1, y1, x2, y2]` | Visual Feature Type | Failure Cause Description |
 |---|---|---|---|---|
@@ -83,6 +88,10 @@ Exactly **14 detections** exhibited confidence $\ge 0.70$ despite having zero sp
 | `China_Drone_001759` | `0.7123` | `[155.06, 269.75, 180.04, 505.2]` | Edge shadow / lane joint / surface patch | False alarm on non-distress surface texture |
 | `China_Drone_001777` | `0.7932` | `[447.75, 433.58, 512.0, 491.82]` | Edge shadow / lane joint / surface patch | False alarm on non-distress surface texture |
 | `China_Drone_001861` | `0.7793` | `[0.0, 412.46, 172.41, 512.0]` | Edge shadow / lane joint / surface patch | False alarm on non-distress surface texture |
+| `China_Drone_002020` | `0.7717` | `[384.6, 385.38, 506.2, 419.55]` | Edge shadow / lane joint / surface patch | False alarm on non-distress surface texture |
+| `China_Drone_002027` | `0.9012` | `[174.02, 0.43, 355.48, 354.89]` | Edge shadow / lane joint / surface patch | False alarm on non-distress surface texture |
+| `China_Drone_002248` | `0.8685` | `[214.52, 398.51, 330.38, 511.91]` | Edge shadow / lane joint / surface patch | False alarm on non-distress surface texture |
+| `China_Drone_002346` | `0.7073` | `[345.68, 233.64, 509.74, 267.36]` | Edge shadow / lane joint / surface patch | False alarm on non-distress surface texture |
 
 **Root Cause**: High-confidence false alarms are dominated by asphalt seams, dark tree shadows cast across clean pavement, and longitudinal joint sealant lines that mimic crack textures.
 
