@@ -1,0 +1,6 @@
+model_id,inputs,mae,rmse,r2_score,change_mae,mae_skill_vs_persistence,paired_delta_mae,paired_delta_rmse,site_win_rate_pct,direction_accuracy_pct,spearman_rank_corr,outperforms_persistence
+M0_Persistence,None (Current state carried forward),0.0582,0.0815,0.9125,0.0582,0.0,0.0,0.0,0.0,0.0,0.0,False
+M1_OLS_Scenario,Current condition + Scenario,0.0614,0.0829,0.9095,0.062,-0.0545,0.0032,0.0014,43.48,58.04,-0.0483,False
+M2_XGB_Scenario,Current condition + Scenario,0.0587,0.0806,0.9145,0.0588,-0.0085,0.0005,-0.0009,52.17,65.18,-0.0094,False
+M3_XGB_Temporal,Current condition + Temporal history,0.0563,0.0806,0.9145,0.0573,0.0326,-0.0019,-0.0009,73.91,66.96,0.2405,True
+M4_XGB_Combined,Current condition + Temporal history + Scenario,0.0551,0.0766,0.9229,0.0561,0.0527,-0.0031,-0.005,52.17,65.18,0.2181,True

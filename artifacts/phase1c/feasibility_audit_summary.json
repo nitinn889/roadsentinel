@@ -1,0 +1,65 @@
+{
+  "dataset_name": "FHWA LTPP SDR 40 (Joined Scenario Deterioration Table)",
+  "source_file": "xgboost/data/processed/scenario_training_pairs.csv",
+  "total_pairs": 113,
+  "total_sites": 23,
+  "state_breakdown": {
+    "NY": 50,
+    "AK": 19,
+    "ND": 18,
+    "HI": 12,
+    "RI": 9,
+    "LA": 5
+  },
+  "interval_days": {
+    "minimum": 31,
+    "maximum": 728,
+    "mean": 429.5132743362832,
+    "median": 420.0,
+    "p25": 283.0,
+    "p75": 633.0
+  },
+  "missing_values_per_raw_column": {
+    "site_id": 0,
+    "state": 0,
+    "state_code": 0,
+    "shrp_id": 0,
+    "construction_no": 0,
+    "current_date": 0,
+    "future_date": 0,
+    "observed_days_ahead": 0,
+    "days_ahead": 0,
+    "current_iri_m_per_km": 0,
+    "future_iri_m_per_km": 0,
+    "rainfall_level": 0,
+    "traffic_level": 0,
+    "temperature": 0,
+    "water_exposure": 0,
+    "rain_observation_days": 0,
+    "temperature_observation_days": 0,
+    "traffic_source": 0
+  },
+  "temporal_history_sufficiency": {
+    "sites_with_at_least_3_chronological_visits": 23,
+    "sites_with_at_least_4_chronological_visits": 22,
+    "pairs_with_0_prior_inspections": 23,
+    "pairs_with_at_least_1_prior_inspection": 90,
+    "pairs_with_at_least_2_prior_inspections": 78,
+    "percentage_pairs_with_full_lag_history_pct": 69.03
+  },
+  "scenario_variable_provenance": {
+    "rainfall_level": "FHWA LTPP Virtual Weather Station (VWS) daily precipitation prefix sums (mm/day)",
+    "temperature": "FHWA LTPP Virtual Weather Station (VWS) daily mean temperature (deg C)",
+    "water_exposure": "Fraction of interval days with daily precipitation > 0 mm",
+    "traffic_level": "FHWA LTPP AADTT_LTPPLN heavy truck traffic / day with TRF_REP fallback",
+    "days_ahead": "Time elapsed between profile visits (binned to 30-day increments)"
+  },
+  "causal_claims_permitted": false,
+  "counterfactual_capability_validated": false,
+  "valid_forecasting_horizon_range_days": [
+    240,
+    720
+  ],
+  "rapid_forecasting_30_90_days_supported": false,
+  "audit_timestamp": "2026-09-10T23:46:33.919491"
+}

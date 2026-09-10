@@ -1,0 +1,24 @@
+{
+  "predefined_rule_applied": "Prompt 1C Section 8 Operational Selection Rule",
+  "verdict": "RESTRICTED_BOUNDED_OPERATING_REGION_OR_SCENARIO_ESTIMATE",
+  "assigned_operational_role_for_xgboost": "Secondary Scenario-Conditioned Estimate (Persistence Retained as Baseline)",
+  "authoritative_primary_forecast": "M0_Persistence",
+  "evidence_summary": {
+    "overall_mae_skill": 0.0527,
+    "paired_delta_mae_point_estimate": -0.0031,
+    "paired_delta_mae_95ci": [
+      -0.0106,
+      0.0043
+    ],
+    "site_win_rate_pct": 52.17,
+    "audit_set_win_rate_pct": 33.33,
+    "unseen_sites_win_rate_pct": 58.82
+  },
+  "justification": "M4 does not demonstrate universal superiority across all sites (Overall MAE skill: +0.0527, Site Win Rate: 52.2%, Paired 95% CI: [-0.0106, 0.0043]). Per Prompt 1C Predefined Operational Selection Rule, Persistence is retained as the authoritative baseline forecast. XGBoost is exposed strictly as an experimental scenario-conditioned projection (with positive skill observed in ['Medium_Horizon_365_550d', 'Long_Horizon_gt_550d'] if applicable).",
+  "prohibited_actions": [
+    "Do not select whichever model performs best separately on each test record",
+    "Do not label XGBoost scenario sensitivities as causal or counterfactual interventions",
+    "Do not claim validated 30-90 day rapid forecasting from historical LTPP multi-year survey intervals"
+  ],
+  "decision_timestamp": "2026-09-10T23:47:23.164762"
+}

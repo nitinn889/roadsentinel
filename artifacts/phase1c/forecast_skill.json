@@ -1,0 +1,131 @@
+{
+  "evaluation_protocol": "Nested Grouped Cross-Validation (5 outer folds, 4 inner folds, grouped by site_id)",
+  "total_pairs_evaluated": 113,
+  "total_sites_evaluated": 23,
+  "m0_persistence_baseline_mae": 0.0582,
+  "m0_persistence_baseline_rmse": 0.0815,
+  "m4_proposed_xgboost_mae": 0.0551,
+  "m4_proposed_xgboost_rmse": 0.0766,
+  "m4_mae_skill": 0.0527,
+  "paired_difference_m4_minus_m0": {
+    "point_estimate_delta_mae": -0.0031,
+    "site_clustered_95ci_lower": -0.0106,
+    "site_clustered_95ci_upper": 0.0043,
+    "ci_spans_zero": true,
+    "statistically_significantly_better_than_persistence": false
+  },
+  "site_level_performance": {
+    "total_sites": 23,
+    "sites_won_by_m4": 12,
+    "site_win_rate_pct": 52.17,
+    "audit_set_6_sites_win_rate_pct": 33.33,
+    "unseen_17_sites_win_rate_pct": 58.82
+  },
+  "performance_by_horizon": {
+    "Short_Horizon_lt_365d": {
+      "sample_count": 43,
+      "m0_mae": 0.0496,
+      "m4_mae": 0.0515,
+      "m4_skill_vs_m0": -0.0377,
+      "m4_wins": false
+    },
+    "Medium_Horizon_365_550d": {
+      "sample_count": 35,
+      "m0_mae": 0.0674,
+      "m4_mae": 0.0612,
+      "m4_skill_vs_m0": 0.0912,
+      "m4_wins": true
+    },
+    "Long_Horizon_gt_550d": {
+      "sample_count": 35,
+      "m0_mae": 0.0597,
+      "m4_mae": 0.0536,
+      "m4_skill_vs_m0": 0.1015,
+      "m4_wins": true
+    }
+  },
+  "performance_on_full_lag_history_subset_n78": {
+    "sample_count": 78,
+    "m0_mae": 0.0646,
+    "m4_mae": 0.0586,
+    "m4_skill": 0.0918,
+    "m4_wins": true
+  },
+  "model_ablation_summary": [
+    {
+      "model_id": "M0_Persistence",
+      "inputs": "None (Current state carried forward)",
+      "mae": 0.0582,
+      "rmse": 0.0815,
+      "r2_score": 0.9125,
+      "change_mae": 0.0582,
+      "mae_skill_vs_persistence": 0.0,
+      "paired_delta_mae": 0.0,
+      "paired_delta_rmse": 0.0,
+      "site_win_rate_pct": 0.0,
+      "direction_accuracy_pct": 0.0,
+      "spearman_rank_corr": 0.0,
+      "outperforms_persistence": false
+    },
+    {
+      "model_id": "M1_OLS_Scenario",
+      "inputs": "Current condition + Scenario",
+      "mae": 0.0614,
+      "rmse": 0.0829,
+      "r2_score": 0.9095,
+      "change_mae": 0.062,
+      "mae_skill_vs_persistence": -0.0545,
+      "paired_delta_mae": 0.0032,
+      "paired_delta_rmse": 0.0014,
+      "site_win_rate_pct": 43.48,
+      "direction_accuracy_pct": 58.04,
+      "spearman_rank_corr": -0.0483,
+      "outperforms_persistence": false
+    },
+    {
+      "model_id": "M2_XGB_Scenario",
+      "inputs": "Current condition + Scenario",
+      "mae": 0.0587,
+      "rmse": 0.0806,
+      "r2_score": 0.9145,
+      "change_mae": 0.0588,
+      "mae_skill_vs_persistence": -0.0085,
+      "paired_delta_mae": 0.0005,
+      "paired_delta_rmse": -0.0009,
+      "site_win_rate_pct": 52.17,
+      "direction_accuracy_pct": 65.18,
+      "spearman_rank_corr": -0.0094,
+      "outperforms_persistence": false
+    },
+    {
+      "model_id": "M3_XGB_Temporal",
+      "inputs": "Current condition + Temporal history",
+      "mae": 0.0563,
+      "rmse": 0.0806,
+      "r2_score": 0.9145,
+      "change_mae": 0.0573,
+      "mae_skill_vs_persistence": 0.0326,
+      "paired_delta_mae": -0.0019,
+      "paired_delta_rmse": -0.0009,
+      "site_win_rate_pct": 73.91,
+      "direction_accuracy_pct": 66.96,
+      "spearman_rank_corr": 0.2405,
+      "outperforms_persistence": true
+    },
+    {
+      "model_id": "M4_XGB_Combined",
+      "inputs": "Current condition + Temporal history + Scenario",
+      "mae": 0.0551,
+      "rmse": 0.0766,
+      "r2_score": 0.9229,
+      "change_mae": 0.0561,
+      "mae_skill_vs_persistence": 0.0527,
+      "paired_delta_mae": -0.0031,
+      "paired_delta_rmse": -0.005,
+      "site_win_rate_pct": 52.17,
+      "direction_accuracy_pct": 65.18,
+      "spearman_rank_corr": 0.2181,
+      "outperforms_persistence": true
+    }
+  ]
+}
