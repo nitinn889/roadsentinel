@@ -1,0 +1,7 @@
+threshold_name,threshold_value,familiar_false_warning_pct,ood_detection_rate_pct,false_negatives,false_positives,true_negatives,true_positives,accepted_coverage_pct,escalation_coverage_pct,description
+p95 (Canonical),0.3804,3.9583,100.0,0,19,461,300,59.1026,40.8974,Canonical Phase-12 familiar-domain warning threshold
+p95 (Ref Bank Exact),0.3503,5.0,100.0,0,24,456,300,58.4615,41.5385,Exact 95th percentile of intra-training reference bank
+p97.5 (Ref Bank Exact),0.399,2.5,100.0,0,12,468,300,60.0,40.0,Exact 97.5th percentile of intra-training reference bank
+p99 (Canonical),0.4491,1.4583,100.0,0,7,473,300,60.641,39.359,Canonical operational gate threshold (Phase 8 / Phase 12 / Phase 1A)
+p99 (Ref Bank Exact),0.4558,1.4583,100.0,0,7,473,300,60.641,39.359,Exact 99th percentile of intra-training reference bank
+p99.5 (Ref Bank Exact),0.4897,0.8333,100.0,0,4,476,300,61.0256,38.9744,Exact 99.5th percentile of intra-training reference bank

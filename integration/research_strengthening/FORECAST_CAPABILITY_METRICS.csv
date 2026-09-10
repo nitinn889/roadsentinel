@@ -1,0 +1,21 @@
+evaluation_dimension,metric_name,canonical_value,unit,canonical_source,notes
+Model Identity,model_id,roadsentinel_xgb_v2_ltpp_scenario,string,xgboost/outputs/scenario_model_v2_metrics.json,Standard gradient-boosted decision tree regressor trained on FHWA LTPP database
+Benchmark Protocol,split_strategy,Seeded site-based disjoint holdout,protocol,xgboost/outputs/scenario_model_v2_metrics.json,Sites are strictly partitioned to ensure zero spatial leakage between training and testing
+Benchmark Protocol,site_overlap_count,0,sites,xgboost/outputs/scenario_model_v2_metrics.json,Rigorous zero-leakage guarantee: 0 overlapping pavement test sections
+Benchmark Protocol,train_site_count,17,sites,xgboost/outputs/scenario_model_v2_metrics.json,17 distinct geographic highway test sites across USA
+Benchmark Protocol,test_site_count,6,sites,xgboost/outputs/scenario_model_v2_metrics.json,"6 completely disjoint held-out highway test sites (02-1002, 15-1006, 36-1008, 36-4017, 38-3006, 38-5002)"
+Dataset Size,train_pair_count,89,longitudinal pairs,xgboost/outputs/scenario_model_v2_metrics.json,Longitudinal distress progression interval records from LTPP InfoPave SDR 40
+Dataset Size,test_pair_count,24,longitudinal pairs,xgboost/outputs/scenario_model_v2_metrics.json,24 held-out evaluation pairs from the 6 disjoint test sites
+Generalization Accuracy,test_mae,0.0924,normalized severity error,xgboost/outputs/scenario_model_v2_metrics.json,Mean Absolute Error on held-out site-disjoint pavement test sections
+Generalization Accuracy,test_rmse,0.1144,normalized severity error,xgboost/outputs/scenario_model_v2_metrics.json,Root Mean Squared Error on held-out test sections
+Generalization Accuracy,test_r2,0.8055,R² coefficient,xgboost/outputs/scenario_model_v2_metrics.json,Model explains over 80.5% of longitudinal deterioration variance on unseen sites
+Feature Importance,gain_proxy_current_severity,0.7553,gain fraction,xgboost/outputs/scenario_model_v2_metrics.json,Current surface distress condition is the primary predictor of future deterioration
+Feature Importance,gain_proxy_traffic_level,0.1150,gain fraction,xgboost/outputs/scenario_model_v2_metrics.json,Heavy vehicle traffic loading is the second strongest deterioration driver
+Multi-Scenario Projection,mean_90d_delta_wet_exposure,+0.0526,projected severity delta,integration/CANONICAL_RESEARCH_METRICS.json,Dominant scenario producing highest deterioration delta across 100% of captures
+Multi-Scenario Projection,mean_90d_delta_heavy_rain,+0.0489,projected severity delta,integration/CANONICAL_RESEARCH_METRICS.json,Second highest deterioration rate under simulated heavy precipitation
+Multi-Scenario Projection,mean_90d_delta_heavy_traffic,+0.0384,projected severity delta,integration/CANONICAL_RESEARCH_METRICS.json,Accelerated mechanical fatigue degradation
+Multi-Scenario Projection,mean_90d_delta_high_heat,+0.0315,projected severity delta,integration/CANONICAL_RESEARCH_METRICS.json,Thermal expansion and binder softening degradation
+Multi-Scenario Projection,mean_90d_delta_normal,+0.0242,projected severity delta,integration/CANONICAL_RESEARCH_METRICS.json,Baseline natural weathering degradation
+Capability Comparison,yolo_standalone_output,Present visual detection only,capability,integration/RESEARCH_CLAIM_REGISTRY.md,YOLO output is confined strictly to bounding boxes on current survey frame
+Capability Comparison,roadsentinel_pipeline_output,Present condition + MODEL-BASED FORECAST,capability,integration/RESEARCH_CLAIM_REGISTRY.md,"RoadSentinel outputs multi-horizon (30, 60, 90 days) scenario-conditioned projections"
+Scientific Constraint,causal_and_calibration_caveats,EMPIRICAL_PROJECTION_ONLY,disclaimer,integration/PHASE14_SYSTEM_CONSISTENCY_AUDIT.md,"Forecasts are empirical data-driven regressions, not causal mechanics. Severity is uncalibrated to physical ASTM D6433 PCI."

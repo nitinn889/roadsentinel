@@ -1,0 +1,23 @@
+corruption_type,severity_level,condition_name,sample_size,yolo_precision,yolo_recall,yolo_f1,mean_domain_distance,domain_escalation_pct,mean_reliability_score,unsafe_automated_accept_rate_pct
+clean_baseline,0,Clean Baseline (No Corruption),50,0.7123,0.7123,0.7123,0.2238,10.0,0.5134,0.0
+brightness,1,Mild Brightness (0.75x),50,0.6974,0.726,0.7114,0.2252,10.0,0.5075,0.0
+brightness,2,Moderate Brightness (0.50x),50,0.7612,0.6986,0.7286,0.229,10.0,0.5328,0.0
+brightness,3,Severe Brightness (0.25x),50,0.8649,0.4384,0.5818,0.2576,10.0,0.3865,0.0
+contrast,1,Mild Contrast (0.75x),50,0.7606,0.7397,0.75,0.224,10.0,0.5113,0.0
+contrast,2,Moderate Contrast (0.50x),50,0.8033,0.6712,0.7313,0.2305,10.0,0.4695,0.0
+contrast,3,Severe Contrast (0.25x),50,0.8205,0.4384,0.5714,0.2612,8.0,0.3821,0.0
+gaussian_blur,1,Mild Gaussian Blur (k=5),50,0.7879,0.7123,0.7482,0.2244,10.0,0.5175,0.0
+gaussian_blur,2,Moderate Gaussian Blur (k=11),50,0.8788,0.3973,0.5472,0.2596,14.0,0.3629,0.0
+gaussian_blur,3,Severe Gaussian Blur (k=21),50,1.0,0.1507,0.2619,0.3868,24.0,0.1538,0.0
+motion_blur,1,Mild Motion Blur (k=7),50,0.6571,0.3151,0.4259,0.2632,8.0,0.345,0.0
+motion_blur,2,Moderate Motion Blur (k=15),50,0.7059,0.1644,0.2667,0.3944,26.0,0.1787,0.0
+motion_blur,3,Severe Motion Blur (k=25),50,0.7273,0.1096,0.1905,0.4718,56.0,0.125,0.0
+jpeg_compression,1,Mild JPEG (Quality 70),50,0.72,0.7397,0.7297,0.2233,10.0,0.5094,0.0
+jpeg_compression,2,Moderate JPEG (Quality 40),50,0.7385,0.6575,0.6957,0.2334,10.0,0.4205,0.0
+jpeg_compression,3,Severe JPEG (Quality 15),50,0.6061,0.274,0.3774,0.3046,8.0,0.303,0.0
+synthetic_rain,1,Mild Rain (50 streaks),50,0.6667,0.7123,0.6887,0.2637,10.0,0.481,0.0
+synthetic_rain,2,Moderate Rain (150 streaks),50,0.6618,0.6164,0.6383,0.3005,10.0,0.4314,0.0
+synthetic_rain,3,Severe Rain (300 streaks),50,0.6667,0.5205,0.5846,0.3176,12.0,0.4043,0.0
+partial_occlusion,1,Mild Occlusion (5% area),50,0.494,0.5616,0.5256,0.2623,10.0,0.488,0.0
+partial_occlusion,2,Moderate Occlusion (15% area),50,0.4512,0.5068,0.4774,0.2753,10.0,0.5035,0.0
+partial_occlusion,3,Severe Occlusion (30% area),50,0.4133,0.4247,0.4189,0.2838,10.0,0.4733,0.0

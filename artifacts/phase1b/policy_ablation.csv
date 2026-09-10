@@ -1,0 +1,16 @@
+evaluation_stratum,total_observations,baseline_t1_failures,system_architecture,automated_accept_count,automated_accept_coverage_pct,human_review_count,human_review_coverage_pct,domain_escalation_count,domain_escalation_coverage_pct,unsafe_automated_accepts,unsafe_automated_accept_rate_pct,failures_prevented_downstream,failures_prevented_pct,successful_cases_unnecessarily_rejected,measured_latency_ms,measured_throughput_fps
+India_Cross_Domain,300,293,YOLO_ONLY,300,100.0,0,0.0,0,0.0,293,97.67,0,0.0,0,3.62,276.24
+India_Cross_Domain,300,293,YOLO_PLUS_RELIABILITY,12,4.0,288,96.0,0,0.0,11,91.67,282,96.25,6,8.15,122.7
+India_Cross_Domain,300,293,YOLO_PLUS_DOMAIN_GATE,0,0.0,0,0.0,300,100.0,0,0.0,293,100.0,7,23.87,41.89
+India_Cross_Domain,300,293,YOLO_PLUS_DOMAIN_GATE_PLUS_RELIABILITY,0,0.0,0,0.0,300,100.0,0,0.0,293,100.0,7,28.4,35.21
+India_Cross_Domain,300,293,FULL_ROADSENTINEL_POLICY,0,0.0,0,0.0,300,100.0,0,0.0,293,100.0,7,291.65,3.43
+China_In_Domain,480,86,YOLO_ONLY,480,100.0,0,0.0,0,0.0,86,17.92,0,0.0,0,3.62,276.24
+China_In_Domain,480,86,YOLO_PLUS_RELIABILITY,299,62.29,181,37.71,0,0.0,24,8.03,62,72.09,119,8.15,122.7
+China_In_Domain,480,86,YOLO_PLUS_DOMAIN_GATE,473,98.54,0,0.0,7,1.46,85,17.97,1,1.16,6,23.87,41.89
+China_In_Domain,480,86,YOLO_PLUS_DOMAIN_GATE_PLUS_RELIABILITY,296,61.67,177,36.88,7,1.46,24,8.11,62,72.09,122,28.4,35.21
+China_In_Domain,480,86,FULL_ROADSENTINEL_POLICY,296,61.67,177,36.88,7,1.46,24,8.11,62,72.09,122,291.65,3.43
+Pooled_Benchmark,780,379,YOLO_ONLY,780,100.0,0,0.0,0,0.0,379,48.59,0,0.0,0,3.62,276.24
+Pooled_Benchmark,780,379,YOLO_PLUS_RELIABILITY,311,39.87,469,60.13,0,0.0,35,11.25,344,90.77,125,8.15,122.7
+Pooled_Benchmark,780,379,YOLO_PLUS_DOMAIN_GATE,473,60.64,0,0.0,307,39.36,85,17.97,294,77.57,13,23.87,41.89
+Pooled_Benchmark,780,379,YOLO_PLUS_DOMAIN_GATE_PLUS_RELIABILITY,296,37.95,177,22.69,307,39.36,24,8.11,355,93.67,129,28.4,35.21
+Pooled_Benchmark,780,379,FULL_ROADSENTINEL_POLICY,296,37.95,177,22.69,307,39.36,24,8.11,355,93.67,129,291.65,3.43

@@ -1,0 +1,23 @@
+{
+  "china_train_val_filename_overlap": 0,
+  "china_train_val_exact_hash_overlap": 0,
+  "china_train_val_near_duplicate_count": 56,
+  "china_india_filename_overlap": 0,
+  "china_india_hash_overlap": 0,
+  "india_china_near_duplicate_count": 0,
+  "ref_bank_size": 1921,
+  "ref_bank_matches_train_count": true,
+  "ref_bank_contains_val": false,
+  "ref_bank_contains_india": false,
+  "threshold_selection_data": "China_Train_Reference_Embeddings_Only (N=1921)",
+  "india_labels_used_for_tuning": false,
+  "status_threshold_selection": "VERIFIED_INDEPENDENT",
+  "xgboost_train_site_count": 17,
+  "xgboost_test_site_count": 6,
+  "xgboost_site_overlap_count": 0,
+  "xgboost_site_overlap_list": [],
+  "xgboost_temporal_lookahead_leakage": false,
+  "temporal_camera_overlap_verified": true,
+  "temporal_ordering_strictly_chronological": true,
+  "temporal_rule_not_observed_ne_repaired": "ENFORCED"
+}

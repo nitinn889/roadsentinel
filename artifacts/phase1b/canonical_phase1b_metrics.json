@@ -1,0 +1,427 @@
+{
+  "phase": "1B - Experimental Validity, Leakage Audit & Robustness Validation",
+  "timestamp_iso": "2026-09-10T23:00:00+05:30",
+  "git_branch": "phase1b-robustness-validation",
+  "audit_verdict": "VERIFIED_VALID_WITH_CONSTRAINTS",
+  "yolo_in_domain_china": {
+    "image_count": 480,
+    "gt_boxes": 742,
+    "predictions": 874,
+    "tp": 574,
+    "fp": 300,
+    "fn": 168,
+    "precision": {
+      "point_estimate": 0.6568,
+      "ci_95": [
+        "0.6238",
+        "0.6920"
+      ],
+      "sampling_unit": "image",
+      "sample_size": 480
+    },
+    "recall": {
+      "point_estimate": 0.7736,
+      "ci_95": [
+        "0.7395",
+        "0.8068"
+      ],
+      "sampling_unit": "image",
+      "sample_size": 480
+    },
+    "f1": {
+      "point_estimate": 0.7104,
+      "ci_95": [
+        "0.6818",
+        "0.7388"
+      ],
+      "sampling_unit": "image",
+      "sample_size": 480
+    },
+    "mean_matched_iou": {
+      "point_estimate": 0.8007,
+      "ci_95": [
+        "0.7911",
+        "0.8100"
+      ],
+      "sampling_unit": "matched_defect_box",
+      "sample_size": 574
+    },
+    "mean_latency_ms": 2.149,
+    "canonical_throughput_fps": 465.28
+  },
+  "yolo_cross_domain_india": {
+    "image_count": 300,
+    "gt_boxes": 652,
+    "predictions": 83,
+    "tp": 8,
+    "fp": 75,
+    "fn": 644,
+    "precision": {
+      "point_estimate": 0.0964,
+      "ci_95": [
+        "0.0385",
+        "0.1667"
+      ],
+      "sampling_unit": "image",
+      "sample_size": 300
+    },
+    "recall": {
+      "point_estimate": 0.0123,
+      "ci_95": [
+        "0.0045",
+        "0.0214"
+      ],
+      "sampling_unit": "image",
+      "sample_size": 300
+    },
+    "f1": {
+      "point_estimate": 0.0218,
+      "ci_95": [
+        "0.0081",
+        "0.0374"
+      ],
+      "sampling_unit": "image",
+      "sample_size": 300
+    },
+    "f1_audited": 0.0218,
+    "f1_deprecated_notice": "Historical 0.0226 is deprecated and superseded by exact 0.0218",
+    "zero_tp_image_rate_pct": 97.33,
+    "frames_fp_only": "57/65 (87.69%)",
+    "target_t0_failures": "292/300",
+    "target_t1_failures": "293/300"
+  },
+  "dinov2_domain_gate": {
+    "auroc": {
+      "point_estimate": 1.0,
+      "ci_95": [
+        "1.0000",
+        "1.0000"
+      ],
+      "sampling_unit": "image_pair",
+      "sample_size": 780
+    },
+    "separation_margin": "+0.1158 (min India 0.6405 - max China 0.5247)",
+    "operational_threshold_p99": 0.4491,
+    "india_shift_detection_rate_pct": {
+      "point_estimate": 100.0,
+      "ci_95": [
+        "100.0000",
+        "100.0000"
+      ],
+      "sampling_unit": "image",
+      "sample_size": 300
+    },
+    "china_false_warning_pct": {
+      "point_estimate": 1.4583,
+      "ci_95": [
+        "0.6250",
+        "2.5000"
+      ],
+      "sampling_unit": "image",
+      "sample_size": 480
+    },
+    "scope_caveat": "Perfect separation holds exclusively on China UAV vs India Dashcam; not universal OOD.",
+    "threshold_sweep": [
+      {
+        "threshold_name": "p95 (Canonical)",
+        "threshold_value": 0.3804,
+        "familiar_false_warning_pct": 3.9583,
+        "ood_detection_rate_pct": 100.0,
+        "false_negatives": 0,
+        "false_positives": 19,
+        "true_negatives": 461,
+        "true_positives": 300,
+        "accepted_coverage_pct": 59.1026,
+        "escalation_coverage_pct": 40.8974,
+        "description": "Canonical Phase-12 familiar-domain warning threshold"
+      },
+      {
+        "threshold_name": "p95 (Ref Bank Exact)",
+        "threshold_value": 0.3503,
+        "familiar_false_warning_pct": 5.0,
+        "ood_detection_rate_pct": 100.0,
+        "false_negatives": 0,
+        "false_positives": 24,
+        "true_negatives": 456,
+        "true_positives": 300,
+        "accepted_coverage_pct": 58.4615,
+        "escalation_coverage_pct": 41.5385,
+        "description": "Exact 95th percentile of intra-training reference bank"
+      },
+      {
+        "threshold_name": "p97.5 (Ref Bank Exact)",
+        "threshold_value": 0.399,
+        "familiar_false_warning_pct": 2.5,
+        "ood_detection_rate_pct": 100.0,
+        "false_negatives": 0,
+        "false_positives": 12,
+        "true_negatives": 468,
+        "true_positives": 300,
+        "accepted_coverage_pct": 60.0,
+        "escalation_coverage_pct": 40.0,
+        "description": "Exact 97.5th percentile of intra-training reference bank"
+      },
+      {
+        "threshold_name": "p99 (Canonical)",
+        "threshold_value": 0.4491,
+        "familiar_false_warning_pct": 1.4583,
+        "ood_detection_rate_pct": 100.0,
+        "false_negatives": 0,
+        "false_positives": 7,
+        "true_negatives": 473,
+        "true_positives": 300,
+        "accepted_coverage_pct": 60.641,
+        "escalation_coverage_pct": 39.359,
+        "description": "Canonical operational gate threshold (Phase 8 / Phase 12 / Phase 1A)"
+      },
+      {
+        "threshold_name": "p99 (Ref Bank Exact)",
+        "threshold_value": 0.4558,
+        "familiar_false_warning_pct": 1.4583,
+        "ood_detection_rate_pct": 100.0,
+        "false_negatives": 0,
+        "false_positives": 7,
+        "true_negatives": 473,
+        "true_positives": 300,
+        "accepted_coverage_pct": 60.641,
+        "escalation_coverage_pct": 39.359,
+        "description": "Exact 99th percentile of intra-training reference bank"
+      },
+      {
+        "threshold_name": "p99.5 (Ref Bank Exact)",
+        "threshold_value": 0.4897,
+        "familiar_false_warning_pct": 0.8333,
+        "ood_detection_rate_pct": 100.0,
+        "false_negatives": 0,
+        "false_positives": 4,
+        "true_negatives": 476,
+        "true_positives": 300,
+        "accepted_coverage_pct": 61.0256,
+        "escalation_coverage_pct": 38.9744,
+        "description": "Exact 99.5th percentile of intra-training reference bank"
+      }
+    ]
+  },
+  "reliability_selective_prediction": {
+    "detection_auroc": 0.7741,
+    "detection_brier": 0.1921,
+    "detection_ece": 0.1075,
+    "risk_coverage_points_t1": {
+      "coverage_100pct_error": 17.92,
+      "coverage_80pct_error": 9.38,
+      "coverage_50pct_error": 6.25,
+      "coverage_50pct_canonical_gated_error": 2.08,
+      "max_error_reduction_pct": 88.4,
+      "isolated_baseline_errors_pct": 94.2
+    }
+  },
+  "decision_policy_ablation": {
+    "india_unsafe_accepts": {
+      "YOLO_ONLY": 293,
+      "YOLO_PLUS_RELIABILITY": 11,
+      "YOLO_PLUS_DOMAIN_GATE": 0,
+      "YOLO_PLUS_DOMAIN_GATE_PLUS_RELIABILITY": 0,
+      "FULL_ROADSENTINEL_POLICY": 0
+    },
+    "failures_prevented_downstream_india": {
+      "YOLO_ONLY": "0/293 (0.0%)",
+      "YOLO_PLUS_RELIABILITY": "282/293 (96.25%)",
+      "YOLO_PLUS_DOMAIN_GATE": "293/293 (100.0%)",
+      "YOLO_PLUS_DOMAIN_GATE_PLUS_RELIABILITY": "293/293 (100.0%)",
+      "FULL_ROADSENTINEL_POLICY": "293/293 (100.0%)"
+    }
+  },
+  "temporal_subsystem": {
+    "evaluated_sequences": 8,
+    "unique_distress_tracks": 48,
+    "persistent_tracks_ge2_states": 22,
+    "persistence_ratio_pct": 45.83,
+    "matched_transitions": 33,
+    "observed_area_increased": 14,
+    "observed_area_decreased": 19,
+    "semantic_rule": "NOT_OBSERVED != REPAIRED (Enforced across all states)"
+  },
+  "forecasting_xgboost": {
+    "model_version": "scenario_model_v2",
+    "training_sites_count": 17,
+    "test_sites_count": 6,
+    "site_overlap_count": 0,
+    "test_r2": {
+      "point_estimate": 0.8055,
+      "ci_95": [
+        "0.5866",
+        "0.9135"
+      ],
+      "sampling_unit": "longitudinal_pair",
+      "sample_size": 24
+    },
+    "test_mae": {
+      "point_estimate": 0.0924,
+      "ci_95": [
+        "0.0675",
+        "0.1210"
+      ],
+      "sampling_unit": "longitudinal_pair",
+      "sample_size": 24
+    },
+    "test_rmse": {
+      "point_estimate": 0.1144,
+      "ci_95": [
+        "0.0799",
+        "0.1497"
+      ],
+      "sampling_unit": "longitudinal_pair",
+      "sample_size": 24
+    },
+    "scenario_estimates": {
+      "WET_EXPOSURE": "+0.0526 (Statistical regression projection, not causal)",
+      "HEAVY_RAIN": "+0.0489",
+      "HEAVY_TRAFFIC": "+0.0384",
+      "HIGH_HEAT": "+0.0315",
+      "NORMAL": "+0.0242"
+    },
+    "per_site_error_breakdown": [
+      {
+        "test_site_id": "02-1002",
+        "sample_pairs_count": 4,
+        "mean_true_future_severity": 0.4615,
+        "mean_pred_future_severity": 0.4153,
+        "site_mae": 0.137,
+        "site_rmse": 0.1529,
+        "min_error": 0.0592,
+        "max_error": 0.2459,
+        "mean_days_ahead": 622.5
+      },
+      {
+        "test_site_id": "15-1006",
+        "sample_pairs_count": 3,
+        "mean_true_future_severity": 0.767,
+        "mean_pred_future_severity": 0.8668,
+        "site_mae": 0.0998,
+        "site_rmse": 0.1034,
+        "min_error": 0.0629,
+        "max_error": 0.1275,
+        "mean_days_ahead": 650.0
+      },
+      {
+        "test_site_id": "36-1008",
+        "sample_pairs_count": 6,
+        "mean_true_future_severity": 0.1641,
+        "mean_pred_future_severity": 0.1846,
+        "site_mae": 0.0581,
+        "site_rmse": 0.0721,
+        "min_error": 0.0001,
+        "max_error": 0.1113,
+        "mean_days_ahead": 345.0
+      },
+      {
+        "test_site_id": "36-4017",
+        "sample_pairs_count": 5,
+        "mean_true_future_severity": 0.669,
+        "mean_pred_future_severity": 0.7224,
+        "site_mae": 0.106,
+        "site_rmse": 0.1509,
+        "min_error": 0.0014,
+        "max_error": 0.3101,
+        "mean_days_ahead": 354.0
+      },
+      {
+        "test_site_id": "38-3006",
+        "sample_pairs_count": 2,
+        "mean_true_future_severity": 0.065,
+        "mean_pred_future_severity": 0.0558,
+        "site_mae": 0.0641,
+        "site_rmse": 0.0648,
+        "min_error": 0.055,
+        "max_error": 0.0733,
+        "mean_days_ahead": 360.0
+      },
+      {
+        "test_site_id": "38-5002",
+        "sample_pairs_count": 4,
+        "mean_true_future_severity": 0.2341,
+        "mean_pred_future_severity": 0.293,
+        "site_mae": 0.0909,
+        "site_rmse": 0.0934,
+        "min_error": 0.0639,
+        "max_error": 0.118,
+        "mean_days_ahead": 435.0
+      }
+    ]
+  },
+  "runtime_benchmarks": {
+    "hardware": "NVIDIA GeForce RTX 5060 Laptop GPU (8GB VRAM)",
+    "software": "PyTorch 2.13.0+cu130, CUDA 12.8",
+    "timings": [
+      {
+        "pipeline_tier": "YOLOv8n_Alone",
+        "input_resolution": "512x512",
+        "batch_size": 1,
+        "warmup_runs": 20,
+        "timed_runs": 100,
+        "mean_latency_ms": 2.149,
+        "median_latency_ms": 2.082,
+        "std_latency_ms": 0.228,
+        "p95_latency_ms": 2.502,
+        "p99_latency_ms": 3.212,
+        "mean_throughput_fps": 465.28,
+        "peak_gpu_memory_mb": 117.0,
+        "device": "NVIDIA GeForce RTX 5060 Laptop GPU"
+      },
+      {
+        "pipeline_tier": "DINOv2_Domain_Gate_Alone",
+        "input_resolution": "518x518",
+        "batch_size": 1,
+        "warmup_runs": 20,
+        "timed_runs": 100,
+        "mean_latency_ms": 25.916,
+        "median_latency_ms": 25.426,
+        "std_latency_ms": 2.323,
+        "p95_latency_ms": 30.85,
+        "p99_latency_ms": 31.281,
+        "mean_throughput_fps": 38.59,
+        "peak_gpu_memory_mb": 156.8,
+        "device": "NVIDIA GeForce RTX 5060 Laptop GPU"
+      },
+      {
+        "pipeline_tier": "Staged_Pipeline_Gated",
+        "input_resolution": "512x512 + 518x518",
+        "batch_size": 1,
+        "warmup_runs": 20,
+        "timed_runs": 100,
+        "mean_latency_ms": 28.412,
+        "median_latency_ms": 28.349,
+        "std_latency_ms": 1.062,
+        "p95_latency_ms": 30.153,
+        "p99_latency_ms": 31.816,
+        "mean_throughput_fps": 35.2,
+        "peak_gpu_memory_mb": 156.8,
+        "device": "NVIDIA GeForce RTX 5060 Laptop GPU"
+      }
+    ],
+    "raspberry_pi_status": "PENDING_PHYSICAL_BENCHMARKING (Pi 5 metrics omitted)"
+  },
+  "split_independence_audit": {
+    "china_train_val_filename_overlap": 0,
+    "china_train_val_exact_hash_overlap": 0,
+    "china_train_val_near_duplicate_count": 56,
+    "china_india_filename_overlap": 0,
+    "china_india_hash_overlap": 0,
+    "india_china_near_duplicate_count": 0,
+    "ref_bank_size": 1921,
+    "ref_bank_matches_train_count": true,
+    "ref_bank_contains_val": false,
+    "ref_bank_contains_india": false,
+    "threshold_selection_data": "China_Train_Reference_Embeddings_Only (N=1921)",
+    "india_labels_used_for_tuning": false,
+    "status_threshold_selection": "VERIFIED_INDEPENDENT",
+    "xgboost_train_site_count": 17,
+    "xgboost_test_site_count": 6,
+    "xgboost_site_overlap_count": 0,
+    "xgboost_site_overlap_list": [],
+    "xgboost_temporal_lookahead_leakage": false,
+    "temporal_camera_overlap_verified": true,
+    "temporal_ordering_strictly_chronological": true,
+    "temporal_rule_not_observed_ne_repaired": "ENFORCED"
+  }
+}

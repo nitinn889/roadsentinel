@@ -1,0 +1,4 @@
+pipeline_tier,input_resolution,batch_size,warmup_runs,timed_runs,mean_latency_ms,median_latency_ms,std_latency_ms,p95_latency_ms,p99_latency_ms,mean_throughput_fps,peak_gpu_memory_mb,device
+YOLOv8n_Alone,512x512,1,20,100,2.149,2.082,0.228,2.502,3.212,465.28,117.0,NVIDIA GeForce RTX 5060 Laptop GPU
+DINOv2_Domain_Gate_Alone,518x518,1,20,100,25.916,25.426,2.323,30.85,31.281,38.59,156.8,NVIDIA GeForce RTX 5060 Laptop GPU
+Staged_Pipeline_Gated,512x512 + 518x518,1,20,100,28.412,28.349,1.062,30.153,31.816,35.2,156.8,NVIDIA GeForce RTX 5060 Laptop GPU
