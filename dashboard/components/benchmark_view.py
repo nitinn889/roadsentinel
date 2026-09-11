@@ -11,6 +11,7 @@ from data_loader import (
     WORKSPACE_ROOT,
     load_binary_metrics,
     load_final_perception_table,
+    load_group_sensitive_metrics,
     load_panel_examples,
     load_yolo_semantic_metrics,
 )
@@ -56,17 +57,40 @@ def render_benchmark_view():
             use_container_width=True
         )
 
-    # Key Metric Highlight Cards
+    # Key Metric Highlight Cards from Loaded Perception Artifacts
+    df_group = load_group_sensitive_metrics()
+    yolo_f1 = 0.7104
+    dino_f1 = 0.0267
+    yolo_lat = "3.62 ms"
+    dino_lat = "263.15 ms"
+    dup_f1 = 0.7022
+
+    if not df_final.empty:
+        yolo_rows = df_final[df_final["Model"].str.contains("YOLO", na=False)]
+        dino_rows = df_final[df_final["Model"].str.contains("DINO", na=False)]
+        if not yolo_rows.empty and "F1" in yolo_rows.columns:
+            yolo_f1 = float(yolo_rows.iloc[0]["F1"])
+            yolo_lat = str(yolo_rows.iloc[0].get("Mean Latency", "3.62 ms"))
+        if not dino_rows.empty and "F1" in dino_rows.columns:
+            dino_f1 = float(dino_rows.iloc[0]["F1"])
+            dino_lat = str(dino_rows.iloc[0].get("Mean Latency", "263.15 ms"))
+
+    if not df_group.empty and "f1_score" in df_group.columns:
+        filtered_row = df_group[df_group["evaluation_stratum"].str.contains("Excluding_Connected", na=False)]
+        if not filtered_row.empty:
+            dup_f1 = float(filtered_row.iloc[0]["f1_score"])
+
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        st.metric("YOLOv8n F1-Score", "0.7104", delta="+0.6837 vs DINO/SAM")
+        st.metric("YOLOv8n F1-Score", f"{yolo_f1:.4f}", delta=f"+{yolo_f1 - dino_f1:.4f} vs DINO/SAM")
     with c2:
-        st.metric("DINOv2+SAM2 F1-Score", "0.0267", delta="-0.6837 (1104 FPs)", delta_color="inverse")
+        st.metric("Duplicate-Filtered China F1", f"{dup_f1:.4f}", delta="-0.0082 (N=456 disjoint)", help="Excludes 24 validation frames sharing pHash <= 5 with training set")
     with c3:
-        st.metric("YOLO Inference Latency", "3.62 ms", delta="276.3 FPS (Real-time)")
+        st.metric("DINOv2+SAM2 F1-Score", f"{dino_f1:.4f}", delta=f"-{yolo_f1 - dino_f1:.4f} (High False Alarms)", delta_color="inverse")
     with c4:
-        st.metric("DINO/SAM Inference Latency", "263.15 ms", delta="3.8 FPS (72.7x slower)", delta_color="inverse")
+        st.metric("YOLO Inference Latency", yolo_lat, delta="276.3 FPS on RTX 5060")
 
+    st.caption("Direct DINOv2 + SAM2 defect-accuracy superiority has not been established on organic road distress. YOLOv8n dominates in-domain localization.")
     st.markdown("---")
 
     # 3. YOLO 5-Class Semantic Breakdown (Section 18)

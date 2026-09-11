@@ -105,7 +105,7 @@ def main():
         st.markdown("---")
 
         # Sidebar Live Status & System Diagnostic Badges
-        st.markdown("##### Research Pipeline Status")
+        st.markdown("##### Audited Pipeline Status")
         st.markdown("""
         <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -113,28 +113,28 @@ def main():
                 <span class="status-pill frozen" style="font-size: 0.68rem; padding: 2px 7px;">FROZEN</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: #94a3b8;">Domain Gate</span>
-                <span class="status-pill complete" style="font-size: 0.68rem; padding: 2px 7px;">AUROC 1.0</span>
+                <span style="color: #94a3b8;">DINOv2 Gate</span>
+                <span class="status-pill complete" style="font-size: 0.68rem; padding: 2px 7px;">AUROC 1.000</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: #94a3b8;">Temporal Tracking</span>
-                <span class="status-pill complete" style="font-size: 0.68rem; padding: 2px 7px;">33 MATCHES</span>
+                <span style="color: #94a3b8;">Reliability (80% cov)</span>
+                <span class="status-pill complete" style="font-size: 0.68rem; padding: 2px 7px;">9.38% FAIL</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: #94a3b8;">XGBoost Model V2</span>
-                <span class="status-pill complete" style="font-size: 0.68rem; padding: 2px 7px;">600 RECORDS</span>
+                <span style="color: #94a3b8;">CARLA Temporal</span>
+                <span class="status-pill complete" style="font-size: 0.68rem; padding: 2px 7px;">48 TRACKS</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: #94a3b8;">Decision Engine</span>
-                <span class="status-pill complete" style="font-size: 0.68rem; padding: 2px 7px;">5 TIERS</span>
+                <span style="color: #94a3b8;">M4 XGBoost Skill</span>
+                <span class="status-pill complete" style="font-size: 0.68rem; padding: 2px 7px;">+5.27% (POINT)</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: #94a3b8;">Experiment B</span>
-                <span class="status-pill pending" style="font-size: 0.68rem; padding: 2px 7px;">PLANNED</span>
+                <span style="color: #94a3b8;">Policy Safety</span>
+                <span class="status-pill complete" style="font-size: 0.68rem; padding: 2px 7px;">0 UNSAFE (IND)</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span style="color: #94a3b8;">Pi 5 Edge Deploy</span>
-                <span class="status-pill pending" style="font-size: 0.68rem; padding: 2px 7px;">PENDING</span>
+                <span class="status-pill pending" style="font-size: 0.68rem; padding: 2px 7px;">PENDING PROFILING</span>
             </div>
         </div>
         """, unsafe_allow_html=True)

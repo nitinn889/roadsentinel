@@ -1,16 +1,15 @@
-"""Temporal Road Monitoring & Repeated Inspection Component for RoadSentinel Dashboard V2.
+"""CARLA/Unreal Synthetic Temporal Evaluation & Repeated Inspection Component.
 
-Provides:
-- Dynamic discovery of stored physical segment observations from env/output/temporal_segments/
-- Zero image-upload requirement (reads directly from repository disk)
-- VIEW A: Full Segment History (all stored observations, metadata sidecars, and ineligibility reasons)
-- VIEW B: Validated Temporal Sequences (geometric tracking, change quantification, and event taxonomy)
+Integrates audited temporal tracking metrics across 8 sequences, 48 tracks, 22 persistent tracks,
+and 33 transitions, preserving the semantic rule: NOT_OBSERVED != REPAIRED.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 from typing import Any, Dict, List
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import streamlit as st
 
@@ -18,6 +17,7 @@ from data_loader import (
     WORKSPACE_ROOT,
     discover_segment_observations,
     discover_temporal_segments,
+    load_all_temporal_events_summary,
     load_canonical_metrics,
     load_sequence_daily_summary,
     load_sequence_events,
@@ -95,27 +95,140 @@ VALIDATED_SEQUENCES_MAP = {
 }
 
 
-def render_temporal_monitoring():
-    st.markdown("## Repeated Inspection & Temporal Road Monitoring")
-    st.markdown(
-        "Evaluate multi-day road surveillance across repeated camera inspections stored in "
-        "`env/output/temporal_segments/`. No image uploads required — observations are discovered "
-        "dynamically from the project filesystem and sidecar metadata."
+def render_temporal_composition_plots(summary: dict):
+    """Render persistence composition and transition direction charts."""
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4.5), facecolor="#0f172a")
+    ax1.set_facecolor("#1e293b")
+    ax2.set_facecolor("#1e293b")
+
+    # 1. Persistence Composition Donut / Pie
+    pers = summary["persistent_tracks"]
+    trans = summary["total_tracks"] - pers
+    sizes = [pers, trans]
+    colors = ["#10b981", "#64748b"]
+    labels = [f"Persistent ({pers})", f"Transient ({trans})"]
+    
+    wedges, texts, autotexts = ax1.pie(
+        sizes, labels=labels, autopct="%1.1f%%",
+        startangle=140, colors=colors,
+        textprops=dict(color="#cbd5e1", fontsize=9.5),
+        wedgeprops=dict(width=0.45, edgecolor="#0f172a")
     )
+    for at in autotexts:
+        at.set_color("#ffffff")
+        at.set_fontweight("bold")
+    ax1.set_title("Track Persistence Composition (N=48 Tracks)", color="#f8fafc", fontsize=11, fontweight="bold", pad=12)
 
-    canon = load_canonical_metrics()
+    # 2. Transition Direction Bar Chart
+    trans_types = ["Area Increased\n(Δ > +15%)", "Area Decreased\n(Δ < -15%)", "Unobserved\n(Occluded)"]
+    trans_counts = [summary["area_increases"], summary["area_decreases"], summary.get("not_observed_count", 34)]
+    bar_colors = ["#ef4444", "#3b82f6", "#eab308"]
 
-    # 1. Scientific Disclaimer & Tracking Engine Callout
+    bars = ax2.bar(trans_types, trans_counts, color=bar_colors, width=0.5, alpha=0.9)
+    ax2.set_title("Transition Direction Breakdown (N=33 Matched)", color="#f8fafc", fontsize=11, fontweight="bold", pad=12)
+    ax2.set_ylabel("Occurrences", color="#94a3b8", fontsize=10)
+    ax2.tick_params(colors="#94a3b8")
+    ax2.grid(True, linestyle="--", alpha=0.15, color="#94a3b8", axis="y")
+
+    for bar, count in zip(bars, trans_counts):
+        ax2.annotate(
+            f"{count}",
+            xy=(bar.get_x() + bar.get_width() / 2, bar.get_height()),
+            xytext=(0, 4),
+            textcoords="offset points",
+            ha="center", va="bottom",
+            color="#f8fafc", fontsize=10, fontweight="bold"
+        )
+
+    for spine in ["top", "right", "bottom", "left"]:
+        ax2.spines[spine].set_color("#334155")
+
+    plt.tight_layout()
+    st.pyplot(fig)
+    plt.close(fig)
+
+
+def render_temporal_monitoring():
+    # Prominent Labeling Requirement
     st.markdown("""
-    <div class="callout-box warn">
-        <strong>CRITICAL SCIENTIFIC WORDING & TRACKING SPECIFICATION:</strong><br>
-        • <strong>Strict Phrasing</strong>: Multi-day metrics represent <strong>MODEL-OBSERVED TEMPORAL CHANGE</strong> across simulated road states and environmental conditions, NOT certified ground-truth physical pavement deterioration.<br>
-        • <strong>Hierarchical Tracking Engine</strong>: Greedy one-to-one bipartite matching executed in strict order:
-          <code>Mask IoU ≥ 0.50</code> → <code>BBox IoU ≥ 0.30</code> → <code>Centroid Distance ≤ 75 px + Area Ratio ≤ 3.0×</code> (No Hungarian assignment).
+    <div style="background: rgba(30, 41, 59, 0.85); border: 2px solid #38bdf8; border-radius: 12px; padding: 18px 24px; margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 1.4rem; font-weight: 800; color: #38bdf8; font-family: 'Outfit', sans-serif;">
+                CARLA/Unreal Synthetic Temporal Evaluation
+            </div>
+            <span class="status-pill measured">AUDITED SYNTHETIC BENCHMARK</span>
+        </div>
+        <div style="font-size: 0.95rem; color: #cbd5e1; margin-top: 8px; line-height: 1.5;">
+            <strong>Scope & Architecture:</strong> Evaluates repeated camera inspections across multi-day surveillance scenarios 
+            simulated in CARLA/Unreal Engine (40 captures across 8 compatible subsequences). 
+            Tracks candidate pavement distress regions using bipartite geometric matching.
+        </div>
+        <div style="margin-top: 10px; padding: 10px 14px; background: rgba(234, 179, 8, 0.12); border-left: 4px solid #eab308; border-radius: 4px; font-size: 0.9rem; color: #fef08a;">
+            <strong>MANDATORY SCIENTIFIC STATEMENT:</strong> These results demonstrate <strong>temporal-system functionality</strong>, 
+            NOT real-world pavement deterioration.
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # 2. Dynamic Segment Selector & Execution Mode
+    summary = load_all_temporal_events_summary()
+
+    # Required Audited Summary Metrics Cards
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Captures / Sequences</div>
+            <div class="metric-value" style="font-size: 1.5rem; color: #38bdf8;">{summary['total_captures']} / {summary['total_sequences']}</div>
+            <div class="metric-delta neutral">40 captures in 8 sequences</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with c2:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Total Distress Tracks</div>
+            <div class="metric-value" style="font-size: 1.5rem; color: #a855f7;">{summary['total_tracks']}</div>
+            <div class="metric-delta neutral">Bipartite matched candidates</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with c3:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Persistent Tracks (Rate)</div>
+            <div class="metric-value" style="font-size: 1.5rem; color: #10b981;">{summary['persistent_tracks']} ({summary['persistence_rate_pct']:.2f}%)</div>
+            <div class="metric-delta positive">Retained across &ge;2 states</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with c4:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Matched Transitions</div>
+            <div class="metric-value" style="font-size: 1.5rem; color: #f59e0b;">{summary['transitions']}</div>
+            <div class="metric-delta neutral">{summary['area_increases']} increases | {summary['area_decreases']} decreases</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Semantic Rule Callout
+    st.markdown("""
+    <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 8px; padding: 12px 18px; margin: 16px 0;">
+        <span style="color: #f87171; font-weight: 700; font-size: 0.95rem;">CRITICAL SEMANTIC CONSTRAINTS:</span>
+        <div style="font-family: monospace; font-size: 1.05rem; font-weight: 700; color: #fca5a5; margin-top: 4px;">
+            NOT_OBSERVED != REPAIRED
+        </div>
+        <div style="color: #cbd5e1; font-size: 0.85rem; margin-top: 4px;">
+            A candidate distress region that is unobserved on Day T (e.g. obscured by glare, lighting shift, or false-negative suppression) 
+            is formally classified as <code>NOT_OBSERVED</code>. It is <strong>NEVER</strong> interpreted as road repair or healing.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Track Composition & Transition Direction Plots
+    st.markdown("### 1. Track Persistence & Transition Direction Composition")
+    render_temporal_composition_plots(summary)
+
+    st.markdown("---")
+
+    # 2. Dynamic Segment Selector & Physical Observations
+    st.markdown("### 2. Physical Segment Observations & Sequences")
     segments = discover_temporal_segments()
     if not segments:
         st.error("No temporal segment directories discovered in env/output/temporal_segments/.")
@@ -124,47 +237,40 @@ def render_temporal_monitoring():
     ctrl_col1, ctrl_col2 = st.columns([2, 2])
     with ctrl_col1:
         selected_segment = st.selectbox(
-            "Select Road Segment (Dynamically Discovered)",
+            "Select Road Segment (Discovered on disk)",
             segments,
             index=segments.index("SEG_004") if "SEG_004" in segments else 0,
-            help="Discovered dynamically from env/output/temporal_segments/. SEG_005/SEG_006 will appear automatically when captured."
+            help="Discovered dynamically from env/output/temporal_segments/."
         )
 
     with ctrl_col2:
         exec_mode = st.radio(
-            "Execution & Evaluation Mode",
-            ["Verified Demo Mode (Precomputed)", "Live Prototype Mode (Rerun YOLO on Stored Images)"],
+            "Evaluation Mode",
+            ["Verified Precomputed Mode", "Live Prototype Mode (GPU YOLO Inference)"],
             index=0,
             horizontal=True,
-            help="Verified Demo Mode loads frozen Phase-2/3/4/11 outputs instantly. Live Mode runs YOLO directly on the stored segment files without re-uploading."
+            help="Precomputed mode loads verified Phase 2/3 outputs. Live mode runs YOLO directly on the stored segment files."
         )
 
-    # Discover observations for the chosen segment
     observations = discover_segment_observations(selected_segment)
 
-    st.markdown("---")
-
-    # 3. Two Primary Views Tab Navigation
+    # Tabs for Full History vs Validated Sequences vs Taxonomy
     tab_view_a, tab_view_b, tab_events = st.tabs([
         "VIEW A: Full Segment History (All Observations)",
         "VIEW B: Validated Temporal Sequences",
         "Canonical Event Taxonomy & Research Figures"
     ])
 
-    # ==========================================
-    # VIEW A: FULL SEGMENT HISTORY
-    # ==========================================
+    # VIEW A: Full Observation History
     with tab_view_a:
-        st.markdown(f"### VIEW A: Full Observation History for `{selected_segment}`")
+        st.markdown(f"#### VIEW A: Full Observation History for `{selected_segment}`")
         st.markdown(
-            f"Displays all **{len(observations)} physical observations** stored in `env/output/temporal_segments/{selected_segment}/`. "
-            "Includes all capture metadata sidecars, pavement distress metrics, and explicit temporal eligibility reasons."
+            f"Displays all **{len(observations)} physical observations** stored in `env/output/temporal_segments/{selected_segment}/`."
         )
 
         if not observations:
             st.warning(f"No stored day captures found for {selected_segment}.")
         else:
-            # Summary Table
             summary_rows = []
             for obs in observations:
                 summary_rows.append({
@@ -183,10 +289,6 @@ def render_temporal_monitoring():
                 })
             st.dataframe(pd.DataFrame(summary_rows), hide_index=True, use_container_width=True)
 
-            st.markdown("---")
-            st.markdown("#### Physical Observation Cards & Sidecar Inspector")
-
-            # Day Selector for detailed view
             day_labels = [obs["day_label"] for obs in observations]
             selected_day_label = st.selectbox(
                 "Select Day Observation to Inspect:",
@@ -223,7 +325,6 @@ def render_temporal_monitoring():
                     st.warning(f"Image asset missing on disk at `{img_path}`.")
 
             with col_info:
-                # Eligibility Badge
                 if obs_match["temporal_status"] == "ELIGIBLE":
                     st.markdown("""
                     <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; border-radius: 6px; padding: 10px; margin-bottom: 12px;">
@@ -239,7 +340,6 @@ def render_temporal_monitoring():
                     </div>
                     """, unsafe_allow_html=True)
 
-                # Metadata Sidecar Details
                 if obs_match["has_metadata"]:
                     st.markdown(f"""
                     **Metadata Sidecar Status**: `VALID`  
@@ -248,16 +348,8 @@ def render_temporal_monitoring():
                     - **Pavement Evolution State**: {obs_match['road_health_state']}  
                     - **Moisture State**: {obs_match['moisture_state']}  
                     """)
-                else:
-                    st.markdown("""
-                    <div class="callout-box danger">
-                        <strong>METADATA MISSING (Diagnostic Case):</strong><br>
-                        Simulation metadata sidecar was intentionally omitted for this capture (diagnostic verification).
-                    </div>
-                    """, unsafe_allow_html=True)
 
                 st.markdown("---")
-                # Perception & Deterioration Metrics
                 m1, m2 = st.columns(2)
                 with m1:
                     st.metric("Current Severity", f"{obs_match['current_severity']:.4f}")
@@ -266,16 +358,9 @@ def render_temporal_monitoring():
                     st.metric("Defect Area Ratio", f"{obs_match['defect_area_ratio']:.6f}")
                     st.metric("Surface Anomaly", f"{obs_match['surface_anomaly_score']:.4f}")
 
-    # ==========================================
-    # VIEW B: VALIDATED TEMPORAL SEQUENCES
-    # ==========================================
+    # VIEW B: Validated Temporal Sequences
     with tab_view_b:
-        st.markdown(f"### VIEW B: Validated Compatible Sequences for `{selected_segment}`")
-        st.markdown(
-            "To preserve geometric tracking integrity, bipartite correspondence is executed **only on validated sequences** "
-            "with constant camera geometry. Incompatible transitions (viewpoint switches, isolated frames) are safely excluded."
-        )
-
+        st.markdown(f"#### VIEW B: Validated Compatible Sequences for `{selected_segment}`")
         val_seqs = VALIDATED_SEQUENCES_MAP.get(selected_segment, [])
         if not val_seqs:
             st.info(f"No validated multi-state temporal sequences defined yet for {selected_segment}.")
@@ -292,15 +377,10 @@ def render_temporal_monitoring():
             </div>
             """, unsafe_allow_html=True)
 
-            # Load sequence outputs
             df_seq_daily = load_sequence_daily_summary(selected_seq_id)
             seq_events = load_sequence_events(selected_seq_id)
-            seq_prog = load_sequence_progression(selected_seq_id)
 
             if not df_seq_daily.empty:
-                st.markdown("#### MODEL-OBSERVED TEMPORAL CHANGE: Quantitative Trajectories")
-
-                # Metric Line Charts
                 chart_col1, chart_col2, chart_col3 = st.columns(3)
                 with chart_col1:
                     st.markdown("**Current Severity vs Day**")
@@ -312,7 +392,6 @@ def render_temporal_monitoring():
                     st.markdown("**Candidate Defect Count vs Day**")
                     st.line_chart(df_seq_daily.set_index("day")["defect_count"], use_container_width=True)
 
-                # Day-to-Day Change Table
                 st.markdown("#### Day-to-Day Transition & Delta Table")
                 disp_cols = [
                     "day", "current_severity", "current_severity_delta",
@@ -323,43 +402,24 @@ def render_temporal_monitoring():
                 available_disp = [c for c in disp_cols if c in df_seq_daily.columns]
                 st.dataframe(df_seq_daily[available_disp], hide_index=True, use_container_width=True)
 
-            # Events for this specific sequence
             if seq_events:
                 st.markdown(f"#### Sequence Track Events ({len(seq_events)} transitions)")
-                df_ev = pd.DataFrame(seq_events)
-                st.dataframe(df_ev, hide_index=True, use_container_width=True)
+                st.dataframe(pd.DataFrame(seq_events), hide_index=True, use_container_width=True)
 
-            # Sequence figure if available
-            p_seq_fig = PLOTS_DIR / f"fig2_{selected_segment.lower()}_drone_progression.png"
-            if not p_seq_fig.exists():
-                p_seq_fig = PLOTS_DIR / f"fig1_{selected_segment.lower()}_stability_control.png"
-            if not p_seq_fig.exists():
-                p_seq_fig = PLOTS_DIR / f"fig3_{selected_segment.lower()}_environmental_response.png"
-
-            if p_seq_fig.exists():
-                st.image(str(p_seq_fig), caption=f"Publication Figure for {selected_seq_id}", use_container_width=True)
-
-    # ==========================================
-    # CANONICAL EVENT TAXONOMY & FIGURES
-    # ==========================================
+    # TAB EVENTS: Canonical Taxonomy & Research Figures
     with tab_events:
-        st.markdown("### Canonical Event Taxonomy & All 8 Sequences Overview")
-        st.markdown(
-            "Across all 8 temporal subsequences in Experiment A (40 captures, 33 matched transitions, 48 unique tracks), "
-            "the bipartite tracking engine classified pairwise temporal transitions into 5 formal event types:"
-        )
-
+        st.markdown("#### Canonical Event Taxonomy & All 8 Sequences Overview")
         e1, e2, e3, e4, e5 = st.columns(5)
         with e1:
-            st.metric("NEW_DEFECT", "48", help="A defect observed on Day T with no spatial correspondence on Day T-1.")
+            st.metric("NEW_DEFECT", f"{summary.get('new_defect_count', 48)}")
         with e2:
-            st.metric("MATCHED_EXISTING", "33", help="Defect track maintained across consecutive observations (14 increased, 19 decreased).")
+            st.metric("MATCHED_EXISTING", f"{summary['transitions']}")
         with e3:
-            st.metric("AREA_INCREASED", "14", help="Matched region exhibiting >15% observed bounding area growth (canonical count: 14).")
+            st.metric("AREA_INCREASED", f"{summary['area_increases']}")
         with e4:
-            st.metric("AREA_DECREASED", "19", help="Matched region exhibiting >15% observed area contraction (canonical count: 19).")
+            st.metric("AREA_DECREASED", f"{summary['area_decreases']}")
         with e5:
-            st.metric("NOT_OBSERVED", "34", help="Region tracked previously but unobserved on Day T. NEVER marked as REPAIRED.")
+            st.metric("NOT_OBSERVED", f"{summary.get('not_observed_count', 34)}")
 
         col_fig1, col_fig2 = st.columns(2)
         with col_fig1:
@@ -371,7 +431,6 @@ def render_temporal_monitoring():
             if p_track.exists():
                 st.image(str(p_track), caption="Figure 5: Track Lifespan Retention Distribution (Longest track: 7 states)", use_container_width=True)
 
-        # Full Sequences Table
         seq_table = load_temporal_sequences_table()
         if not seq_table.empty:
             with st.expander("View Full Sequences Metadata Table (All 8 Subsequences)"):
