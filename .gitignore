@@ -75,6 +75,7 @@ ml/outputs/*
 # Main downloaded datasets
 # ============================================================
 RoadSentinel_datasets/
+/data/external_uav/
 
 # ============================================================
 # YOLO

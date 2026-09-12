@@ -1,0 +1,56 @@
+{
+  "decision": "INCONCLUSIVE",
+  "rationale": "No material-regression rule triggered, but at least one predeclared GO requirement lacked support.",
+  "predeclared_rules": {
+    "go": "Source-balanced Macro F1 gain >=0.02 absolute or >=5% relative; China Macro F1 decline no greater than 0.02; no pothole-recall decrease in either source; no integrity failure; improvement is broad (at least 10 differing groups and >=60% favor M-UAV1 in each source). A source with fewer than 20 pothole objects is treated as insufficient support for GO.",
+    "no_go": "NO-GO takes precedence if balanced Macro F1 is negative with both sources nonpositive, China Macro F1 drops by >0.02, or pothole recall drops by >0.05 in either source.",
+    "inconclusive": "Neither branch above, including insufficient pothole support or localized/uncertain improvement."
+  },
+  "go_conditions": {
+    "source_balanced_macro_f1_gain_at_least_0.02_absolute_or_5_percent_relative": true,
+    "china_macro_f1_does_not_decrease_by_more_than_0.02": true,
+    "pothole_recall_does_not_decrease_on_either_source": false,
+    "improvement_broad_across_groups": false,
+    "no_leakage_or_evaluation_integrity_failure": true,
+    "minimum_20_pothole_gt_per_source": false
+  },
+  "no_go_conditions": {
+    "source_balanced_macro_f1_negative_with_both_sources_nonpositive": false,
+    "china_macro_f1_material_regression_gt_0.02": false,
+    "pothole_recall_material_regression_gt_0.05_any_source": false
+  },
+  "observed": {
+    "source_macro_f1_delta": {
+      "point": 0.03543384064373262,
+      "ci95_low": -0.009513733599397152,
+      "ci95_high": 0.07025753463675312
+    },
+    "source_macro_f1_relative_delta": 0.1439847023401201,
+    "source_deltas": {
+      "rdd2022_china_drone": 0.03330376655464473,
+      "uav_pdd2023": 0.03756391473282056
+    },
+    "pothole_recall_deltas": {
+      "rdd2022_china_drone": -0.03125,
+      "uav_pdd2023": 0.0
+    },
+    "pothole_gt": {
+      "rdd2022_china_drone": 32,
+      "uav_pdd2023": 15
+    },
+    "breadth": {
+      "rdd2022_china_drone": {
+        "m_uav0": 34,
+        "m_uav1": 29,
+        "ties": 64,
+        "differing_groups": 63
+      },
+      "uav_pdd2023": {
+        "m_uav0": 6,
+        "m_uav1": 10,
+        "ties": 0,
+        "differing_groups": 16
+      }
+    }
+  }
+}

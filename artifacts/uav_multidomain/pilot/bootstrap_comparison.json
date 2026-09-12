@@ -1,0 +1,117 @@
+{
+  "method": "Paired cluster bootstrap over isolation_group_id within each source; percentile 95% intervals.",
+  "seed": 20260912,
+  "replicates": 2000,
+  "independence_caveat": "UAV-PDD clusters are original photograph IDs. China clusters are pHash-based and may not capture every acquisition sequence; China intervals are approximate.",
+  "source_metrics": {
+    "rdd2022_china_drone": {
+      "m_uav0": {
+        "macro_f1": {
+          "point": 0.3998330312880355,
+          "ci95_low": 0.32602208810473227,
+          "ci95_high": 0.5066611938281844
+        },
+        "pothole_recall": {
+          "point": 0.15625,
+          "ci95_low": 0.03569862155388471,
+          "ci95_high": 0.4666666666666667
+        }
+      },
+      "m_uav1": {
+        "macro_f1": {
+          "point": 0.4331367978426802,
+          "ci95_low": 0.3666353674677506,
+          "ci95_high": 0.5333191843774784
+        },
+        "pothole_recall": {
+          "point": 0.125,
+          "ci95_low": 0.017849310776942354,
+          "ci95_high": 0.4166666666666667
+        }
+      }
+    },
+    "uav_pdd2023": {
+      "m_uav0": {
+        "macro_f1": {
+          "point": 0.0923559313981662,
+          "ci95_low": 0.06432418525447031,
+          "ci95_high": 0.12787257021611043
+        },
+        "pothole_recall": {
+          "point": 0.0,
+          "ci95_low": 0.0,
+          "ci95_high": 0.0
+        }
+      },
+      "m_uav1": {
+        "macro_f1": {
+          "point": 0.12991984613098675,
+          "ci95_low": 0.1020368271364868,
+          "ci95_high": 0.15769749251853143
+        },
+        "pothole_recall": {
+          "point": 0.0,
+          "ci95_low": 0.0,
+          "ci95_high": 0.0
+        }
+      }
+    }
+  },
+  "source_deltas": {
+    "rdd2022_china_drone": {
+      "macro_f1": {
+        "point": 0.03330376655464473,
+        "ci95_low": -0.04296996175520844,
+        "ci95_high": 0.09811995691856219
+      },
+      "pothole_recall": {
+        "point": -0.03125,
+        "ci95_low": -0.22736013986013986,
+        "ci95_high": 0.09999999999999998
+      }
+    },
+    "uav_pdd2023": {
+      "macro_f1": {
+        "point": 0.03756391473282056,
+        "ci95_low": -0.00298266996298396,
+        "ci95_high": 0.06813277147191248
+      },
+      "pothole_recall": {
+        "point": 0.0,
+        "ci95_low": 0.0,
+        "ci95_high": 0.0
+      }
+    }
+  },
+  "source_balanced_macro_f1": {
+    "m_uav0": {
+      "point": 0.24609448134310086,
+      "ci95_low": 0.2071164587299579,
+      "ci95_high": 0.3038350802068295
+    },
+    "m_uav1": {
+      "point": 0.2815283219868335,
+      "ci95_low": 0.24484452986778432,
+      "ci95_high": 0.33409076208864136
+    },
+    "delta_m_uav1_minus_m_uav0": {
+      "point": 0.03543384064373262,
+      "ci95_low": -0.009513733599397152,
+      "ci95_high": 0.07025753463675312
+    }
+  },
+  "breadth_by_source": {
+    "rdd2022_china_drone": {
+      "m_uav0": 34,
+      "m_uav1": 29,
+      "ties": 64,
+      "differing_groups": 63
+    },
+    "uav_pdd2023": {
+      "m_uav0": 6,
+      "m_uav1": 10,
+      "ties": 0,
+      "differing_groups": 16
+    }
+  }
+}

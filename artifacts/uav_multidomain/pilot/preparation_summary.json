@@ -1,0 +1,38 @@
+{
+  "status": "PASS",
+  "seed": 20260912,
+  "phase1_harmonized_canonical_empty_count": 269,
+  "all_training_partition_canonical_empty_count": 306,
+  "verified_negative_count": 5,
+  "valid_multi_role_reuse_count": 313,
+  "pilot_eligible_multi_role_reuse_count": 257,
+  "m_uav0_train_images": 1149,
+  "m_uav1_train_images": 1179,
+  "m_uav1_added_uav_pdd_images": 30,
+  "validation_images": {
+    "rdd2022_china_drone": 136,
+    "uav_pdd2023": 123
+  },
+  "uav_pdd_source_photo_partition_counts": {
+    "internal_test": 2178,
+    "validation": 123,
+    "calibration": 98,
+    "train": 33
+  },
+  "uav_pdd_source_photo_group_counts": {
+    "internal_test": 205,
+    "validation": 16,
+    "calibration": 11,
+    "train": 5
+  },
+  "phash_manual_review": {
+    "pairs": 31,
+    "visually_different": 31,
+    "confirmed_or_likely_duplicates": 0
+  },
+  "preparation_validation": {
+    "status": "PASS",
+    "rows": 2846,
+    "errors": []
+  }
+}

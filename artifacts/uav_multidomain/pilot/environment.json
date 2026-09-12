@@ -1,0 +1,11 @@
+{
+  "python": "3.14.4",
+  "python_executable": "/home/nitin-nandakumar/Downloads/roadsentinel/.venv/bin/python",
+  "pytorch": "2.13.0+cu130",
+  "pytorch_cuda": "13.0",
+  "cuda_available": true,
+  "gpu": "NVIDIA GeForce RTX 5060 Laptop GPU",
+  "nvidia_smi": "NVIDIA GeForce RTX 5060 Laptop GPU, 595.84, 8151 MiB",
+  "ultralytics": "8.4.143",
+  "base_model": "yolov8n.pt"
+}

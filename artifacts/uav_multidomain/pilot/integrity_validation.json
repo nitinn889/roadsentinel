@@ -1,0 +1,95 @@
+{
+  "status": "PASS",
+  "errors": [],
+  "checks": {
+    "required_artifacts": {
+      "pass": true,
+      "missing": []
+    },
+    "identical_training_settings": true,
+    "identical_validation_ids": {
+      "pass": true,
+      "count": 259
+    },
+    "identical_china_training_ids": {
+      "pass": true,
+      "count": 1149
+    },
+    "no_prohibited_sources": {
+      "pass": true,
+      "rows": 0
+    },
+    "no_train_validation_group_crossing": {
+      "pass": true,
+      "crossing_groups": []
+    },
+    "no_protected_partition_samples": {
+      "pass": true,
+      "leaked": []
+    },
+    "canonical_empty_policy": {
+      "pass": true,
+      "verified_negative_rows": 7,
+      "bad_samples": []
+    },
+    "phash_review": {
+      "pass": true,
+      "pairs": 31,
+      "decision_counts": {
+        "Visually different": 31
+      }
+    },
+    "uapd_independent_candidates": {
+      "pass": true,
+      "count": 749,
+      "known_china_overlap_excluded": 2401
+    },
+    "pilot_runs_pass": {
+      "pass": true,
+      "rows": 2
+    },
+    "smoke_runs_pass_and_separate": {
+      "pass": true,
+      "rows": 2
+    },
+    "metric_coverage": {
+      "pass": true,
+      "source_rows": 4,
+      "class_rows": 16,
+      "image_rows": 518
+    },
+    "frozen_artifact_hashes": {
+      "yolo/weights/best.pt": {
+        "pass": true,
+        "expected_sha256": "ddbea38144425aad288f05d90f07a38bcac35eeb467767643c707eb8e2fb5dcf",
+        "actual_sha256": "ddbea38144425aad288f05d90f07a38bcac35eeb467767643c707eb8e2fb5dcf"
+      },
+      "road_health_pipeline/output/real_memory_bank/embeddings.npy": {
+        "pass": true,
+        "expected_sha256": "e8d16c41e3090bb60e0f5474774c9f9d8a80c6ffcd124dd69e8a2a4e54a0236d",
+        "actual_sha256": "e8d16c41e3090bb60e0f5474774c9f9d8a80c6ffcd124dd69e8a2a4e54a0236d"
+      },
+      "road_health_pipeline/output/real_memory_bank/index.faiss": {
+        "pass": true,
+        "expected_sha256": "d12a8120a2f9ff36f5ec5c981164b586b06e3477e0e7711adb8f6fb34c7bc1c2",
+        "actual_sha256": "d12a8120a2f9ff36f5ec5c981164b586b06e3477e0e7711adb8f6fb34c7bc1c2"
+      },
+      "xgboost/model/scenario_model_v2.json": {
+        "pass": true,
+        "expected_sha256": "613227f98a8c5b45fb9909ab9f3b36ba12b219f68dbd2998fd26db6d77c7e679",
+        "actual_sha256": "613227f98a8c5b45fb9909ab9f3b36ba12b219f68dbd2998fd26db6d77c7e679"
+      },
+      "integration/CANONICAL_RESEARCH_METRICS.json": {
+        "pass": true,
+        "expected_sha256": "e1acc85a0a95c511d60f77afb1c46ef8adbc4c81904f7aa701fc321fcf84764b",
+        "actual_sha256": "e1acc85a0a95c511d60f77afb1c46ef8adbc4c81904f7aa701fc321fcf84764b"
+      }
+    },
+    "preparation_validation": {
+      "status": "PASS",
+      "rows": 2846,
+      "errors": []
+    },
+    "decision": "INCONCLUSIVE"
+  }
+}
